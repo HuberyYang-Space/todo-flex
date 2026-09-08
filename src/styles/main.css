@@ -1,0 +1,43 @@
+/* 主题变量：暗色为默认基调，亮色作为可切换的备选 */
+:root {
+  --bg: #f7f8fa;
+  --fg: #1f2430;
+  --panel: #ffffff;
+  --border: #e3e6ec;
+  --accent: #0891b2;
+  --accent-2: #7c3aed;
+}
+
+html.dark {
+  --bg: #080b12;
+  --fg: #e6edf6;
+  --panel: #0f1520;
+  --border: #1e2733;
+  --accent: #22d3ee;
+  --accent-2: #a78bfa;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--fg);
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+}
+
+/* 尊重系统的减弱动效偏好：关掉装饰性动画，保留布局可读性 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

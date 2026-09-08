@@ -1,0 +1,72 @@
+{
+  "name": "todo-flex",
+  "type": "module",
+  "private": true,
+  "packageManager": "pnpm@11.23.0",
+  "description": "🧭 An interactive CSS Flexbox playground that visualizes free space and size distribution | 把剩余空间与尺寸分配画出来的 CSS Flex 交互演示站",
+  "author": "Hubery Yang",
+  "license": "MIT",
+  "homepage": "https://github.com/Hub-yang/todo-flex#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hub-yang/todo-flex.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Hub-yang/todo-flex/issues"
+  },
+  "keywords": [
+    "css",
+    "flexbox",
+    "flex",
+    "playground",
+    "visualization"
+  ],
+  "scripts": {
+    "dev": "vite --open",
+    "build": "vue-tsc --noEmit && vite build",
+    "tscheck": "vue-tsc --noEmit",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint",
+    "lint:fix": "eslint --fix",
+    "taze": "npx taze major -r",
+    "prepare": "husky",
+    "commitlint": "commitlint --edit"
+  },
+  "dependencies": {
+    "@vueuse/core": "^14.4.0",
+    "gsap": "^3.15.0",
+    "prismjs": "^1.30.0",
+    "three": "^0.185.1",
+    "vue": "^3.5.42"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^9.5.1",
+    "@commitlint/cli": "^21.2.2",
+    "@commitlint/config-conventional": "^21.2.2",
+    "@huberyyang/todo-scripts": "^1.4.0",
+    "@iconify-json/carbon": "^1.2.26",
+    "@types/node": "^26.4.1",
+    "@types/prismjs": "^1.26.6",
+    "@types/three": "^0.185.4",
+    "@unocss/eslint-plugin": "^66.10.0",
+    "@unocss/reset": "^66.10.0",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "@vue/test-utils": "^2.5.0",
+    "eslint": "^10.10.0",
+    "eslint-plugin-format": "^2.0.1",
+    "happy-dom": "^20.14.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.0",
+    "typescript": "^6.0.3",
+    "unocss": "^66.10.0",
+    "unplugin-auto-import": "^21.1.0",
+    "unplugin-icons": "^23.0.1",
+    "unplugin-vue-components": "^32.1.0",
+    "vite": "^8.2.2",
+    "vite-plugin-vue-devtools": "^8.2.1",
+    "vitest": "^5.0.0",
+    "vue-tsc": "^3.3.11"
+  }
+}
