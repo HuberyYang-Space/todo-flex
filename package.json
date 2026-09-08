@@ -6,13 +6,13 @@
   "description": "🧭 An interactive CSS Flexbox playground that visualizes free space and size distribution | 把剩余空间与尺寸分配画出来的 CSS Flex 交互演示站",
   "author": "Hubery Yang",
   "license": "MIT",
-  "homepage": "https://github.com/Hub-yang/todo-flex#readme",
+  "homepage": "https://github.com/HuberyYang-Space/todo-flex#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Hub-yang/todo-flex.git"
+    "url": "git+https://github.com/HuberyYang-Space/todo-flex.git"
   },
   "bugs": {
-    "url": "https://github.com/Hub-yang/todo-flex/issues"
+    "url": "https://github.com/HuberyYang-Space/todo-flex/issues"
   },
   "keywords": [
     "css",
