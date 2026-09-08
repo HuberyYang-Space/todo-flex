@@ -13,8 +13,8 @@ function valueOf(key: string): string | number | boolean {
 }
 
 function update(key: string, value: string | number | boolean): void {
-  // 属性表的 key 与状态字段一一对应，这里做一次宽松写入
-  ;(state.container as Record<string, unknown>)[key] = value
+  // 属性表的 key 与状态字段一一对应；Object.assign 免去不合法的索引签名断言
+  Object.assign(state.container, { [key]: value })
 }
 </script>
 

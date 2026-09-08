@@ -14,7 +14,8 @@ function valueOf(item: FlexItemState, key: string): string | number | boolean {
 }
 
 function update(item: FlexItemState, key: string, value: string | number | boolean): void {
-  ;(item as Record<string, unknown>)[key] = value
+  // 属性表的 key 与状态字段一一对应；Object.assign 免去不合法的索引签名断言
+  Object.assign(item, { [key]: value })
 }
 
 /** flex 简写是一次写三个分量，这里直接回填，让用户看到简写到底展开成了什么 */

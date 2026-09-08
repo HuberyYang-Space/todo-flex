@@ -1,17 +1,23 @@
 <script setup lang="ts">
-// 骨架占位：真实页面结构在 spec 定稿后按实现计划逐步替换
+import ThePlayground from '~/components/playground/ThePlayground.vue'
 </script>
 
 <template>
-  <main class="h-full flex flex-col items-center justify-center gap-4 font-mono">
-    <h1 class="text-2xl">
-      todo-flex
-    </h1>
-    <p class="op-60">
-      看得见的 CSS Flexbox
-    </p>
-    <button class="btn" @click="toggleDark()">
-      {{ isDark ? 'dark' : 'light' }}
-    </button>
-  </main>
+  <div class="min-h-full font-sans">
+    <header class="mx-auto max-w-360 w-full flex items-center justify-between p-4">
+      <div>
+        <h1 class="text-lg font-bold font-mono">
+          todo-flex
+        </h1>
+        <p class="text-xs op-60">
+          看得见的 CSS Flexbox
+        </p>
+      </div>
+      <button class="btn text-xs" @click="toggleDark()">
+        {{ isDark ? '暗色' : '亮色' }}
+      </button>
+    </header>
+
+    <ThePlayground />
+  </div>
 </template>
