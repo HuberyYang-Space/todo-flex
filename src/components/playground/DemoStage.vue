@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
 import type { FlexItemState } from '~/core/types'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useFlexState } from '~/composables/useFlexState'
+import { useMeasure } from '~/composables/useMeasure'
 import { isRowDirection } from '~/core/axis'
+import { itemLabel } from '~/core/labels'
 
 const { state, selectItem } = useFlexState()
+
+// 演示区是全站唯一的真实布局来源，挂上观测层供明细表读取实际尺寸
+const stageEl = ref<HTMLElement>()
+useMeasure().observeStage(stageEl)
 
 const isRow = computed(() => isRowDirection(state.container.direction))
 
@@ -40,16 +46,13 @@ function itemStyle(item: FlexItemState): CSSProperties {
 function contentStyle(item: FlexItemState): CSSProperties {
   return isRow.value ? { width: `${item.size}px` } : { height: `${item.size}px` }
 }
-
-function label(index: number): string {
-  return String.fromCharCode(65 + index)
-}
 </script>
 
 <template>
   <div
+    ref="stageEl"
     data-testid="stage"
-    class="relative overflow-hidden panel"
+    class="stage relative overflow-hidden rounded-2 bg-panel"
     :style="containerStyle"
   >
     <div
@@ -65,32 +68,51 @@ function label(index: number): string {
       @keydown.enter="selectItem(item.id)"
     >
       <div class="content" :style="contentStyle(item)">
-        {{ label(index) }}
+        {{ itemLabel(index) }}
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+/*
+ * 演示区的描边一律用 outline，绝不用 border。
+ *
+ * border 会占据布局空间：容器少 2px 可用宽度、每个盒子实际尺寸比推导值多 2px，
+ * 诊断层会把这个恒定偏差误报成「有规则介入」。而 emitCss 输出的 CSS 里并没有 border，
+ * 演示区一旦加了输出 CSS 之外的布局影响，「复制这段 CSS 即可复现」就不成立了。
+ * 同理：这两个选择器都不得添加 padding。
+ */
+.stage {
+  outline: 1px solid var(--border);
+  outline-offset: -1px;
+}
+
 .stage-item {
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+
+  /*
+   * 绝不能加 overflow: hidden。
+   * CSS 规范规定「自动最小尺寸」只在主轴 overflow 为 visible 时生效，
+   * 一旦裁剪，min-width:auto 立即失效——本站的头号陷阱就演示不出来了。
+   * 盒子被压到比内容还窄时，内容溢出正是要给用户看的现象。
+   */
   cursor: pointer;
-  border: 1px solid var(--accent);
   border-radius: 6px;
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
   background-color: color-mix(in srgb, var(--accent) 14%, transparent);
   transition:
-    border-color 0.2s ease,
+    outline-color 0.2s ease,
     box-shadow 0.2s ease;
 }
 
 .stage-item:focus-visible,
 .stage-item.is-selected {
-  border-color: var(--accent-2);
+  outline-color: var(--accent-2);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-2) 45%, transparent);
-  outline: none;
 }
 
 .content {

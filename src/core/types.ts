@@ -85,3 +85,41 @@ export interface DerivedLayout {
   items: DerivedItem[]
   steps: DerivationStep[]
 }
+
+/**
+ * 观测层读到的单个盒子的真实布局。
+ * 尺寸来自 ResizeObserver 报告的 border-box、位置来自 offsetLeft/offsetTop，
+ * 两者都不受 transform 影响——M4 接入 GSAP Flip 后动画照播、数字照准。
+ */
+export interface MeasuredItem {
+  id: string
+  width: number
+  height: number
+  left: number
+  top: number
+}
+
+export interface MeasuredStage {
+  width: number
+  height: number
+  items: MeasuredItem[]
+}
+
+export type DiagnosticRule = 'min-width-auto' | 'margin-auto' | 'max-size-clamp'
+
+/**
+ * 诊断结论，两类：
+ * - `warn`：理论值与实际值对不上，指出是哪条规则介入了
+ * - `info`：由状态直接推出的提示。`margin: auto` 属于这类——浏览器实测确认它
+ *   吃掉剩余空间时只改变位置、不改变尺寸，因此永远不会体现为尺寸偏差
+ */
+export interface Diagnostic {
+  itemId: string
+  rule: DiagnosticRule
+  severity: 'warn' | 'info'
+  theoretical: number
+  actual: number
+  /** 补充数值，交给文案渲染（如被 margin 吃掉的剩余空间） */
+  params: Record<string, number>
+  messageKey: string
+}

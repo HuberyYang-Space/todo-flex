@@ -5,6 +5,7 @@ import CssOutput from './CssOutput.vue'
 import DemoStage from './DemoStage.vue'
 import ItemControls from './ItemControls.vue'
 import ItemList from './ItemList.vue'
+import MetricsTable from './MetricsTable.vue'
 
 const { state, resetState } = useFlexState()
 
@@ -65,6 +66,8 @@ function setHeight(event: Event): void {
           <DemoStage />
         </div>
       </div>
+
+      <MetricsTable />
 
       <CssOutput />
     </main>

@@ -203,11 +203,29 @@ interface Diagnostic {
 }
 ```
 
-判定优先级（自上而下匹配第一条命中的）：
+诊断分两类，`severity` 字段区分：
 
-1. `actual > theoretical` 且 `actual ≈ item.size` 且 `minWidthAuto` 为真 → `min-width-auto`（收缩被内容固有尺寸截断）。
-2. `marginAuto` 为真且该行剩余空间被吞掉（`justify-content` 不再生效）→ `margin-auto`。
-3. 其余不一致 → `max-size-clamp`（兜底解释：尺寸被某个上下限截断）。
+**`warn` —— 尺寸对不上（差值 > 0.5px）**，自上而下匹配第一条命中的：
+
+1. `actual ≈ item.size` 且 `minWidthAuto` 为真 → `min-width-auto`（收缩被内容固有尺寸截断）。
+2. 其余不一致 → `max-size-clamp`（兜底解释：尺寸被某个上下限截断）。
+
+**`info` —— 尺寸吻合，但状态本身值得提示**：
+
+3. `marginAuto` 为真且该行剩余空间为正 → `margin-auto`，附带被吃掉的剩余空间数值。
+
+> **2026-09-09 修订（两处，均由浏览器实测推翻原设计）**
+>
+> **其一**：`min-width-auto` 原本还要求 `actual > theoretical`，该条件过窄。多盒子收缩连锁时——
+> A 拒绝缩到内容尺寸以下，压力全部转嫁给 B——B 会先缩过头，再被自己的下限接住，最终**小于**理论值，
+> 但同样是被 `min-width: auto` 截断的。判据改为「实际尺寸停在内容固有尺寸上」，与大小关系无关。
+>
+> **其二**：`margin-auto` 原本被当作尺寸偏差型诊断，**这在架构上不可能触发**。实测确认
+> `margin: auto` 吃掉剩余空间时盒子尺寸一个都不变（三个盒子仍是 80px），变的只有位置
+> （`offsetLeft` 从 0 变成 228）。而诊断层只比对尺寸，所以这条规则永远是死代码。
+> 改为不依赖测量的状态提示（`severity: 'info'`）。
+> 若将来要做成真正的「理论 vs 实际」发现，需要给推导引擎新增位置推导
+> （`justify-content` 六种分布 + auto margin 吸收规则），那是独立的一块工作。
 
 `basis-vs-width` 不属于运行时诊断——`flex-basis` 覆盖 `width` 是确定性规则，不产生理论与实际的偏差，
 它作为陷阱案例（8.2 之二）在 Traps 板块讲解。

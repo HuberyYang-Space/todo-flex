@@ -16,6 +16,7 @@ declare module 'vue' {
     DemoStage: typeof import('./src/components/playground/DemoStage.vue')['default']
     ItemControls: typeof import('./src/components/playground/ItemControls.vue')['default']
     ItemList: typeof import('./src/components/playground/ItemList.vue')['default']
+    MetricsTable: typeof import('./src/components/playground/MetricsTable.vue')['default']
     PropertyField: typeof import('./src/components/playground/PropertyField.vue')['default']
     ThePlayground: typeof import('./src/components/playground/ThePlayground.vue')['default']
   }

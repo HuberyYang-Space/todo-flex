@@ -16,6 +16,12 @@ describe('thePlayground', () => {
     expect(wrapper.text()).toContain('盒子属性')
   })
 
+  it('明细区随演示区一起呈现，每个盒子一行', () => {
+    const wrapper = mount(ThePlayground)
+    expect(wrapper.find('[data-testid="metrics"]').exists()).toBe(true)
+    expect(wrapper.findAll('[data-testid="metrics-row"]')).toHaveLength(3)
+  })
+
   it('容器宽度滑块改变演示区尺寸', async () => {
     const wrapper = mount(ThePlayground)
     await wrapper.get('[data-testid="stage-width"]').setValue('480')

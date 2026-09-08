@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { MAX_ITEMS, useFlexState } from '~/composables/useFlexState'
+import { itemLabel } from '~/core/labels'
 
 const { state, addItem, removeItem, selectItem } = useFlexState()
-
-function label(index: number): string {
-  return String.fromCharCode(65 + index)
-}
 </script>
 
 <template>
@@ -33,7 +30,7 @@ function label(index: number): string {
         :class="{ 'border-accent text-accent': state.selectedId === item.id }"
         @click="selectItem(item.id)"
       >
-        <span class="font-mono">{{ label(index) }} · flex: {{ item.grow }} {{ item.shrink }} {{ item.basis }}</span>
+        <span class="font-mono">{{ itemLabel(index) }} · flex: {{ item.grow }} {{ item.shrink }} {{ item.basis }}</span>
         <button
           data-testid="remove-item"
           class="op-60 hover:op-100"

@@ -1,6 +1,8 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
 import { useFlexState } from '~/composables/useFlexState'
+import { useMeasure } from '~/composables/useMeasure'
 import DemoStage from './DemoStage.vue'
 
 describe('demoStage', () => {
@@ -57,5 +59,16 @@ describe('demoStage', () => {
     const wrapper = mount(DemoStage)
     await wrapper.findAll('[data-testid="stage-item"]')[0].trigger('keydown.enter')
     expect(useFlexState().state.selectedId).toBe('item-1')
+  })
+
+  it('挂载后把演示区接入观测层', async () => {
+    useMeasure().measured.value = null
+
+    mount(DemoStage, { attachTo: document.body })
+    await nextTick()
+
+    // happy-dom 不排版，数字全是 0；这里验证的是接线，不是尺寸
+    const ids = useMeasure().measured.value?.items.map(item => item.id)
+    expect(ids).toEqual(['item-1', 'item-2', 'item-3'])
   })
 })

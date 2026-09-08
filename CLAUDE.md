@@ -28,9 +28,14 @@ pnpm build                    # 类型检查 + 生产构建
 
 ## 当前进度
 
-里程碑 M1（推导引擎）与 M2（可用的 Playground）已完成：13 个提交对应计划文档里的 13 个 task，
-94 个测试全绿、lint 零 error、构建通过。**下一步是 M3（透明化核心）**：观测层 `useMeasure`、
-诊断层 `core/diagnostics.ts`、理论 vs 实际明细表、SVG 叠加层、容器拖拽。
+M1（推导引擎）、M2（可用的 Playground）已完成。M3（透明化核心）完成一半：
+观测层 `useMeasure`、诊断层 `core/diagnostics.ts`、理论 vs 实际明细表已落地并经浏览器实测。
+**M3 剩余部分**：SVG 叠加层 `OverlayLayer`（剩余空间色块、轴向箭头、尺寸 HUD）、
+演示区右下角 resize 拖拽手柄（目前容器尺寸是两个 range 滑块）。
+
+**浏览器验证不可省。** M3 上半程有两个 bug 是单元测试原理上抓不到的（happy-dom 没有排版引擎），
+全靠真实浏览器暴露：装饰性 border 参与布局导致全量误报、`overflow: hidden` 让 `min-width: auto` 完全失效。
+凡是涉及演示区布局的改动，跑完 test/lint/build 之后仍需在浏览器里核对明细表的数字。
 
 > 注意：`docs/superpowers/plans/` 里的计划文档 checkbox 全是未勾选状态，但代码与 git 历史证明 M1+M2 已实现完毕。
 > 判断进度以 git 历史和实际代码为准，不要被 checkbox 误导。
@@ -67,9 +72,15 @@ state ──→ 渲染 ──→ 观测 ──→ 诊断 ──→ 展示
 3. **推导引擎故意不模拟 `min-width: auto` 的下限截断**。这个缝隙是留给诊断层去发现并解释的，
    是产品的差异化所在，不要当成 bug 补上。
 4. **控制面板必须由 `data/flexProperties.ts` 驱动生成**，禁止为每个属性手写一遍 select/radio 模板。
-5. **观测层（M3）禁止使用 `getBoundingClientRect()`**。GSAP Flip 用 transform 做动画，
+5. **观测层禁止使用 `getBoundingClientRect()`**。GSAP Flip 用 transform 做动画，
    rect 会返回动画中间态导致明细表数字乱跳；尺寸用 `ResizeObserver`，位置用 `offsetLeft/offsetTop`，两者都不受 transform 影响。
-6. **item 的内容只用一个 `size` 数字表示**（主轴方向上的内容固有尺寸），不支持自定义文本——
+   `useMeasure.spec.ts` 里有一条测试直接 spy 这个方法并断言从未被调用。
+6. **演示区的描边一律用 `outline`，禁止 `border` 与 `padding`**。border 占布局空间：容器少 2px 可用宽度、
+   每个盒子实际尺寸比推导值多 2px，诊断层会把这个恒定偏差误报成「有规则介入」。而 `emitCss` 输出的 CSS 里没有 border，
+   演示区一旦引入导出 CSS 之外的布局影响，「复制这段 CSS 即可复现」就不成立了。
+7. **`.stage-item` 禁止 `overflow: hidden`**。CSS 规范规定自动最小尺寸只在主轴 `overflow` 为 `visible` 时生效，
+   一旦裁剪，`min-width: auto` 立刻失效，本站的头号陷阱就演示不出来。盒子被压得比内容还窄时，内容溢出正是要给用户看的现象。
+8. **item 的内容只用一个 `size` 数字表示**（主轴方向上的内容固有尺寸），不支持自定义文本——
    它要驱动 `min-width: auto` 陷阱，也让后续 URL 序列化免于处理文本转义。
 
 ## 工程约定
