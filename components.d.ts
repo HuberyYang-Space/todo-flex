@@ -11,6 +11,8 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    ContainerControls: typeof import('./src/components/playground/ContainerControls.vue')['default']
     DemoStage: typeof import('./src/components/playground/DemoStage.vue')['default']
+    PropertyField: typeof import('./src/components/playground/PropertyField.vue')['default']
   }
 }
