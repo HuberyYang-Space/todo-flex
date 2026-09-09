@@ -36,7 +36,18 @@ SVG 叠加层 `OverlayLayer`（剩余空间斜纹色块、溢出标记、轴向�
 **演示区的 3D 方案已试过并放弃**——立体面的投影高度是「厚度 × sin(倾角)」，小倾角下根本读不出体积感，
 大倾角又会压缩 column 方向的主轴；相关代码已删，决策记录见
 `docs/superpowers/specs/2026-09-09-stage-3d-motion-design.md`（已标作废）。
-M4 剩余：叠加层动画（设计文档 §7 的「剩余空间流动斜纹」，当前是静态斜纹）、`prefers-reduced-motion` 全面核对。
+**演示区方块的视觉已定案：等距实体块**（样本册第 26 号），实现方案见
+`docs/superpowers/plans/2026-09-09-isometric-solid-block.md`——**动手前先读那份文档开头的
+「三轮试错的结论」**，里面记着三条已经走死的路，重蹈任何一条都会白做一遍。
+三十二个候选方案的对比页：https://claude.ai/code/artifact/c94e5026-c873-4035-a93d-d00a8c3f64a1
+
+M4 剩余：等距实体块落地、叠加层动画（设计文档 §7 的「剩余空间流动斜纹」，当前是静态斜纹）、
+`prefers-reduced-motion` 全面核对。
+
+**浏览器验证的环境坑**：本机那个 Chrome 窗口反复掉回不可见状态（`visibilityState: hidden`），
+一不可见 requestAnimationFrame 就停发，GSAP 时间线与 CSS transition 全部冻在第一帧。
+已经因此两次把冻结状态误判成缺陷。量任何与动画有关的东西之前，**先跑一次 rAF 计数确认页面在动**；
+静态样式可以靠截图验，动效必须让用户自己看。
 
 **浏览器验证不可省。** M3 有三个 bug 是单元测试原理上抓不到的（happy-dom 没有排版引擎），
 全靠真实浏览器暴露：装饰性 border 参与布局导致全量误报、`overflow: hidden` 让 `min-width: auto` 完全失效、
