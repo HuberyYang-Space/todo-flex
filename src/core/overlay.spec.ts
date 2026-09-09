@@ -35,7 +35,7 @@ describe('computeOverlay', () => {
     const { bands } = computeOverlay(state, derived, measured)
 
     expect(bands).toEqual([
-      { kind: 'free', lineIndex: 0, x: 100, y: 0, width: 300, height: 200 },
+      { kind: 'free', lineIndex: 0, x: 100, y: 0, width: 300, height: 200, flow: 'reverse' },
     ])
   })
 
@@ -54,8 +54,8 @@ describe('computeOverlay', () => {
 
     expect(bands).toEqual([
       // 紧贴后一个盒子画：200 - 80 = 120 起，宽 80
-      { kind: 'free', lineIndex: 0, x: 120, y: 0, width: 80, height: 200 },
-      { kind: 'free', lineIndex: 0, x: 300, y: 0, width: 100, height: 200 },
+      { kind: 'free', lineIndex: 0, x: 120, y: 0, width: 80, height: 200, flow: 'forward' },
+      { kind: 'free', lineIndex: 0, x: 300, y: 0, width: 100, height: 200, flow: 'reverse' },
     ])
   })
 
@@ -97,7 +97,7 @@ describe('computeOverlay', () => {
     ])
 
     expect(computeOverlay(state, derived, measured).bands).toEqual([
-      { kind: 'free', lineIndex: 0, x: 0, y: 100, width: 400, height: 200 },
+      { kind: 'free', lineIndex: 0, x: 0, y: 100, width: 400, height: 200, flow: 'reverse' },
     ])
   })
 
@@ -116,8 +116,8 @@ describe('computeOverlay', () => {
     ])
 
     expect(computeOverlay(state, derived, measured).bands).toEqual([
-      { kind: 'free', lineIndex: 0, x: 200, y: 0, width: 100, height: 90 },
-      { kind: 'free', lineIndex: 1, x: 100, y: 110, width: 200, height: 90 },
+      { kind: 'free', lineIndex: 0, x: 200, y: 0, width: 100, height: 90, flow: 'reverse' },
+      { kind: 'free', lineIndex: 1, x: 100, y: 110, width: 200, height: 90, flow: 'reverse' },
     ])
   })
 
@@ -171,6 +171,92 @@ describe('computeOverlay', () => {
     expect(lines).toHaveLength(1)
     // 720 - 240 - 24 = 456
     expect(lines[0].actual).toBe(456)
-    expect(bands.at(-1)).toEqual({ kind: 'free', lineIndex: 0, x: 264, y: 0, width: 456, height: 320 })
+    expect(bands.at(-1)).toEqual({ kind: 'free', lineIndex: 0, x: 264, y: 0, width: 456, height: 320, flow: 'reverse' })
+  })
+})
+
+/*
+ * 剩余空间色块的斜纹要朝「这块空间一旦被分配，会流向谁」的方向动。
+ * flow 一律用屏幕坐标表述：forward = 朝坐标增大的方向（右 / 下），reverse = 朝减小的方向（左 / 上）。
+ */
+describe('computeOverlay 的斜纹流向', () => {
+  it('行尾的剩余空间流向前面那个盒子', () => {
+    const state = createDefaultState()
+    state.container.width = 400
+    state.container.columnGap = 0
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: 300 }])
+    const measured = stage(400, 200, [
+      { id: 'item-1', left: 0, top: 0, width: 100, height: 200 },
+    ])
+
+    expect(computeOverlay(state, derived, measured).bands.map(band => band.flow)).toEqual(['reverse'])
+  })
+
+  it('行首的剩余空间流向后面那个盒子', () => {
+    const state = createDefaultState()
+    state.container.width = 400
+    state.container.columnGap = 0
+    // justify-content: flex-end 的效果：盒子被推到末尾，空的是前面
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: 300 }])
+    const measured = stage(400, 200, [
+      { id: 'item-1', left: 300, top: 0, width: 100, height: 200 },
+    ])
+
+    expect(computeOverlay(state, derived, measured).bands.map(band => band.flow)).toEqual(['forward'])
+  })
+
+  it('被两个盒子夹住的空间没有唯一去向，沿主轴正方向流', () => {
+    const state = createDefaultState()
+    state.container.width = 400
+    state.container.columnGap = 0
+    const derived = makeLines([{ index: 0, itemIds: ['item-1', 'item-2'], freeSpace: 100 }])
+    // item-2 一直占到容器末尾，所以只有中间这一块 band
+    const measured = stage(400, 200, [
+      { id: 'item-1', left: 0, top: 0, width: 100, height: 200 },
+      { id: 'item-2', left: 200, top: 0, width: 200, height: 200 },
+    ])
+
+    expect(computeOverlay(state, derived, measured).bands.map(band => band.flow)).toEqual(['forward'])
+  })
+
+  it('row-reverse 的主轴正方向在屏幕上朝左，夹住的空间跟着反过来', () => {
+    const state = createDefaultState()
+    state.container.direction = 'row-reverse'
+    state.container.width = 400
+    state.container.columnGap = 0
+    const derived = makeLines([{ index: 0, itemIds: ['item-1', 'item-2'], freeSpace: 100 }])
+    const measured = stage(400, 200, [
+      { id: 'item-1', left: 0, top: 0, width: 100, height: 200 },
+      { id: 'item-2', left: 200, top: 0, width: 200, height: 200 },
+    ])
+
+    expect(computeOverlay(state, derived, measured).bands.map(band => band.flow)).toEqual(['reverse'])
+  })
+
+  it('column 方向上「前面那个盒子」在上方，尾部空间朝上流', () => {
+    const state = createDefaultState()
+    state.container.direction = 'column'
+    state.container.height = 300
+    state.container.rowGap = 0
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: 200 }])
+    const measured = stage(400, 300, [
+      { id: 'item-1', left: 0, top: 0, width: 400, height: 100 },
+    ])
+
+    expect(computeOverlay(state, derived, measured).bands.map(band => band.flow)).toEqual(['reverse'])
+  })
+
+  it('溢出标记不吃斜纹，也就没有流向', () => {
+    const state = createDefaultState()
+    state.container.width = 200
+    state.container.columnGap = 0
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: -80 }])
+    const measured = stage(200, 200, [
+      { id: 'item-1', left: 0, top: 0, width: 280, height: 200 },
+    ])
+
+    const [band] = computeOverlay(state, derived, measured).bands
+    expect(band.kind).toBe('overflow')
+    expect(band.flow).toBeUndefined()
   })
 })

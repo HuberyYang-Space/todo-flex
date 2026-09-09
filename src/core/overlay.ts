@@ -15,6 +15,12 @@ const EPSILON = 0.5
 
 export type BandKind = 'free' | 'overflow'
 
+/**
+ * 斜纹的流动方向，一律用屏幕坐标表述：
+ * forward = 朝坐标增大的一侧（右 / 下），reverse = 朝减小的一侧（左 / 上）。
+ */
+export type FlowDirection = 'forward' | 'reverse'
+
 /** 叠加层里的一块矩形，坐标以演示区左上角为原点 */
 export interface OverlayBand {
   kind: BandKind
@@ -23,6 +29,8 @@ export interface OverlayBand {
   y: number
   width: number
   height: number
+  /** 斜纹朝哪边流，只有 free 色块有——溢出标记不吃斜纹 */
+  flow?: FlowDirection
 }
 
 /** 每行的剩余空间对照：理论值来自推导引擎，实际值由观测值反算 */
@@ -55,6 +63,8 @@ export function computeOverlay(
   // 容器主轴尺寸取实测值而非状态值：状态值是我们要求的，实测值才是浏览器给的
   const containerMain = isRow ? measured.width : measured.height
   const measuredById = new Map(measured.items.map(item => [item.id, item]))
+  // 主轴正方向落在屏幕的哪一侧。被两个盒子夹住的空间没有唯一去向，只能按它来定
+  const mainForward: FlowDirection = container.direction.endsWith('-reverse') ? 'reverse' : 'forward'
 
   const mainStart = (record: MeasuredItem): number => (isRow ? record.left : record.top)
   const mainSize = (record: MeasuredItem): number => (isRow ? record.width : record.height)
@@ -77,8 +87,8 @@ export function computeOverlay(
     const crossFrom = Math.min(...records.map(crossStart))
     const crossTo = Math.max(...records.map(record => crossStart(record) + crossSize(record)))
 
-    const push = (kind: BandKind, from: number, length: number): void => {
-      bands.push(makeBand(kind, line.index, isRow, from, length, crossFrom, crossTo - crossFrom))
+    const push = (kind: BandKind, from: number, length: number, flow?: FlowDirection): void => {
+      bands.push(makeBand(kind, line.index, isRow, from, length, crossFrom, crossTo - crossFrom, flow))
     }
 
     let cursor = 0
@@ -87,16 +97,23 @@ export function computeOverlay(
       // 色块紧贴后一个盒子画，gap 留在前一个盒子那侧——视觉上二者不可分，这是约定。
       const deduct = cursor === 0 ? 0 : gap
       const free = mainStart(record) - cursor - deduct
-      if (free > EPSILON)
-        push('free', mainStart(record) - free, free)
+      if (free > EPSILON) {
+        /*
+         * 斜纹讲的是「这块空间一旦被分配，会流向谁」。
+         * 前面还没有盒子（cursor === 0）时唯一的去向就是后面那个，朝屏幕后方流；
+         * 被两个盒子夹住时两边都可能吃，没有唯一答案，退回主轴正方向。
+         */
+        push('free', mainStart(record) - free, free, cursor === 0 ? 'forward' : mainForward)
+      }
 
       // 盒子可能重叠（margin 为负等），游标只前进不后退
       cursor = Math.max(cursor, mainStart(record) + mainSize(record))
     }
 
     const tail = containerMain - cursor
+    // 行尾的空间后面再没有盒子了，只能流回前面那个
     if (tail > EPSILON)
-      push('free', cursor, tail)
+      push('free', cursor, tail, 'reverse')
     else if (tail < -EPSILON)
       push('overflow', containerMain, -tail)
 
@@ -120,8 +137,11 @@ function makeBand(
   mainLength: number,
   crossFrom: number,
   crossLength: number,
+  flow?: FlowDirection,
 ): OverlayBand {
-  return isRow
-    ? { kind, lineIndex, x: mainFrom, y: crossFrom, width: mainLength, height: crossLength }
-    : { kind, lineIndex, x: crossFrom, y: mainFrom, width: crossLength, height: mainLength }
+  const rect = isRow
+    ? { x: mainFrom, y: crossFrom, width: mainLength, height: crossLength }
+    : { x: crossFrom, y: mainFrom, width: crossLength, height: mainLength }
+
+  return { kind, lineIndex, ...rect, ...(flow ? { flow } : {}) }
 }

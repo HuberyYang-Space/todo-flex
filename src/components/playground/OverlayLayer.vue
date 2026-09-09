@@ -16,6 +16,9 @@ const { visible, hoveredId } = useOverlay()
 const ARROW_ORIGIN = 16
 const ARROW_LENGTH = 32
 
+/** 斜纹 pattern 按流向各生成一份，id 后缀与 OverlayBand.flow 对齐 */
+const FLOWS = ['forward', 'reverse'] as const
+
 const geometry = computed(() =>
   measured.value ? computeOverlay(state, derived.value, measured.value) : null,
 )
@@ -70,18 +73,34 @@ function round(value: number): number {
     :viewBox="`0 0 ${measured.width} ${measured.height}`"
   >
     <defs>
-      <!-- 剩余空间用斜纹填充：与实心色块拉开区别，一眼看出「这里没有盒子」 -->
-      <pattern id="overlay-stripes" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <!--
+        剩余空间用斜纹填充：与实心色块拉开区别，一眼看出「这里没有盒子」。
+        两个方向各一份，斜纹朝「这块空间一旦被分配会流向谁」的方向动。
+        三条线是为了平移时无缝：走完一个周期（8px）时，邻位那条正好补上离场那条的位置。
+      -->
+      <pattern
+        v-for="flow in FLOWS"
+        :id="`overlay-stripes-${flow}`"
+        :key="flow"
+        width="8"
+        height="8"
+        patternUnits="userSpaceOnUse"
+        patternTransform="rotate(45)"
+      >
         <rect width="8" height="8" fill="var(--accent)" fill-opacity="0.08" />
-        <line
-          x1="0"
-          y1="0"
-          x2="0"
-          y2="8"
-          stroke="var(--accent)"
-          stroke-opacity="0.35"
-          stroke-width="3"
-        />
+        <g class="stripe-flow" :class="`stripe-flow--${flow}`">
+          <line
+            v-for="x in [-8, 0, 8]"
+            :key="x"
+            :x1="x"
+            y1="0"
+            :x2="x"
+            y2="8"
+            stroke="var(--accent)"
+            stroke-opacity="0.35"
+            stroke-width="3"
+          />
+        </g>
       </pattern>
       <marker
         id="overlay-arrow-main"
@@ -117,7 +136,7 @@ function round(value: number): number {
       :y="band.y"
       :width="band.width"
       :height="band.height"
-      :class="band.kind === 'free' ? 'band-free' : 'band-overflow'"
+      :class="band.kind === 'free' ? ['band-free', `band-free--${band.flow ?? 'forward'}`] : 'band-overflow'"
     />
 
     <!-- 轴向箭头 -->
@@ -163,8 +182,47 @@ function round(value: number): number {
   pointer-events: none;
 }
 
-.band-free {
-  fill: url(#overlay-stripes);
+.band-free--forward {
+  fill: url(#overlay-stripes-forward);
+}
+
+.band-free--reverse {
+  fill: url(#overlay-stripes-reverse);
+}
+
+/*
+ * 平移一个完整周期（8px）就回到同一个相位，循环起来看不出接缝。
+ *
+ * 只做一个方向的位移就够了：45° 斜纹只能表达垂直于自身的运动分量（理发店转灯错觉），
+ * 「向右」与「向下」在这条斜纹上本来就是同一个平移。方向感由色块自己的长宽比给出——
+ * row 布局下色块宽扁，读作横向流；column 下高瘦，读作纵向流。所以两份 pattern 足够，不必做四份。
+ */
+.stripe-flow {
+  animation: stripe-flow 2.4s linear infinite;
+}
+
+.stripe-flow--reverse {
+  animation-direction: reverse;
+}
+
+@keyframes stripe-flow {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(8px);
+  }
+}
+
+/*
+ * main.css 的通配兜底已经能把它按住，这里再显式关一次：
+ * 这是全站唯一一个无限循环的装饰动画，不该只靠一条 `*` 规则活着。
+ */
+@media (prefers-reduced-motion: reduce) {
+  .stripe-flow {
+    animation: none;
+  }
 }
 
 .band-overflow {

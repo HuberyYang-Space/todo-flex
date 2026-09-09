@@ -38,6 +38,29 @@ describe('overlayLayer', () => {
     expect(bands[0].attributes('width')).toBe('76')
   })
 
+  it('行尾的色块按流向挂上反向斜纹的类名', () => {
+    const wrapper = mount(OverlayLayer)
+    const band = wrapper.find('[data-testid="overlay-band"]')
+    expect(band.classes()).toContain('band-free--reverse')
+  })
+
+  it('盒子被推到末尾时，行首的色块改挂正向斜纹', () => {
+    useMeasure().measured.value = {
+      width: 400,
+      height: 200,
+      items: [{ id: 'item-1', left: 300, top: 0, width: 100, height: 200 }],
+    }
+    const wrapper = mount(OverlayLayer)
+    const band = wrapper.find('[data-testid="overlay-band"]')
+    expect(band.classes()).toContain('band-free--forward')
+  })
+
+  it('两个方向的斜纹 pattern 都定义在 defs 里', () => {
+    const wrapper = mount(OverlayLayer)
+    expect(wrapper.find('#overlay-stripes-forward').exists()).toBe(true)
+    expect(wrapper.find('#overlay-stripes-reverse').exists()).toBe(true)
+  })
+
   it('关掉开关后整层不渲染', async () => {
     const wrapper = mount(OverlayLayer)
     useOverlay().visible.value = false
