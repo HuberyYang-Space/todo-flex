@@ -2,6 +2,10 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **已作废（2026-09-09）**：3D 路线经浏览器验证后放弃，相关代码已删除。
+> 本文保留作过程记录，不要照它实现。其中 Task 2（观测层挂起）与 Task 4（Flip 编排）
+> 的成果仍在代码里。
+
 **Goal:** 把演示区的盒子变成有体积、会呼吸、丝滑重排的 3D 方块，厚度编码 grow/shrink 的伸缩量，而位置与尺寸仍然完全由浏览器的 flex 排版决定。
 
 **Architecture:** 厚度换算下沉到纯函数 `core/depth.ts`（只归一化，不产出像素）；视觉与动效常量集中在 `visual/motion.ts`；`useFlip` 负责 GSAP Flip 编排并在动画期间挂起观测层；`DemoStage` 里新插一层 `.scene` 同时包住 `.stage` 与叠加层，让两者共用同一个倾斜变换。盒子仍是真 flex item，立体面全部由伪元素构成，不占布局空间。

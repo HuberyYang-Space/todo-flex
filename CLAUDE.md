@@ -32,9 +32,11 @@ M1（推导引擎）、M2（可用的 Playground）、M3（透明化核心）已
 M3 全部经浏览器实测：观测层 `useMeasure`、诊断层 `core/diagnostics.ts`、理论 vs 实际明细表、
 SVG 叠加层 `OverlayLayer`（剩余空间斜纹色块、溢出标记、轴向箭头、尺寸 HUD）、
 演示区右下角 resize 拖拽手柄 `StageResizer`（已替代原来的两个 range 滑块）。
-**下一步是 M4（动效）**：GSAP Flip 布局过渡、叠加层动画（含设计文档 §7 说的「剩余空间流动斜纹」，
-当前是静态斜纹）、`prefers-reduced-motion` 降级。接入 Flip 时注意红线 5：观测层已经绕开
-`getBoundingClientRect()`，改动观测层前先读那条。
+**M4（动效）进行中**：GSAP Flip 布局过渡、惯性水滴形变、观测层挂起机制、演示区质感升级已落地。
+**演示区的 3D 方案已试过并放弃**——立体面的投影高度是「厚度 × sin(倾角)」，小倾角下根本读不出体积感，
+大倾角又会压缩 column 方向的主轴；相关代码已删，决策记录见
+`docs/superpowers/specs/2026-09-09-stage-3d-motion-design.md`（已标作废）。
+M4 剩余：叠加层动画（设计文档 §7 的「剩余空间流动斜纹」，当前是静态斜纹）、`prefers-reduced-motion` 全面核对。
 
 **浏览器验证不可省。** M3 有三个 bug 是单元测试原理上抓不到的（happy-dom 没有排版引擎），
 全靠真实浏览器暴露：装饰性 border 参与布局导致全量误报、`overflow: hidden` 让 `min-width: auto` 完全失效、
