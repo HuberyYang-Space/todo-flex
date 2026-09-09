@@ -64,7 +64,7 @@
 - Produces: `motion.blockDepth`（最大厚度 px）与 `motion.blockDepthMin`（下限 px）
 - Produces: `.stage-box` 上的内联变量 `--d`，值为 `clamp(min, 可用间距 - 2, blockDepth)`
 
-- [ ] **Step 1: 写失败的测试**
+- [x] **Step 1: 写失败的测试**
 
 在 `DemoStage.spec.ts` 追加：
 
@@ -113,12 +113,12 @@
 
 文件顶部补 `import { motion } from '~/visual/motion'`。
 
-- [ ] **Step 2: 跑测试确认失败**
+- [x] **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/components/playground/DemoStage.spec.ts`
 Expected: FAIL，`--d` 为空。
 
-- [ ] **Step 3: 加常量**
+- [x] **Step 3: 加常量**
 
 `src/visual/motion.ts` 末尾追加（保持在同一个 `motion` 对象内）：
 
@@ -129,7 +129,7 @@ Expected: FAIL，`--d` 为空。
   blockDepthMin: 3,
 ```
 
-- [ ] **Step 4: 组件里按 gap 算厚度**
+- [x] **Step 4: 组件里按 gap 算厚度**
 
 `DemoStage.vue` 的 `<script setup>` 里补：
 
@@ -157,12 +157,12 @@ const blockDepth = computed(() => {
 > 测试断言的是 `.stage-box` 上的 `--d`。若继承拿不到内联值，改成在 `itemStyle` 里逐个写；
 > 两种都可以，测试用 `getPropertyValue` 读到即可。
 
-- [ ] **Step 5: 跑测试确认通过**
+- [x] **Step 5: 跑测试确认通过**
 
 Run: `pnpm vitest run src/components/playground/DemoStage.spec.ts`
 Expected: PASS。
 
-- [ ] **Step 6: 提交**
+- [x] **Step 6: 提交**
 
 调用 `/commit` skill，建议信息：`feat(playground): 方块厚度随间距自适应`。
 
@@ -175,7 +175,7 @@ Expected: PASS。
 
 **注意：圆角要从 12px 降到 3px。** 平行四边形的面与大圆角接不上，会露出缺口——这是样本册里 26 号取小圆角的原因，视觉上方块会从「圆润卡片」变成「方正块体」。
 
-- [ ] **Step 1: 替换 `.stage-box` 的质感**
+- [x] **Step 1: 替换 `.stage-box` 的质感**
 
 把现有 `.stage-box` 的 `border-radius` / `background` / `box-shadow` 三项换成：
 
@@ -201,7 +201,7 @@ Expected: PASS。
 }
 ```
 
-- [ ] **Step 2: 画两个面**
+- [x] **Step 2: 画两个面**
 
 ```css
 /*
@@ -243,7 +243,7 @@ Expected: PASS。
 
 `.stage-box` 需要 `position: relative`（若尚未设置则补上）。
 
-- [ ] **Step 3: 悬停与选中态跟上**
+- [x] **Step 3: 悬停与选中态跟上**
 
 悬停时厚度加大、接触阴影拉开；选中时三个面一起换成 `--accent-2` 体系：
 
@@ -274,12 +274,12 @@ Expected: PASS。
 > `--d: calc(var(--d) + 3px)` 会自引用导致无效。实现时改成在 `.stage-box` 上定义
 > `--d-hover` 或直接用两个独立变量，不要让 `--d` 引用自己。
 
-- [ ] **Step 4: 跑测试与 lint**
+- [x] **Step 4: 跑测试与 lint**
 
 Run: `pnpm test && pnpm lint`
 Expected: 全绿。样式改动不影响任何断言。
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 调用 `/commit` skill，建议信息：`style(playground): 方块改用等距实体块`。
 
@@ -287,12 +287,12 @@ Expected: 全绿。样式改动不影响任何断言。
 
 ### Task 3: 验证
 
-- [ ] **Step 1: 三项验证**
+- [x] **Step 1: 三项验证**
 
 Run: `pnpm test`、`pnpm lint`、`pnpm build`
 Expected: 全绿，把输出贴进回复。
 
-- [ ] **Step 2: 请示浏览器验证**
+- [x] **Step 2: 请示浏览器验证**
 
 按项目约定**先问用户**，不要自行调用 claude-in-chrome。
 
@@ -313,10 +313,42 @@ Expected: 全绿，把输出贴进回复。
 8. 暗色与亮色主题：顶面/侧面的明暗差在两个主题下都读得出来。
 9. 触发一次重排（点 `space-between`）：面跟着方块走，动画结束后无残留。
 
-- [ ] **Step 4: 更新进度**
+**实测结论（2026-09-09）：9 项过 6 项。**
+
+- 已验证：1（三面 + 左上光源，顶面/右面各 10px，skew 45° 咬合）、2（gap 0 时厚度收到下限 3px，
+  相邻盒子齐平，邻居正面盖住侧面）、3（column 下纵向间距 12px > 顶面 10px，留 2px 余量）、
+  5（8 个盒子理论 79.5px / 实际 80px，溢出容器右沿 4px，三层祖先 `overflow` 全为 `visible`，未裁切）、
+  7（选中时三面一起转 accent-2）、8（明暗序：暗色 0.608 > 0.323 > 0.172，亮色 0.900 > 0.786 > 0.491）。
+- **待用户在真实窗口核对：4（wrap 跨行）、6（悬停手感）、9（重排残留）。**
+  这三项都依赖新帧或动效，而本机窗口被遮挡时页面完全不重绘，截图拿到的是上一帧，量不出来。
+- 顺带确认红线 6 没破：溢出态下每个盒子实测正好 80px，明细表未因装饰产生误报。
+- 一处待定：`align-items: stretch` 时盒子顶边与容器上沿齐平，10px 顶面会画到容器外面
+  （容器不能加 padding），观感是否可接受未定。
+
+- [x] **Step 4: 更新进度**
 
 `CLAUDE.md` 的「当前进度」补上 M4 的收尾状态。
 
-- [ ] **Step 5: 提交**
+- [x] **Step 5: 提交**
 
 调用 `/commit` skill，建议信息：`docs: 记录等距实体块的浏览器核对结论`。
+
+---
+
+## 执行结论（2026-09-09）
+
+四个提交：`9d704f3` 厚度自适应 → `4c3760a` 等距实体块样式 → `2bb8044` 明暗序修复 → `bdd4e8b` 文档。
+
+与计划不一致的三处，都是计划本身的问题：
+
+1. **厚度不按 `isRow` 分支**。计划里两个分支的表达式完全相同（`Math.min` 本身对称），
+   实际写成 `Math.min(rowGap, columnGap)`——顶面吃行间距、右侧面吃列间距，两个方向都要看，与 direction 无关。
+2. **悬停/按下的厚度用倍率 `--d-k` 而非 `+3px`**（计划自己指出 `--d: calc(var(--d) + 3px)` 自引用无效）。
+   用乘不用加：gap 拖到 0 时 `--d` 只剩 3px，再加固定值会顶到邻居。倍率常量在 `motion.ts`。
+3. **`--d` 写成 `.stage-box` 的内联样式**（计划预留的备选路径）——CSS 变量继承在 DOM 里读不到内联值，
+   挂在 `.stage-wrapper` 上测试断言拿不到。
+
+另外计划的配色方案有一个缺陷，实测才暴露：顶面写死 `color-mix(accent 62%, white)`、正面混 `--panel`，
+亮色主题下 panel 接近白，把正面拉得比顶面还亮（0.786 > 0.668），左上光源的明暗序是断的。
+已改为三个面从同一体色 `--face` 派生（顶面加白、右侧面加黑），明暗序与主题无关。
+**再改这块配色时不要退回「每个面各自跟 accent 调色」。**
