@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 import { useFlexState } from '~/composables/useFlexState'
 import { useMeasure } from '~/composables/useMeasure'
 import { useStageView } from '~/composables/useStageView'
+import { motion } from '~/visual/motion'
 import DemoStage from './DemoStage.vue'
 
 describe('demoStage', () => {
@@ -69,9 +70,10 @@ describe('demoStage', () => {
     await wrapper.vm.$nextTick()
 
     const el = wrapper.findAll('[data-testid="stage-item"]')[0].element as HTMLElement
-    // 720 - 240 - 24 = 456 全给第一个盒子，456/720 × 26px ≈ 16.5px
-    expect(el.style.getPropertyValue('--elev')).toBe('16.5px')
-    expect(el.style.getPropertyValue('--thickness')).toBe('16.5px')
+    // 720 - 240 - 24 = 456 全给第一个盒子；期望值从 token 推导，调参不该改测试
+    const expected = `${Math.round(456 / 720 * motion.maxDepth * 10) / 10}px`
+    expect(el.style.getPropertyValue('--elev')).toBe(expected)
+    expect(el.style.getPropertyValue('--thickness')).toBe(expected)
   })
 
   it('shrink 让出空间时抬升为负、厚度仍为正', async () => {
@@ -89,7 +91,7 @@ describe('demoStage', () => {
 
   it('3D 视图下场景带俯视倾角', () => {
     const wrapper = mount(DemoStage)
-    expect(wrapper.get('[data-testid="scene"]').attributes('style')).toContain('rotateX(10deg)')
+    expect(wrapper.get('[data-testid="scene"]').attributes('style')).toContain(`rotateX(${motion.tiltDeg}deg)`)
   })
 
   it('平面视图下倾角与厚度一起归零', async () => {

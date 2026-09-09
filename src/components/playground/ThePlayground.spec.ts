@@ -4,6 +4,7 @@ import { useFlexState } from '~/composables/useFlexState'
 import { useFlip } from '~/composables/useFlip'
 import { useOverlay } from '~/composables/useOverlay'
 import { useStageView } from '~/composables/useStageView'
+import { motion } from '~/visual/motion'
 import ThePlayground from './ThePlayground.vue'
 
 describe('thePlayground', () => {
@@ -53,7 +54,7 @@ describe('thePlayground', () => {
 
   it('3D 开关能压平演示区', async () => {
     const wrapper = mount(ThePlayground)
-    expect(wrapper.get('[data-testid="scene"]').attributes('style')).toContain('rotateX(10deg)')
+    expect(wrapper.get('[data-testid="scene"]').attributes('style')).toContain(`rotateX(${motion.tiltDeg}deg)`)
 
     await wrapper.get('[data-testid="view-toggle"]').trigger('change')
     expect(wrapper.get('[data-testid="scene"]').attributes('style')).toContain('rotateX(0deg)')
