@@ -162,98 +162,147 @@ function contentStyle(item: FlexItemState): CSSProperties {
   cursor: pointer;
 }
 
-/* 内层：看得见的那块板子。形变与质感都在这里，位移由外层的 Flip 负责 */
 /*
- * 内层：看得见的那块板子。形变与质感都在这里，位移由外层的 Flip 负责。
+ * 内层：看得见的那块实体。形变与质感都在这里，位移由外层的 Flip 负责。
  *
- * 立体感全靠光影，不用 3D 变换——一块实心材料在顶光下的样子：
- * 顶面受光最亮、体色向下渐暗、底部有一圈硬边当作块体的侧壁、
- * 侧壁之下再落一层柔和投影。四层叠起来眼睛就会读成「有厚度的东西」。
- * box-shadow 与渐变都不占布局空间，红线 6 不受影响。
+ * 这是「等距实体块」：顶面与右侧面是两个伪元素画的二维平行四边形（见下方注释），
+ * 正面就是 .stage-box 本身。三个面共用左上光源——顶面最亮、正面居中、右侧面最暗。
+ * 圆角必须小（3px）：平行四边形的面接不上大圆角，会在拐角处露出缺口。
+ * 渐变、box-shadow 与绝对定位的伪元素都不占布局空间，红线 6 不受影响。
  */
 .stage-box {
   display: flex;
+  position: relative;
   flex: 1 1 auto;
   align-items: center;
   align-self: stretch;
   justify-content: center;
 
-  /* 块体的侧壁厚度，悬停/按下时会变，做出被抬起与被压下的手感 */
-  --edge: 7px;
+  /*
+   * 实际厚度 = 组件下发的 --d 乘以状态倍率。
+   * 用乘不用加：gap 收窄时 --d 已经只剩 3px，悬停再加固定值会直接顶到邻居。
+   */
+  --d-k: 1;
+  --depth: calc(var(--d, 10px) * var(--d-k));
 
-  border-radius: 12px;
-  outline: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  border-radius: 3px;
+  outline: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
   outline-offset: -1px;
-  background:
-    /* 左上角的高光斑，给平面一点球面感 */
-    radial-gradient(120% 80% at 18% 8%, color-mix(in srgb, white 22%, transparent) 0%, transparent 55%),
-    /* 体色：顶面受光最亮，向下逐渐沉入暗部 */
-    linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--accent) 62%, var(--panel)) 0%,
-        color-mix(in srgb, var(--accent) 34%, var(--panel)) 38%,
-        color-mix(in srgb, var(--accent) 16%, var(--panel)) 82%,
-        color-mix(in srgb, var(--accent) 24%, black) 100%
-      );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 40%, var(--panel)) 0%,
+    color-mix(in srgb, var(--accent) 28%, var(--panel)) 100%
+  );
+
+  /*
+   * 接触阴影 + 分层投影。第一层又紧又暗的那道才是接触阴影，
+   * 物体贴不贴地全看它；后面几层模糊值倍增（1→2→4→8→16），模拟环境光的衰减。
+   * 只用一层大模糊阴影的话，读起来是「物体的模糊剪影」而不是「落在台面上的影子」。
+   */
   box-shadow:
-    /* 顶面高光：一条亮线加一层向下弥散的光 */
-    inset 0 1px 0 color-mix(in srgb, white 45%, transparent),
-    inset 0 6px 12px -8px color-mix(in srgb, white 35%, transparent),
-    /* 底部内收的暗部，让体色在接近侧壁处沉下去 */ inset 0 -8px 14px -8px color-mix(in srgb, black 45%, transparent),
-    /* 侧壁：实心硬边，这一层是「厚度」的主要来源 */ 0 var(--edge) 0 -1px color-mix(in srgb, var(--accent) 22%, black),
-    /* 落在台面上的投影 */ 0 calc(var(--edge) + 6px) 16px -6px color-mix(in srgb, black 55%, transparent);
+    0 1px 1px color-mix(in srgb, black 34%, transparent),
+    0 2px 2px color-mix(in srgb, black 26%, transparent),
+    0 4px 4px color-mix(in srgb, black 20%, transparent),
+    0 8px 8px color-mix(in srgb, black 14%, transparent),
+    0 16px 16px color-mix(in srgb, black 10%, transparent);
   transition:
     outline-color var(--lift-duration, 0.28s) ease,
+    background var(--lift-duration, 0.28s) ease,
     box-shadow var(--lift-duration, 0.28s) ease,
     translate var(--lift-duration, 0.28s) cubic-bezier(0.34, 1.56, 0.64, 1),
     scale var(--lift-duration, 0.28s) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /*
+ * 顶面与右侧面是二维平行四边形，不是用 rotateX 旋进屏幕的立体面——
+ * 后者垂直于视线，投影高度只剩「厚度 × sin(倾角)」，小倾角下根本读不出体积，
+ * 这正是上一轮 3D 方案失败的直接原因，不要退回去。
+ *
+ * 两个面各自 skew 45°，在方块右上角咬合成一个封闭的块体轮廓。
+ * 伪元素绝对定位、不参与布局，也不接收指针事件，所以既不碰红线 6，也不挡点击。
+ */
+.stage-box::before,
+.stage-box::after {
+  content: '';
+  position: absolute;
+  transition:
+    width var(--lift-duration, 0.28s) ease,
+    height var(--lift-duration, 0.28s) ease,
+    background var(--lift-duration, 0.28s) ease,
+    transform var(--lift-duration, 0.28s) cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+
+/* 顶面：向上挪一个厚度，再 skew 成平行四边形。受光最足，往白里调 */
+.stage-box::before {
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--depth);
+  transform: translateY(calc(-1 * var(--depth))) skewX(-45deg);
+  transform-origin: bottom left;
+  background: color-mix(in srgb, var(--accent) 62%, white);
+}
+
+/* 右侧面：向右挪一个厚度，skew 方向与顶面在右上角咬合。背光，往黑里调 */
+.stage-box::after {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--depth);
+  transform: translateX(var(--depth)) skewY(-45deg);
+  transform-origin: top left;
+  background: color-mix(in srgb, var(--accent) 34%, black);
+}
+
+/*
  * 悬停与选中用独立的 translate / scale 属性，不用 transform——
  * 挤压拉伸的动画写在 transform 上，两者分开才不会互相覆盖。
  */
-/* 悬停：块体被抬起来，侧壁随之变厚、投影拉远变虚 */
+/* 悬停：块体被抬起来，厚度随之加大、接触阴影拉开变虚 */
 .stage-item:hover .stage-box,
 .stage-item:focus-visible .stage-box {
-  --edge: 11px;
+  --d-k: var(--d-hover-k, 1.3);
 
   translate: 0 calc(-1 * var(--lift, 6px));
   scale: var(--lift-scale, 1.03);
   outline-color: color-mix(in srgb, var(--accent) 85%, transparent);
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 55%, transparent),
-    inset 0 6px 12px -8px color-mix(in srgb, white 45%, transparent),
-    inset 0 -8px 14px -8px color-mix(in srgb, black 45%, transparent),
-    0 var(--edge) 0 -1px color-mix(in srgb, var(--accent) 22%, black),
-    0 calc(var(--edge) + 12px) 26px -6px color-mix(in srgb, black 60%, transparent);
+    0 2px 2px color-mix(in srgb, black 30%, transparent),
+    0 4px 4px color-mix(in srgb, black 24%, transparent),
+    0 8px 8px color-mix(in srgb, black 18%, transparent),
+    0 16px 16px color-mix(in srgb, black 14%, transparent),
+    0 32px 32px color-mix(in srgb, black 10%, transparent);
 }
 
-/* 按下：块体被压到台面上，侧壁几乎消失 */
+/* 按下：块体被压回台面，厚度几乎收没，接触阴影收紧 */
 .stage-item:active .stage-box {
-  --edge: 2px;
+  --d-k: var(--d-active-k, 0.35);
 
   translate: 0 2px;
   scale: 1;
+  box-shadow:
+    0 1px 1px color-mix(in srgb, black 34%, transparent),
+    0 2px 2px color-mix(in srgb, black 22%, transparent),
+    0 4px 4px color-mix(in srgb, black 14%, transparent);
 }
 
+/* 选中：三个面一起换成 accent-2 体系，明暗关系保持一致 */
 .stage-item.is-selected .stage-box {
   outline-color: var(--accent-2);
-  background:
-    radial-gradient(120% 80% at 18% 8%, color-mix(in srgb, white 26%, transparent) 0%, transparent 55%),
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--accent-2) 62%, var(--panel)) 0%,
-      color-mix(in srgb, var(--accent-2) 34%, var(--panel)) 38%,
-      color-mix(in srgb, var(--accent-2) 16%, var(--panel)) 82%,
-      color-mix(in srgb, var(--accent-2) 24%, black) 100%
-    );
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 50%, transparent),
-    inset 0 6px 12px -8px color-mix(in srgb, white 40%, transparent),
-    inset 0 -8px 14px -8px color-mix(in srgb, black 45%, transparent),
-    0 var(--edge) 0 -1px color-mix(in srgb, var(--accent-2) 22%, black),
-    0 calc(var(--edge) + 10px) 22px -6px color-mix(in srgb, var(--accent-2) 45%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent-2) 40%, var(--panel)) 0%,
+    color-mix(in srgb, var(--accent-2) 28%, var(--panel)) 100%
+  );
+}
+
+.stage-item.is-selected .stage-box::before {
+  background: color-mix(in srgb, var(--accent-2) 62%, white);
+}
+
+.stage-item.is-selected .stage-box::after {
+  background: color-mix(in srgb, var(--accent-2) 34%, black);
 }
 
 .content {
