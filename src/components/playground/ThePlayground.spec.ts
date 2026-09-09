@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useFlexState } from '~/composables/useFlexState'
+import { useOverlay } from '~/composables/useOverlay'
 import ThePlayground from './ThePlayground.vue'
 
 describe('thePlayground', () => {
@@ -22,11 +23,23 @@ describe('thePlayground', () => {
     expect(wrapper.findAll('[data-testid="metrics-row"]')).toHaveLength(3)
   })
 
-  it('容器宽度滑块改变演示区尺寸', async () => {
+  it('拖拽手柄的键盘微调改变演示区尺寸', async () => {
     const wrapper = mount(ThePlayground)
-    await wrapper.get('[data-testid="stage-width"]').setValue('480')
-    expect(useFlexState().state.container.width).toBe(480)
-    expect(wrapper.get('[data-testid="stage"]').attributes('style')).toContain('width: 480px')
+    await wrapper.get('[data-testid="stage-resizer"]').trigger('keydown', { key: 'ArrowRight', shiftKey: true })
+
+    expect(useFlexState().state.container.width).toBe(730)
+    expect(wrapper.get('[data-testid="stage"]').attributes('style')).toContain('width: 730px')
+  })
+
+  it('叠加层开关能收起整层', async () => {
+    const wrapper = mount(ThePlayground)
+    expect(wrapper.find('[data-testid="overlay-toggle"]').exists()).toBe(true)
+
+    await wrapper.get('[data-testid="overlay-toggle"]').trigger('change')
+    expect(useOverlay().visible.value).toBe(false)
+
+    // 单例状态跨用例共享，改回去免得影响后面的用例
+    useOverlay().toggleVisible()
   })
 
   it('在演示区选中盒子后，属性面板切换到该盒子', async () => {

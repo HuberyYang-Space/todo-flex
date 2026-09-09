@@ -8,6 +8,7 @@ import { useOverlay } from '~/composables/useOverlay'
 import { isRowDirection } from '~/core/axis'
 import { itemLabel } from '~/core/labels'
 import OverlayLayer from './OverlayLayer.vue'
+import StageResizer from './StageResizer.vue'
 
 const { state, selectItem } = useFlexState()
 const { setHovered } = useOverlay()
@@ -87,6 +88,7 @@ function contentStyle(item: FlexItemState): CSSProperties {
     </div>
 
     <OverlayLayer />
+    <StageResizer />
   </div>
 </template>
 

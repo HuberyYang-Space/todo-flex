@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFlexState } from '~/composables/useFlexState'
+import { useOverlay } from '~/composables/useOverlay'
 import ContainerControls from './ContainerControls.vue'
 import CssOutput from './CssOutput.vue'
 import DemoStage from './DemoStage.vue'
@@ -8,14 +9,7 @@ import ItemList from './ItemList.vue'
 import MetricsTable from './MetricsTable.vue'
 
 const { state, resetState } = useFlexState()
-
-function setWidth(event: Event): void {
-  state.container.width = Number((event.target as HTMLInputElement).value)
-}
-
-function setHeight(event: Event): void {
-  state.container.height = Number((event.target as HTMLInputElement).value)
-}
+const { visible: overlayVisible, toggleVisible } = useOverlay()
 </script>
 
 <template>
@@ -34,35 +28,23 @@ function setHeight(event: Event): void {
     <main class="flex flex-col gap-4">
       <div class="panel p-3">
         <div class="mb-3 flex flex-wrap items-center gap-4 text-xs">
-          <label class="flex items-center gap-2">
-            <span class="op-70">容器宽</span>
+          <label class="flex cursor-pointer items-center gap-2">
             <input
-              data-testid="stage-width"
-              type="range"
-              min="200"
-              max="1200"
-              step="10"
-              :value="state.container.width"
-              @input="setWidth"
+              data-testid="overlay-toggle"
+              type="checkbox"
+              :checked="overlayVisible"
+              @change="toggleVisible()"
             >
-            <span class="w-12 font-mono">{{ state.container.width }}px</span>
+            <span class="op-70">叠加层</span>
           </label>
-          <label class="flex items-center gap-2">
-            <span class="op-70">容器高</span>
-            <input
-              data-testid="stage-height"
-              type="range"
-              min="120"
-              max="600"
-              step="10"
-              :value="state.container.height"
-              @input="setHeight"
-            >
-            <span class="w-12 font-mono">{{ state.container.height }}px</span>
-          </label>
+          <span class="op-60">拖拽演示区右下角手柄调整容器尺寸</span>
+          <span class="ml-auto font-mono op-70">
+            {{ state.container.width }} × {{ state.container.height }}
+          </span>
         </div>
 
-        <div class="overflow-auto">
+        <!-- p-2 加在滚动容器上而不是 .stage 上，给伸出去的手柄留位置，不影响布局推导 -->
+        <div class="overflow-auto p-2">
           <DemoStage />
         </div>
       </div>
