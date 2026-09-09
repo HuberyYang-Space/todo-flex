@@ -25,6 +25,34 @@ describe('useFlip', () => {
     wrapper.unmount()
   })
 
+  it('单行布局不启用 absolute 模式，免得盒子白白脱离 flex 布局', async () => {
+    const spy = vi.spyOn(Flip, 'from')
+    const wrapper = mount(DemoStage, { attachTo: document.body })
+    await nextTick()
+
+    useFlexState().state.container.justifyContent = 'center'
+    await nextTick()
+    await nextTick()
+
+    expect(spy).toHaveBeenCalled()
+    expect(spy.mock.calls[0][1]?.absolute).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('换行布局才启用 absolute 模式，跨行迁移需要它', async () => {
+    useFlexState().state.container.wrap = 'wrap'
+    const spy = vi.spyOn(Flip, 'from')
+    const wrapper = mount(DemoStage, { attachTo: document.body })
+    await nextTick()
+
+    useFlexState().state.container.justifyContent = 'center'
+    await nextTick()
+    await nextTick()
+
+    expect(spy.mock.calls[0][1]?.absolute).toBe(true)
+    wrapper.unmount()
+  })
+
   it('连续拖拽期间不拍快照，让方块直接跟手', async () => {
     const wrapper = mount(DemoStage, { attachTo: document.body })
     await nextTick()

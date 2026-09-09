@@ -114,8 +114,14 @@ function contentStyle(item: FlexItemState): CSSProperties {
           @focus="setHovered(item.id)"
           @blur="setHovered(null)"
         >
-          <div class="content" :style="contentStyle(item)">
-            {{ itemLabel(index) }}
+          <!--
+            内层单独一个盒子承载 3D：GSAP Flip 会把外层 flex item 的内联 transform
+            整个接管，抬升写在外层会被它抹掉。分层之后两边各用各的 transform，互不打架。
+          -->
+          <div class="stage-box">
+            <div class="content" :style="contentStyle(item)">
+              {{ itemLabel(index) }}
+            </div>
           </div>
         </div>
       </div>
@@ -145,6 +151,13 @@ function contentStyle(item: FlexItemState): CSSProperties {
   outline-offset: -1px;
 
   /*
+   * preserve-3d 不会继承，3D 链条上每一层都得显式声明。
+   * 少了这一句，.stage 会把方块压回自己的平面，translateZ 进不了场景的 3D 空间——
+   * 浏览器实测才发现的，单元测试与「移除 overflow」那一步都盖不住。
+   */
+  transform-style: preserve-3d;
+
+  /*
    * 绝不能加 overflow: hidden。
    * CSS Transforms 规范里 overflow 非 visible 是 grouping property，会把本元素的
    * transform-style 强制变成 flat——.scene 的 perspective 就传不到方块上，
@@ -166,12 +179,25 @@ function contentStyle(item: FlexItemState): CSSProperties {
    * 盒子被压到比内容还窄时，内容溢出正是要给用户看的现象。
    */
   cursor: pointer;
+
+  /*
+   * 外层只管布局与交互，transform 完全让给 GSAP Flip。
+   * 3D 抬升在内层 .stage-box 上，preserve-3d 保证它进得了场景的 3D 空间。
+   */
+  transform-style: preserve-3d;
+}
+
+/* 内层：真正看得见的那块板子，3D 抬升与立体面都在这里 */
+.stage-box {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
   border-radius: 6px;
   outline: 1px solid var(--accent);
   outline-offset: -1px;
   background-color: color-mix(in srgb, var(--accent) 14%, transparent);
-
-  /* 厚度由 --elev 抬起，立体面挂在伪元素上 */
   transform-style: preserve-3d;
   transform: translateZ(var(--elev, 0px));
   transition:
@@ -186,7 +212,7 @@ function contentStyle(item: FlexItemState): CSSProperties {
  */
 
 /* 顶面：从盒子上沿向后翻起，进深等于厚度 */
-.stage-item::before {
+.stage-box::before {
   content: '';
   position: absolute;
   top: 0;
@@ -201,7 +227,7 @@ function contentStyle(item: FlexItemState): CSSProperties {
 }
 
 /* 侧面：从盒子右沿向后翻起 */
-.stage-item::after {
+.stage-box::after {
   content: '';
   position: absolute;
   top: 0;
@@ -216,14 +242,14 @@ function contentStyle(item: FlexItemState): CSSProperties {
 }
 
 /* 悬停与选中时整块抬起并投下阴影 */
-.stage-item:hover,
-.stage-item.is-selected {
+.stage-item:hover .stage-box,
+.stage-item.is-selected .stage-box {
   transform: translateZ(calc(var(--elev, 0px) + var(--lift, 18px)));
   box-shadow: 0 18px 28px -12px color-mix(in srgb, var(--accent) 55%, transparent);
 }
 
-.stage-item:focus-visible,
-.stage-item.is-selected {
+.stage-item:focus-visible .stage-box,
+.stage-item.is-selected .stage-box {
   outline-color: var(--accent-2);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-2) 45%, transparent);
 }

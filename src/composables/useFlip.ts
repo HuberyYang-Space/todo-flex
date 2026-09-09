@@ -57,15 +57,21 @@ function observeFlip(target: MaybeRefOrGetter<HTMLElement | undefined | null>): 
     const snapshot = Flip.getState(items)
 
     nextTick(() => {
-      // absolute 模式会把元素临时设成绝对定位，那是真的改布局——
-      // 观测层必须先挂起，否则明细表的数字会在动画过程中乱跳
+      // 动画期间 DOM 一直在变，挂起采样避免无谓的抖动，动画收尾时再采一次准的
       pause()
 
       Flip.from(snapshot, {
         duration: reducedMotion() ? 0 : motion.layoutDuration,
         ease: motion.layoutEase,
         stagger: reducedMotion() ? 0 : motion.layoutStagger,
-        absolute: true,
+        /*
+         * 只有换行场景才开 absolute，按设计文档 §6.2 的原意。
+         *
+         * 这个模式会把盒子临时设成 position: absolute——那是真的改布局，
+         * 期间它们不再是 flex item。只有跨行迁移必须靠它才能画出正确的轨迹；
+         * 单行内的重排用不着，代价却照付。
+         */
+        absolute: state.container.wrap !== 'nowrap',
         // 中断也要恢复，否则观测层会永久卡在挂起状态
         onComplete: resume,
         onInterrupt: resume,
