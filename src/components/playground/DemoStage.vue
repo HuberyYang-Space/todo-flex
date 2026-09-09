@@ -4,10 +4,13 @@ import type { FlexItemState } from '~/core/types'
 import { computed, ref } from 'vue'
 import { useFlexState } from '~/composables/useFlexState'
 import { useMeasure } from '~/composables/useMeasure'
+import { useOverlay } from '~/composables/useOverlay'
 import { isRowDirection } from '~/core/axis'
 import { itemLabel } from '~/core/labels'
+import OverlayLayer from './OverlayLayer.vue'
 
 const { state, selectItem } = useFlexState()
+const { setHovered } = useOverlay()
 
 // 演示区是全站唯一的真实布局来源，挂上观测层供明细表读取实际尺寸
 const stageEl = ref<HTMLElement>()
@@ -49,28 +52,41 @@ function contentStyle(item: FlexItemState): CSSProperties {
 </script>
 
 <template>
-  <div
-    ref="stageEl"
-    data-testid="stage"
-    class="stage relative overflow-hidden rounded-2 bg-panel"
-    :style="containerStyle"
-  >
+  <!--
+    wrapper 存在的唯一理由：.stage 是真实 flex 容器，
+    任何塞进去的子元素都会变成第 N+1 个 flex item 污染演示，
+    所以叠加层只能作为兄弟节点绝对定位盖上去。
+  -->
+  <div class="stage-wrapper relative w-fit">
     <div
-      v-for="(item, index) in state.items"
-      :key="item.id"
-      data-testid="stage-item"
-      :data-item-id="item.id"
-      class="stage-item"
-      :class="{ 'is-selected': state.selectedId === item.id }"
-      tabindex="0"
-      :style="itemStyle(item)"
-      @click="selectItem(item.id)"
-      @keydown.enter="selectItem(item.id)"
+      ref="stageEl"
+      data-testid="stage"
+      class="stage relative overflow-hidden rounded-2 bg-panel"
+      :style="containerStyle"
     >
-      <div class="content" :style="contentStyle(item)">
-        {{ itemLabel(index) }}
+      <div
+        v-for="(item, index) in state.items"
+        :key="item.id"
+        data-testid="stage-item"
+        :data-item-id="item.id"
+        class="stage-item"
+        :class="{ 'is-selected': state.selectedId === item.id }"
+        tabindex="0"
+        :style="itemStyle(item)"
+        @click="selectItem(item.id)"
+        @keydown.enter="selectItem(item.id)"
+        @mouseenter="setHovered(item.id)"
+        @mouseleave="setHovered(null)"
+        @focus="setHovered(item.id)"
+        @blur="setHovered(null)"
+      >
+        <div class="content" :style="contentStyle(item)">
+          {{ itemLabel(index) }}
+        </div>
       </div>
     </div>
+
+    <OverlayLayer />
   </div>
 </template>
 
