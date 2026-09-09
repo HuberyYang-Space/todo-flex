@@ -144,24 +144,45 @@ function contentStyle(item: FlexItemState): CSSProperties {
 }
 
 /* 内层：看得见的那块板子。形变与质感都在这里，位移由外层的 Flip 负责 */
+/*
+ * 内层：看得见的那块板子。形变与质感都在这里，位移由外层的 Flip 负责。
+ *
+ * 立体感全靠光影，不用 3D 变换——一块实心材料在顶光下的样子：
+ * 顶面受光最亮、体色向下渐暗、底部有一圈硬边当作块体的侧壁、
+ * 侧壁之下再落一层柔和投影。四层叠起来眼睛就会读成「有厚度的东西」。
+ * box-shadow 与渐变都不占布局空间，红线 6 不受影响。
+ */
 .stage-box {
   display: flex;
   flex: 1 1 auto;
   align-items: center;
   align-self: stretch;
   justify-content: center;
-  border-radius: 10px;
-  outline: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+
+  /* 块体的侧壁厚度，悬停/按下时会变，做出被抬起与被压下的手感 */
+  --edge: 7px;
+
+  border-radius: 12px;
+  outline: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
   outline-offset: -1px;
-  background: linear-gradient(
-    160deg,
-    color-mix(in srgb, var(--accent) 26%, transparent) 0%,
-    color-mix(in srgb, var(--accent) 12%, transparent) 55%,
-    color-mix(in srgb, var(--accent-2) 12%, transparent) 100%
-  );
+  background:
+    /* 左上角的高光斑，给平面一点球面感 */
+    radial-gradient(120% 80% at 18% 8%, color-mix(in srgb, white 22%, transparent) 0%, transparent 55%),
+    /* 体色：顶面受光最亮，向下逐渐沉入暗部 */
+    linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--accent) 62%, var(--panel)) 0%,
+        color-mix(in srgb, var(--accent) 34%, var(--panel)) 38%,
+        color-mix(in srgb, var(--accent) 16%, var(--panel)) 82%,
+        color-mix(in srgb, var(--accent) 24%, black) 100%
+      );
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 22%, transparent),
-    0 2px 10px -4px color-mix(in srgb, var(--accent) 40%, transparent);
+    /* 顶面高光：一条亮线加一层向下弥散的光 */
+    inset 0 1px 0 color-mix(in srgb, white 45%, transparent),
+    inset 0 6px 12px -8px color-mix(in srgb, white 35%, transparent),
+    /* 底部内收的暗部，让体色在接近侧壁处沉下去 */ inset 0 -8px 14px -8px color-mix(in srgb, black 45%, transparent),
+    /* 侧壁：实心硬边，这一层是「厚度」的主要来源 */ 0 var(--edge) 0 -1px color-mix(in srgb, var(--accent) 22%, black),
+    /* 落在台面上的投影 */ 0 calc(var(--edge) + 6px) 16px -6px color-mix(in srgb, black 55%, transparent);
   transition:
     outline-color var(--lift-duration, 0.28s) ease,
     box-shadow var(--lift-duration, 0.28s) ease,
@@ -173,21 +194,47 @@ function contentStyle(item: FlexItemState): CSSProperties {
  * 悬停与选中用独立的 translate / scale 属性，不用 transform——
  * 挤压拉伸的动画写在 transform 上，两者分开才不会互相覆盖。
  */
+/* 悬停：块体被抬起来，侧壁随之变厚、投影拉远变虚 */
 .stage-item:hover .stage-box,
 .stage-item:focus-visible .stage-box {
+  --edge: 11px;
+
   translate: 0 calc(-1 * var(--lift, 6px));
   scale: var(--lift-scale, 1.03);
+  outline-color: color-mix(in srgb, var(--accent) 85%, transparent);
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 30%, transparent),
-    0 16px 30px -12px color-mix(in srgb, var(--accent) 55%, transparent);
+    inset 0 1px 0 color-mix(in srgb, white 55%, transparent),
+    inset 0 6px 12px -8px color-mix(in srgb, white 45%, transparent),
+    inset 0 -8px 14px -8px color-mix(in srgb, black 45%, transparent),
+    0 var(--edge) 0 -1px color-mix(in srgb, var(--accent) 22%, black),
+    0 calc(var(--edge) + 12px) 26px -6px color-mix(in srgb, black 60%, transparent);
+}
+
+/* 按下：块体被压到台面上，侧壁几乎消失 */
+.stage-item:active .stage-box {
+  --edge: 2px;
+
+  translate: 0 2px;
+  scale: 1;
 }
 
 .stage-item.is-selected .stage-box {
   outline-color: var(--accent-2);
+  background:
+    radial-gradient(120% 80% at 18% 8%, color-mix(in srgb, white 26%, transparent) 0%, transparent 55%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--accent-2) 62%, var(--panel)) 0%,
+      color-mix(in srgb, var(--accent-2) 34%, var(--panel)) 38%,
+      color-mix(in srgb, var(--accent-2) 16%, var(--panel)) 82%,
+      color-mix(in srgb, var(--accent-2) 24%, black) 100%
+    );
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 30%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--accent-2) 60%, transparent),
-    0 16px 30px -14px color-mix(in srgb, var(--accent-2) 60%, transparent);
+    inset 0 1px 0 color-mix(in srgb, white 50%, transparent),
+    inset 0 6px 12px -8px color-mix(in srgb, white 40%, transparent),
+    inset 0 -8px 14px -8px color-mix(in srgb, black 45%, transparent),
+    0 var(--edge) 0 -1px color-mix(in srgb, var(--accent-2) 22%, black),
+    0 calc(var(--edge) + 10px) 22px -6px color-mix(in srgb, var(--accent-2) 45%, transparent);
 }
 
 .content {
