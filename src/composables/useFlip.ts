@@ -18,6 +18,18 @@ function setScrubbing(value: boolean): void {
   scrubbing.value = value
 }
 
+/*
+ * 全局兜底：只要指针抬起或被取消，拖拽就算结束。
+ *
+ * 不能只靠控件自己的 @pointerup——在滑块上按下、拖到滑块外面松手时，事件不会落回滑块，
+ * scrubbing 会永久卡在 true，之后所有动画都被静默抑制。这种清理不该指望每个调用方都记得。
+ */
+if (typeof window !== 'undefined') {
+  const release = (): void => setScrubbing(false)
+  window.addEventListener('pointerup', release)
+  window.addEventListener('pointercancel', release)
+}
+
 /** 尊重系统的减弱动效偏好：时长归零，布局照变，只是不再有过渡 */
 function reducedMotion(): boolean {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true

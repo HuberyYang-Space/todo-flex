@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PropertyDef } from '~/data/flexProperties'
+import { useFlip } from '~/composables/useFlip'
 import { visibleOptions } from '~/data/flexProperties'
 
 const props = defineProps<{
@@ -11,6 +12,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: string | number | boolean]
 }>()
+
+const { setScrubbing } = useFlip()
 
 function onNumberInput(event: Event): void {
   emit('update:modelValue', Number((event.target as HTMLInputElement).value))
@@ -53,6 +56,7 @@ function onTextInput(event: Event): void {
       :step="props.prop.step"
       :value="props.modelValue"
       @input="onNumberInput"
+      @pointerdown="setScrubbing(true)"
     >
 
     <div v-else-if="props.prop.kind === 'text'" class="flex flex-wrap gap-1">

@@ -1,7 +1,9 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useFlexState } from '~/composables/useFlexState'
+import { useFlip } from '~/composables/useFlip'
 import { useOverlay } from '~/composables/useOverlay'
+import { useStageView } from '~/composables/useStageView'
 import ThePlayground from './ThePlayground.vue'
 
 describe('thePlayground', () => {
@@ -47,6 +49,28 @@ describe('thePlayground', () => {
     await wrapper.findAll('[data-testid="stage-item"]')[1].trigger('click')
     expect(wrapper.get('[data-testid="item-title"]').text()).toContain('item-2')
     expect(wrapper.find('[data-testid="item-empty"]').exists()).toBe(false)
+  })
+
+  it('3D 开关能压平演示区', async () => {
+    const wrapper = mount(ThePlayground)
+    expect(wrapper.get('[data-testid="scene"]').attributes('style')).toContain('rotateX(10deg)')
+
+    await wrapper.get('[data-testid="view-toggle"]').trigger('change')
+    expect(wrapper.get('[data-testid="scene"]').attributes('style')).toContain('rotateX(0deg)')
+
+    // 单例状态跨用例共享，改回去免得影响后面的用例
+    useStageView().toggle3D()
+  })
+
+  it('拖动手柄期间抑制动画，松手后恢复', async () => {
+    const wrapper = mount(ThePlayground)
+
+    await wrapper.get('[data-testid="stage-resizer"]').trigger('pointerdown', { clientX: 0, clientY: 0 })
+    expect(useFlip().scrubbing.value).toBe(true)
+
+    window.dispatchEvent(new Event('pointerup'))
+    await wrapper.vm.$nextTick()
+    expect(useFlip().scrubbing.value).toBe(false)
   })
 
   it('重置按钮恢复默认状态', async () => {

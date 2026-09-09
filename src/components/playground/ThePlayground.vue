@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useFlexState } from '~/composables/useFlexState'
 import { useOverlay } from '~/composables/useOverlay'
+import { useStageView } from '~/composables/useStageView'
 import ContainerControls from './ContainerControls.vue'
 import CssOutput from './CssOutput.vue'
 import DemoStage from './DemoStage.vue'
@@ -10,6 +11,7 @@ import MetricsTable from './MetricsTable.vue'
 
 const { state, resetState } = useFlexState()
 const { visible: overlayVisible, toggleVisible } = useOverlay()
+const { is3D, toggle3D } = useStageView()
 </script>
 
 <template>
@@ -36,6 +38,15 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
               @change="toggleVisible()"
             >
             <span class="op-70">叠加层</span>
+          </label>
+          <label class="flex cursor-pointer items-center gap-2">
+            <input
+              data-testid="view-toggle"
+              type="checkbox"
+              :checked="is3D"
+              @change="toggle3D()"
+            >
+            <span class="op-70">3D</span>
           </label>
           <span class="op-60">拖拽演示区右下角手柄调整容器尺寸</span>
           <span class="ml-auto font-mono op-70">

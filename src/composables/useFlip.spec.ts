@@ -40,6 +40,25 @@ describe('useFlip', () => {
     wrapper.unmount()
   })
 
+  it('指针在控件外面松开也能结束拖拽，不会把动画永久抑制掉', () => {
+    const { scrubbing, setScrubbing } = useFlip()
+    setScrubbing(true)
+
+    // 在滑块上按下、拖到别处松手：事件不会落回滑块，只能靠全局兜底
+    window.dispatchEvent(new Event('pointerup'))
+
+    expect(scrubbing.value).toBe(false)
+  })
+
+  it('指针事件被取消时同样结束拖拽', () => {
+    const { scrubbing, setScrubbing } = useFlip()
+    setScrubbing(true)
+
+    window.dispatchEvent(new Event('pointercancel'))
+
+    expect(scrubbing.value).toBe(false)
+  })
+
   it('scrubbing 标志是模块级单例，滑块与手柄改的是同一份', () => {
     const first = useFlip()
     const second = useFlip()

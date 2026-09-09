@@ -2,9 +2,11 @@
 import { useEventListener } from '@vueuse/core'
 import { ref } from 'vue'
 import { useFlexState } from '~/composables/useFlexState'
+import { useFlip } from '~/composables/useFlip'
 import { STAGE_LIMITS } from '~/core/defaults'
 
 const { state } = useFlexState()
+const { setScrubbing } = useFlip()
 
 /** 按下时记住起点与当时的尺寸，位移量直接加在起始尺寸上，避免累积误差 */
 const origin = ref<{ x: number, y: number, width: number, height: number } | null>(null)
@@ -20,6 +22,8 @@ function onPointerdown(event: PointerEvent): void {
     width: state.container.width,
     height: state.container.height,
   }
+  // 拖拽期间抑制 Flip：手已经到了方块还在追，反而拖泥带水
+  setScrubbing(true)
   // 指针捕获让快速拖出手柄范围时事件不丢；happy-dom 里没有这个方法，可选链兜住
   ;(event.target as HTMLElement).setPointerCapture?.(event.pointerId)
 
@@ -50,6 +54,7 @@ useEventListener(window, 'pointermove', (event: PointerEvent) => {
 
 useEventListener(window, 'pointerup', () => {
   origin.value = null
+  setScrubbing(false)
 })
 
 // 方向键微调是这个手柄的键盘等价物——它替掉了原来两个可聚焦的 range 滑块
