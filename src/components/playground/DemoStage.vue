@@ -185,6 +185,14 @@ function contentStyle(item: FlexItemState): CSSProperties {
   --d-k: 1;
   --depth: calc(var(--d, 10px) * var(--d-k));
 
+  /*
+   * 块体的体色。顶面与右侧面都从它派生（加白 / 加黑），而不是各自去跟 accent 调色——
+   * 后者的明暗序会随主题翻车：亮色主题下 --panel 本身接近白，正面被它拉亮到 0.79，
+   * 反而比「accent 混 white」的顶面（0.67）还亮，左上光源就读不出来了。
+   * 从同一个体色加白/加黑，两个主题下顺序都必然成立。
+   */
+  --face: color-mix(in srgb, var(--accent) 34%, var(--panel));
+
   border-radius: 3px;
   outline: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
   outline-offset: -1px;
@@ -241,7 +249,7 @@ function contentStyle(item: FlexItemState): CSSProperties {
   height: var(--depth);
   transform: translateY(calc(-1 * var(--depth))) skewX(-45deg);
   transform-origin: bottom left;
-  background: color-mix(in srgb, var(--accent) 62%, white);
+  background: color-mix(in srgb, white 45%, var(--face));
 }
 
 /* 右侧面：向右挪一个厚度，skew 方向与顶面在右上角咬合。背光，往黑里调 */
@@ -252,7 +260,7 @@ function contentStyle(item: FlexItemState): CSSProperties {
   width: var(--depth);
   transform: translateX(var(--depth)) skewY(-45deg);
   transform-origin: top left;
-  background: color-mix(in srgb, var(--accent) 34%, black);
+  background: color-mix(in srgb, black 40%, var(--face));
 }
 
 /*
@@ -287,22 +295,16 @@ function contentStyle(item: FlexItemState): CSSProperties {
     0 4px 4px color-mix(in srgb, black 14%, transparent);
 }
 
-/* 选中：三个面一起换成 accent-2 体系，明暗关系保持一致 */
+/* 选中：只换体色，顶面与右侧面从 --face 派生，明暗关系自动保持一致 */
 .stage-item.is-selected .stage-box {
+  --face: color-mix(in srgb, var(--accent-2) 34%, var(--panel));
+
   outline-color: var(--accent-2);
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--accent-2) 40%, var(--panel)) 0%,
     color-mix(in srgb, var(--accent-2) 28%, var(--panel)) 100%
   );
-}
-
-.stage-item.is-selected .stage-box::before {
-  background: color-mix(in srgb, var(--accent-2) 62%, white);
-}
-
-.stage-item.is-selected .stage-box::after {
-  background: color-mix(in srgb, var(--accent-2) 34%, black);
 }
 
 .content {
