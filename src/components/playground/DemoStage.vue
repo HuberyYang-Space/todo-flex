@@ -41,6 +41,25 @@ const stageVars = computed<CSSProperties>(() => ({
   '--lift': `${motion.liftHeight}px`,
   '--lift-scale': `${motion.liftScale}`,
   '--lift-duration': `${motion.liftDuration}s`,
+  '--d-hover-k': `${motion.blockDepthHover}`,
+  '--d-active-k': `${motion.blockDepthActive}`,
+} as CSSProperties))
+
+/**
+ * 顶面往上伸、右侧面往右伸，各占一个厚度。间距不够时必须收，
+ * 否则相邻方块的面会压在一起——两个方向的间距都要看：
+ * 顶面吃的是行间距，右侧面吃的是列间距，取更小的那一个才两边都安全。
+ * 留 2px 余量，免得面和邻居严丝合缝地贴上去。
+ */
+const blockDepth = computed(() => {
+  const gap = Math.min(state.container.rowGap, state.container.columnGap)
+
+  return Math.max(motion.blockDepthMin, Math.min(motion.blockDepth, gap - 2))
+})
+
+// 厚度写在 .stage-box 上而不是靠继承：伪元素要拿它算面的尺寸，就近给最不容易出错
+const boxStyle = computed<CSSProperties>(() => ({
+  '--d': `${blockDepth.value}px`,
 } as CSSProperties))
 
 function itemStyle(item: FlexItemState): CSSProperties {
@@ -91,7 +110,7 @@ function contentStyle(item: FlexItemState): CSSProperties {
           内层只做形变（挤压拉伸、悬停放大）。两边不抢同一个 transform，
           水滴那股弹性才不会被位移动画覆盖掉。
         -->
-        <div class="stage-box">
+        <div class="stage-box" :style="boxStyle">
           <div class="content" :style="contentStyle(item)">
             {{ itemLabel(index) }}
           </div>

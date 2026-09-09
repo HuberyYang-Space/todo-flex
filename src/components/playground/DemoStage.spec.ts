@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import { useFlexState } from '~/composables/useFlexState'
 import { useMeasure } from '~/composables/useMeasure'
+import { motion } from '~/visual/motion'
 import DemoStage from './DemoStage.vue'
 
 describe('demoStage', () => {
@@ -70,5 +71,46 @@ describe('demoStage', () => {
     // happy-dom 不排版，数字全是 0；这里验证的是接线，不是尺寸
     const ids = useMeasure().measured.value?.items.map(item => item.id)
     expect(ids).toEqual(['item-1', 'item-2', 'item-3'])
+  })
+
+  it('厚度默认取上限', async () => {
+    const wrapper = mount(DemoStage)
+    await wrapper.vm.$nextTick()
+
+    const box = wrapper.get('[data-testid="stage-item"] .stage-box').element as HTMLElement
+    expect(box.style.getPropertyValue('--d')).toBe(`${motion.blockDepth}px`)
+  })
+
+  it('gap 收窄时厚度跟着收，避免侧面压到邻居', async () => {
+    const { state } = useFlexState()
+    state.container.columnGap = 6
+    const wrapper = mount(DemoStage)
+    await wrapper.vm.$nextTick()
+
+    const box = wrapper.get('[data-testid="stage-item"] .stage-box').element as HTMLElement
+    expect(box.style.getPropertyValue('--d')).toBe('4px')
+  })
+
+  it('gap 为 0 时厚度收到下限而不是消失', async () => {
+    const { state } = useFlexState()
+    state.container.columnGap = 0
+    state.container.rowGap = 0
+    const wrapper = mount(DemoStage)
+    await wrapper.vm.$nextTick()
+
+    const box = wrapper.get('[data-testid="stage-item"] .stage-box').element as HTMLElement
+    expect(box.style.getPropertyValue('--d')).toBe(`${motion.blockDepthMin}px`)
+  })
+
+  it('column 方向改看 rowGap，因为顶面是往上伸的', async () => {
+    const { state } = useFlexState()
+    state.container.direction = 'column'
+    state.container.rowGap = 6
+    state.container.columnGap = 40
+    const wrapper = mount(DemoStage)
+    await wrapper.vm.$nextTick()
+
+    const box = wrapper.get('[data-testid="stage-item"] .stage-box').element as HTMLElement
+    expect(box.style.getPropertyValue('--d')).toBe('4px')
   })
 })
