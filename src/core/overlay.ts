@@ -1,0 +1,127 @@
+import type {
+  DerivedLayout,
+  FlexState,
+  MeasuredItem,
+  MeasuredStage,
+} from './types'
+import { isRowDirection, mainAxisGap } from './axis'
+
+/**
+ * 低于这个像素数的空隙不画。
+ * 亚像素舍入随时带来零点几像素的偏差，不设阈值会画出满屏发丝色块。
+ * 与 diagnostics.ts 的 TOLERANCE 同一个量级，出于同一个理由。
+ */
+const EPSILON = 0.5
+
+export type BandKind = 'free' | 'overflow'
+
+/** 叠加层里的一块矩形，坐标以演示区左上角为原点 */
+export interface OverlayBand {
+  kind: BandKind
+  lineIndex: number
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/** 每行的剩余空间对照：理论值来自推导引擎，实际值由观测值反算 */
+export interface OverlayLine {
+  index: number
+  theoretical: number
+  actual: number
+}
+
+export interface OverlayGeometry {
+  bands: OverlayBand[]
+  lines: OverlayLine[]
+}
+
+/**
+ * 算出「浏览器排完版之后，行内哪些像素是空的」。
+ *
+ * 一切都在屏幕坐标空间里算：从容器左上角 0 出发向右/向下扫，
+ * 与 row-reverse 这类主轴方向的正负无关——反向排列只是让盒子的坐标顺序变了，
+ * 空白像素还是那些空白像素。
+ */
+export function computeOverlay(
+  state: FlexState,
+  derived: DerivedLayout,
+  measured: MeasuredStage,
+): OverlayGeometry {
+  const { container } = state
+  const isRow = isRowDirection(container.direction)
+  const gap = mainAxisGap(container)
+  // 容器主轴尺寸取实测值而非状态值：状态值是我们要求的，实测值才是浏览器给的
+  const containerMain = isRow ? measured.width : measured.height
+  const measuredById = new Map(measured.items.map(item => [item.id, item]))
+
+  const mainStart = (record: MeasuredItem): number => (isRow ? record.left : record.top)
+  const mainSize = (record: MeasuredItem): number => (isRow ? record.width : record.height)
+  const crossStart = (record: MeasuredItem): number => (isRow ? record.top : record.left)
+  const crossSize = (record: MeasuredItem): number => (isRow ? record.height : record.width)
+
+  const bands: OverlayBand[] = []
+  const lines: OverlayLine[] = []
+
+  for (const line of derived.lines) {
+    const records = line.itemIds
+      .map(id => measuredById.get(id))
+      .filter((record): record is MeasuredItem => Boolean(record))
+      .sort((a, b) => mainStart(a) - mainStart(b))
+
+    // 观测还没跟上状态（盒子刚增删）时跳过这一行，不猜
+    if (records.length === 0)
+      continue
+
+    const crossFrom = Math.min(...records.map(crossStart))
+    const crossTo = Math.max(...records.map(record => crossStart(record) + crossSize(record)))
+
+    const push = (kind: BandKind, from: number, length: number): void => {
+      bands.push(makeBand(kind, line.index, isRow, from, length, crossFrom, crossTo - crossFrom))
+    }
+
+    let cursor = 0
+    for (const record of records) {
+      // 盒子之间的空隙里，gap 是用户显式要的间距，扣掉它，剩下的才是「没人要的剩余空间」。
+      // 色块紧贴后一个盒子画，gap 留在前一个盒子那侧——视觉上二者不可分，这是约定。
+      const deduct = cursor === 0 ? 0 : gap
+      const free = mainStart(record) - cursor - deduct
+      if (free > EPSILON)
+        push('free', mainStart(record) - free, free)
+
+      // 盒子可能重叠（margin 为负等），游标只前进不后退
+      cursor = Math.max(cursor, mainStart(record) + mainSize(record))
+    }
+
+    const tail = containerMain - cursor
+    if (tail > EPSILON)
+      push('free', cursor, tail)
+    else if (tail < -EPSILON)
+      push('overflow', containerMain, -tail)
+
+    const used = records.reduce((sum, record) => sum + mainSize(record), 0)
+    lines.push({
+      index: line.index,
+      theoretical: line.freeSpace,
+      actual: containerMain - used - gap * Math.max(records.length - 1, 0),
+    })
+  }
+
+  return { bands, lines }
+}
+
+/** 把「主轴 + 交叉轴」的一段范围翻译成屏幕坐标的矩形 */
+function makeBand(
+  kind: BandKind,
+  lineIndex: number,
+  isRow: boolean,
+  mainFrom: number,
+  mainLength: number,
+  crossFrom: number,
+  crossLength: number,
+): OverlayBand {
+  return isRow
+    ? { kind, lineIndex, x: mainFrom, y: crossFrom, width: mainLength, height: crossLength }
+    : { kind, lineIndex, x: crossFrom, y: mainFrom, width: crossLength, height: mainLength }
+}
