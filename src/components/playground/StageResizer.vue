@@ -22,7 +22,12 @@ function onPointerdown(event: PointerEvent): void {
   }
   // 指针捕获让快速拖出手柄范围时事件不丢；happy-dom 里没有这个方法，可选链兜住
   ;(event.target as HTMLElement).setPointerCapture?.(event.pointerId)
+
+  // preventDefault 挡住了拖拽时的文本选中，但也连带挡掉了 pointerdown 默认的焦点转移，
+  // 于是点完手柄再按方向键，改的是上一个焦点元素。手动补一次 focus 把这条路接回来。
+  // 浏览器实测发现，单元测试与 Tab 聚焦路径都盖不住这个缺口。
   event.preventDefault()
+  ;(event.currentTarget as HTMLElement).focus()
 }
 
 // 监听挂在 window 上而不是手柄上：鼠标甩出手柄之后拖拽仍要跟手

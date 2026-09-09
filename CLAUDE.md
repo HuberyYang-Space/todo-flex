@@ -28,13 +28,18 @@ pnpm build                    # 类型检查 + 生产构建
 
 ## 当前进度
 
-M1（推导引擎）、M2（可用的 Playground）已完成。M3（透明化核心）完成一半：
-观测层 `useMeasure`、诊断层 `core/diagnostics.ts`、理论 vs 实际明细表已落地并经浏览器实测。
-**M3 剩余部分**：SVG 叠加层 `OverlayLayer`（剩余空间色块、轴向箭头、尺寸 HUD）、
-演示区右下角 resize 拖拽手柄（目前容器尺寸是两个 range 滑块）。
+M1（推导引擎）、M2（可用的 Playground）、M3（透明化核心）已完成。
+M3 全部经浏览器实测：观测层 `useMeasure`、诊断层 `core/diagnostics.ts`、理论 vs 实际明细表、
+SVG 叠加层 `OverlayLayer`（剩余空间斜纹色块、溢出标记、轴向箭头、尺寸 HUD）、
+演示区右下角 resize 拖拽手柄 `StageResizer`（已替代原来的两个 range 滑块）。
+**下一步是 M4（动效）**：GSAP Flip 布局过渡、叠加层动画（含设计文档 §7 说的「剩余空间流动斜纹」，
+当前是静态斜纹）、`prefers-reduced-motion` 降级。接入 Flip 时注意红线 5：观测层已经绕开
+`getBoundingClientRect()`，改动观测层前先读那条。
 
-**浏览器验证不可省。** M3 上半程有两个 bug 是单元测试原理上抓不到的（happy-dom 没有排版引擎），
-全靠真实浏览器暴露：装饰性 border 参与布局导致全量误报、`overflow: hidden` 让 `min-width: auto` 完全失效。
+**浏览器验证不可省。** M3 有三个 bug 是单元测试原理上抓不到的（happy-dom 没有排版引擎），
+全靠真实浏览器暴露：装饰性 border 参与布局导致全量误报、`overflow: hidden` 让 `min-width: auto` 完全失效、
+拖拽手柄在 `pointerdown` 里 `preventDefault()` 连带抑制了焦点转移（点完手柄按方向键改的是别处，
+而 Tab 聚焦与单元测试两条路径都照常通过）。
 凡是涉及演示区布局的改动，跑完 test/lint/build 之后仍需在浏览器里核对明细表的数字。
 
 > 注意：`docs/superpowers/plans/` 里的计划文档 checkbox 全是未勾选状态，但代码与 git 历史证明 M1+M2 已实现完毕。

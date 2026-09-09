@@ -56,6 +56,15 @@ describe('stageResizer', () => {
     firePointer('pointerup', 0, 0)
   })
 
+  it('点击手柄后焦点落在手柄上，接着按方向键才改的是尺寸', async () => {
+    const wrapper = mount(StageResizer, { attachTo: document.body })
+    const handle = wrapper.get('[data-testid="stage-resizer"]')
+
+    await handle.trigger('pointerdown', { clientX: 0, clientY: 0 })
+
+    expect(document.activeElement).toBe(handle.element)
+  })
+
   it('方向键微调 1px，保住键盘可达', async () => {
     const { state } = useFlexState()
     const wrapper = mount(StageResizer)
