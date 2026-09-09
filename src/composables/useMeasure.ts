@@ -6,6 +6,18 @@ import { useFlexState } from './useFlexState'
 /** 全站唯一的观测结果，明细表与叠加层都从这里取数 */
 const measured = shallowRef<MeasuredStage | null>(null)
 
+/** 当前接入观测的演示区，resume() 要靠它立即重采 */
+let activeStage: HTMLElement | null = null
+
+/**
+ * 挂起标志。GSAP Flip 的 absolute 模式会把元素临时设成绝对定位——那是真的改布局，
+ * 动画期间采到的尺寸是错的，明细表的数字会乱跳。所以动画期间挂起，结束后重采。
+ *
+ * 注意这与红线 5 是两回事：红线 5 挡的是 getBoundingClientRect 返回 transform 中间态，
+ * 这里挡的是 absolute 模式真的改了布局。两个坑都要堵。
+ */
+let paused = false
+
 /**
  * 读取浏览器算出的真实布局。
  *
@@ -40,6 +52,7 @@ function observeStage(target: MaybeRefOrGetter<HTMLElement | undefined | null>):
   function detach(): void {
     observer?.disconnect()
     observer = null
+    activeStage = null
   }
 
   // 盒子会增删，每次都重新登记一遍观测目标，省去追踪哪些元素已经失效
@@ -52,6 +65,8 @@ function observeStage(target: MaybeRefOrGetter<HTMLElement | undefined | null>):
 
   function sample(stage: HTMLElement): void {
     attach(stage)
+    if (paused)
+      return
     measured.value = readStage(stage)
   }
 
@@ -64,8 +79,11 @@ function observeStage(target: MaybeRefOrGetter<HTMLElement | undefined | null>):
     }
 
     observer = new ResizeObserver(() => {
+      if (paused)
+        return
       measured.value = readStage(stage)
     })
+    activeStage = stage
     sample(stage)
   }, { immediate: true, flush: 'post' })
 
@@ -80,6 +98,17 @@ function observeStage(target: MaybeRefOrGetter<HTMLElement | undefined | null>):
   onScopeDispose(detach)
 }
 
+function pause(): void {
+  paused = true
+}
+
+function resume(): void {
+  paused = false
+  // 挂起期间漏掉的变化要补采一次，不能等下一次状态变化
+  if (activeStage)
+    measured.value = readStage(activeStage)
+}
+
 export function useMeasure() {
-  return { measured, observeStage }
+  return { measured, observeStage, pause, resume }
 }

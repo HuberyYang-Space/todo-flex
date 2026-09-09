@@ -74,6 +74,8 @@ describe('useMeasure', () => {
     FakeResizeObserver.instances = []
     vi.stubGlobal('ResizeObserver', FakeResizeObserver)
     useFlexState().resetState()
+    // paused 是模块级的，用例之间必须归位，否则前一个用例的挂起会串到下一个
+    useMeasure().resume()
     useMeasure().measured.value = null
     scope = effectScope()
   })
@@ -179,5 +181,55 @@ describe('useMeasure', () => {
     await observe(undefined)
 
     expect(useMeasure().measured.value).toBeNull()
+  })
+
+  it('挂起期间状态变化不再更新观测结果', async () => {
+    await observe(buildStage())
+    const { measured, pause, resume } = useMeasure()
+    const before = measured.value
+
+    pause()
+    useFlexState().state.container.width = 999
+    await nextTick()
+
+    expect(measured.value).toBe(before)
+    resume()
+  })
+
+  it('挂起期间 ResizeObserver 报告的尺寸变化同样被忽略', async () => {
+    const stage = buildStage()
+    await observe(stage)
+    const { measured, pause, resume } = useMeasure()
+    const before = measured.value
+
+    pause()
+    setOffsets(stage, { width: 999, height: 300, left: 0, top: 0 })
+    FakeResizeObserver.latest.trigger()
+
+    expect(measured.value).toBe(before)
+    resume()
+  })
+
+  it('恢复时立即重采一次，补上挂起期间漏掉的变化', async () => {
+    const stage = buildStage()
+    await observe(stage)
+    const { measured, pause, resume } = useMeasure()
+
+    pause()
+    setOffsets(stage, { width: 999, height: 300, left: 0, top: 0 })
+    FakeResizeObserver.latest.trigger()
+    resume()
+
+    // 不用等下一次状态变化，恢复的那一刻就该是新值
+    expect(measured.value?.width).toBe(999)
+  })
+
+  it('演示区卸载之后恢复是安全的空操作', async () => {
+    await observe(buildStage())
+    scope.stop()
+
+    const { pause, resume } = useMeasure()
+    pause()
+    expect(() => resume()).not.toThrow()
   })
 })
