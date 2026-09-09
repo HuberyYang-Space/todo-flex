@@ -36,18 +36,38 @@ SVG 叠加层 `OverlayLayer`（剩余空间斜纹色块、溢出标记、轴向�
 **演示区的 3D 方案已试过并放弃**——立体面的投影高度是「厚度 × sin(倾角)」，小倾角下根本读不出体积感，
 大倾角又会压缩 column 方向的主轴；相关代码已删，决策记录见
 `docs/superpowers/specs/2026-09-09-stage-3d-motion-design.md`（已标作废）。
-**演示区方块的视觉已定案：等距实体块**（样本册第 26 号），实现方案见
-`docs/superpowers/plans/2026-09-09-isometric-solid-block.md`——**动手前先读那份文档开头的
+**演示区方块的视觉已定案并已落地：等距实体块**（样本册第 26 号），实现方案见
+`docs/superpowers/plans/2026-09-09-isometric-solid-block.md`——**再动这块视觉前先读那份文档开头的
 「三轮试错的结论」**，里面记着三条已经走死的路，重蹈任何一条都会白做一遍。
 三十二个候选方案的对比页：https://claude.ai/code/artifact/c94e5026-c873-4035-a93d-d00a8c3f64a1
 
-M4 剩余：等距实体块落地、叠加层动画（设计文档 §7 的「剩余空间流动斜纹」，当前是静态斜纹）、
-`prefers-reduced-motion` 全面核对。
+等距实体块的实现要点：顶面与右侧面是 `.stage-box` 的两个伪元素画的二维平行四边形（`skewX` / `skewY`），
+厚度 `--d` 由 `DemoStage` 按 `min(rowGap, columnGap) - 2` 算出来下发，悬停/按下用倍率 `--d-k` 缩放，
+**不要写成 `--d: calc(var(--d) + 3px)`**——自引用无效。
+**三个面必须从同一个体色 `--face` 派生（顶面加白、右侧面加黑），不要各自去跟 `--accent` 调色**：
+后者的明暗序会随主题翻车，亮色主题下 `--panel` 接近白，会把正面拉得比顶面还亮（实测正面 0.79 > 顶面 0.67），
+左上光源就读不出来了。这个缺陷只在亮色主题下出现，只看暗色发现不了。
 
-**浏览器验证的环境坑**：本机那个 Chrome 窗口反复掉回不可见状态（`visibilityState: hidden`），
-一不可见 requestAnimationFrame 就停发，GSAP 时间线与 CSS transition 全部冻在第一帧。
-已经因此两次把冻结状态误判成缺陷。量任何与动画有关的东西之前，**先跑一次 rAF 计数确认页面在动**；
-静态样式可以靠截图验，动效必须让用户自己看。
+M4 剩余：叠加层动画（设计文档 §7 的「剩余空间流动斜纹」，当前是静态斜纹）、
+`prefers-reduced-motion` 全面核对。等距实体块还有三项待用户在真实窗口里核对：
+wrap 换行时跨行的面是否互压、悬停时厚度加大与接触阴影拉开的手感、重排后面有无残留。
+另有一处待定：`align-items: stretch` 时盒子顶边与容器上沿齐平，10px 的顶面会画到容器外面
+（容器不能加 padding，红线 6），观感是否可接受未定。
+
+**浏览器验证的环境坑**（每一条都实际踩过，不要再踩）：
+
+- 本机那个 Chrome 窗口反复掉回不可见状态（`visibilityState: hidden`）。一不可见就有三重后果：
+  ① requestAnimationFrame 停发，GSAP 时间线与 CSS transition 冻在第一帧——已经因此两次把冻结状态误判成缺陷；
+  ② 页面**完全不重绘**，`captureVisibleTab` 返回的是上一帧，改完 DOM 再截图拿到的是旧画面；
+  ③ 在这种页面里 `await` 一个 rAF 循环会永不 resolve，直接把 CDP `Runtime.evaluate` 拖到超时。
+  所以：**先同步读一次 `document.visibilityState`**（别用 rAF 计数，它自己就会挂），
+  静态样式改用 `getComputedStyle` 量而不是靠截图，动效一律让用户自己看。
+- 量静态尺寸前要先注入 `transition: none !important`，否则读到的是冻住的过渡中间值
+  （实测 `--d` 已经是 3px，伪元素的 `width` 还停在 10px）。
+- GSAP Flip 会在 `.stage-item` 上写 `width/height/max-*/min-*/transform` 一整套内联样式，冻结时全留在中间帧。
+  想量真实布局得把这些内联属性一并清掉，只清 `transform` 不够。
+- **`localhost:5175` 未必是本项目**：本机另一个项目占着 `[::1]:5175`（IPv6），浏览器解析 localhost 会走到它那儿去。
+  用 `http://127.0.0.1:<port>` 访问，并且认一下页面标题是不是 `todo-flex`。
 
 **浏览器验证不可省。** M3 有三个 bug 是单元测试原理上抓不到的（happy-dom 没有排版引擎），
 全靠真实浏览器暴露：装饰性 border 参与布局导致全量误报、`overflow: hidden` 让 `min-width: auto` 完全失效、
