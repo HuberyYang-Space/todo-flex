@@ -3,6 +3,7 @@ import type { CSSProperties } from 'vue'
 import type { FlexItemState } from '~/core/types'
 import { computed, ref } from 'vue'
 import { useFlexState } from '~/composables/useFlexState'
+import { useFlip } from '~/composables/useFlip'
 import { useMeasure } from '~/composables/useMeasure'
 import { useOverlay } from '~/composables/useOverlay'
 import { isRowDirection } from '~/core/axis'
@@ -16,6 +17,7 @@ const { setHovered } = useOverlay()
 // 演示区是全站唯一的真实布局来源，挂上观测层供明细表读取实际尺寸
 const stageEl = ref<HTMLElement>()
 useMeasure().observeStage(stageEl)
+useFlip().observeFlip(stageEl)
 
 const isRow = computed(() => isRowDirection(state.container.direction))
 

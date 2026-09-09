@@ -15,8 +15,11 @@ let activeStage: HTMLElement | null = null
  *
  * 注意这与红线 5 是两回事：红线 5 挡的是 getBoundingClientRect 返回 transform 中间态，
  * 这里挡的是 absolute 模式真的改了布局。两个坑都要堵。
+ *
+ * 用计数而不是布尔：多段动画可能重叠（比如换行动画还没完就又改了 direction），
+ * 布尔会被先结束的那一段提前解除挂起，counter 才能保证「全部结束才恢复」。
  */
-let paused = false
+let pauseDepth = 0
 
 /**
  * 读取浏览器算出的真实布局。
@@ -65,7 +68,7 @@ function observeStage(target: MaybeRefOrGetter<HTMLElement | undefined | null>):
 
   function sample(stage: HTMLElement): void {
     attach(stage)
-    if (paused)
+    if (pauseDepth > 0)
       return
     measured.value = readStage(stage)
   }
@@ -79,11 +82,14 @@ function observeStage(target: MaybeRefOrGetter<HTMLElement | undefined | null>):
     }
 
     observer = new ResizeObserver(() => {
-      if (paused)
+      if (pauseDepth > 0)
         return
       measured.value = readStage(stage)
     })
     activeStage = stage
+    // 换了一个演示区，旧那个没结束的动画留下的挂起就此作废——
+    // 不清零的话，一次没跑完的动画会让新演示区永远采不到数
+    pauseDepth = 0
     sample(stage)
   }, { immediate: true, flush: 'post' })
 
@@ -99,11 +105,15 @@ function observeStage(target: MaybeRefOrGetter<HTMLElement | undefined | null>):
 }
 
 function pause(): void {
-  paused = true
+  pauseDepth += 1
 }
 
 function resume(): void {
-  paused = false
+  // 不做下溢：多余的 resume 也只是把状态确认为「没有挂起」
+  pauseDepth = Math.max(0, pauseDepth - 1)
+  if (pauseDepth > 0)
+    return
+
   // 挂起期间漏掉的变化要补采一次，不能等下一次状态变化
   if (activeStage)
     measured.value = readStage(activeStage)
