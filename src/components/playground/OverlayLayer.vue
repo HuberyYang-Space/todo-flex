@@ -16,8 +16,16 @@ const { visible, hoveredId } = useOverlay()
 const ARROW_ORIGIN = 16
 const ARROW_LENGTH = 32
 
-/** 斜纹 pattern 按流向各生成一份，id 后缀与 OverlayBand.flow 对齐 */
-const FLOWS = ['forward', 'reverse'] as const
+/**
+ * 斜纹 pattern 按「流动轴 × 流向」四份，id 后缀与 OverlayBand.flowAxis / flow 对齐。
+ * 纹路朝向必须随轴走，方向才读得出来——理由见文件底部 .stripe-flow 的注释。
+ */
+const STRIPE_PATTERNS = [
+  { axis: 'x', flow: 'forward' },
+  { axis: 'x', flow: 'reverse' },
+  { axis: 'y', flow: 'forward' },
+  { axis: 'y', flow: 'reverse' },
+] as const
 
 const geometry = computed(() =>
   measured.value ? computeOverlay(state, derived.value, measured.value) : null,
@@ -75,20 +83,20 @@ function round(value: number): number {
     <defs>
       <!--
         剩余空间用斜纹填充：与实心色块拉开区别，一眼看出「这里没有盒子」。
-        两个方向各一份，斜纹朝「这块空间一旦被分配会流向谁」的方向动。
+        「流动轴 × 流向」四份，纹路朝「这块空间一旦被分配会流向谁」的方向动。
         三条线是为了平移时无缝：走完一个周期（8px）时，邻位那条正好补上离场那条的位置。
       -->
       <pattern
-        v-for="flow in FLOWS"
-        :id="`overlay-stripes-${flow}`"
-        :key="flow"
+        v-for="stripe in STRIPE_PATTERNS"
+        :id="`overlay-stripes-${stripe.axis}-${stripe.flow}`"
+        :key="`${stripe.axis}-${stripe.flow}`"
         width="8"
         height="8"
         patternUnits="userSpaceOnUse"
-        patternTransform="rotate(45)"
+        :patternTransform="stripe.axis === 'y' ? 'rotate(90)' : undefined"
       >
         <rect width="8" height="8" fill="var(--accent)" fill-opacity="0.08" />
-        <g class="stripe-flow" :class="`stripe-flow--${flow}`">
+        <g class="stripe-flow" :class="`stripe-flow--${stripe.flow}`">
           <line
             v-for="x in [-8, 0, 8]"
             :key="x"
@@ -136,7 +144,7 @@ function round(value: number): number {
       :y="band.y"
       :width="band.width"
       :height="band.height"
-      :class="band.kind === 'free' ? ['band-free', `band-free--${band.flow ?? 'forward'}`] : 'band-overflow'"
+      :class="band.kind === 'free' ? ['band-free', `band-free--${band.flowAxis ?? 'x'}-${band.flow ?? 'forward'}`] : 'band-overflow'"
     />
 
     <!-- 轴向箭头 -->
@@ -182,20 +190,34 @@ function round(value: number): number {
   pointer-events: none;
 }
 
-.band-free--forward {
-  fill: url(#overlay-stripes-forward);
+.band-free--x-forward {
+  fill: url(#overlay-stripes-x-forward);
 }
 
-.band-free--reverse {
-  fill: url(#overlay-stripes-reverse);
+.band-free--x-reverse {
+  fill: url(#overlay-stripes-x-reverse);
+}
+
+.band-free--y-forward {
+  fill: url(#overlay-stripes-y-forward);
+}
+
+.band-free--y-reverse {
+  fill: url(#overlay-stripes-y-reverse);
 }
 
 /*
  * 平移一个完整周期（8px）就回到同一个相位，循环起来看不出接缝。
  *
- * 只做一个方向的位移就够了：45° 斜纹只能表达垂直于自身的运动分量（理发店转灯错觉），
- * 「向右」与「向下」在这条斜纹上本来就是同一个平移。方向感由色块自己的长宽比给出——
- * row 布局下色块宽扁，读作横向流；column 下高瘦，读作纵向流。所以两份 pattern 足够，不必做四份。
+ * 纹路朝向由流动轴给出，不由色块形状给出：x 轴是垂直纹路做左右平移，
+ * y 轴靠 patternTransform 转 90° 变成水平纹路——旋转把 pattern 自身的坐标系一起转了，
+ * 所以下面这条 translateX 在 y 轴的 pattern 里就是屏幕上的向下，一套 keyframes 管四份。
+ * 两种情况下运动都完全垂直于纹路，没有理发店转灯的歧义。
+ *
+ * 曾经只做两份 45° 斜纹、让色块长宽比去暗示方向，浏览器实测会读反：
+ * column 默认三个盒子时色块是 720×56 的宽扁横条（读作横向流，实际沿垂直轴），
+ * row 放到六个盒子时色块是 180×320 的高瘦竖条（读作纵向流，实际沿水平轴）。
+ * 长宽比取决于「剩余空间量 vs 交叉轴尺寸」，跟 flex-direction 不相干，不能拿来当方向线索。
  */
 .stripe-flow {
   animation: stripe-flow 2.4s linear infinite;

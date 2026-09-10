@@ -41,7 +41,7 @@ describe('overlayLayer', () => {
   it('行尾的色块按流向挂上反向斜纹的类名', () => {
     const wrapper = mount(OverlayLayer)
     const band = wrapper.find('[data-testid="overlay-band"]')
-    expect(band.classes()).toContain('band-free--reverse')
+    expect(band.classes()).toContain('band-free--x-reverse')
   })
 
   it('盒子被推到末尾时，行首的色块改挂正向斜纹', () => {
@@ -52,13 +52,35 @@ describe('overlayLayer', () => {
     }
     const wrapper = mount(OverlayLayer)
     const band = wrapper.find('[data-testid="overlay-band"]')
-    expect(band.classes()).toContain('band-free--forward')
+    expect(band.classes()).toContain('band-free--x-forward')
   })
 
-  it('两个方向的斜纹 pattern 都定义在 defs 里', () => {
+  it('column 下色块改挂垂直轴的类名，不看色块自己是宽是高', () => {
+    useFlexState().state.container.direction = 'column'
+    // 720×56 的宽扁横条：形状读着像横向流，流动轴其实是垂直的
+    useMeasure().measured.value = {
+      width: 720,
+      height: 320,
+      items: [{ id: 'item-1', left: 0, top: 0, width: 720, height: 264 }],
+    }
     const wrapper = mount(OverlayLayer)
-    expect(wrapper.find('#overlay-stripes-forward').exists()).toBe(true)
-    expect(wrapper.find('#overlay-stripes-reverse').exists()).toBe(true)
+    const band = wrapper.find('[data-testid="overlay-band"]')
+    expect(Number(band.attributes('width'))).toBeGreaterThan(Number(band.attributes('height')))
+    expect(band.classes()).toContain('band-free--y-reverse')
+  })
+
+  it('流动轴与流向的四份斜纹 pattern 都定义在 defs 里', () => {
+    const wrapper = mount(OverlayLayer)
+    for (const axis of ['x', 'y']) {
+      for (const flow of ['forward', 'reverse'])
+        expect(wrapper.find(`#overlay-stripes-${axis}-${flow}`).exists()).toBe(true)
+    }
+  })
+
+  it('垂直轴的 pattern 把纹路转 90° 变成水平纹路', () => {
+    const wrapper = mount(OverlayLayer)
+    expect(wrapper.find('#overlay-stripes-x-forward').attributes('patternTransform')).toBeUndefined()
+    expect(wrapper.find('#overlay-stripes-y-forward').attributes('patternTransform')).toBe('rotate(90)')
   })
 
   it('关掉开关后整层不渲染', async () => {

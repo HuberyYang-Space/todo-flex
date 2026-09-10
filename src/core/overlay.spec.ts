@@ -35,7 +35,7 @@ describe('computeOverlay', () => {
     const { bands } = computeOverlay(state, derived, measured)
 
     expect(bands).toEqual([
-      { kind: 'free', lineIndex: 0, x: 100, y: 0, width: 300, height: 200, flow: 'reverse' },
+      { kind: 'free', lineIndex: 0, x: 100, y: 0, width: 300, height: 200, flow: 'reverse', flowAxis: 'x' },
     ])
   })
 
@@ -54,8 +54,8 @@ describe('computeOverlay', () => {
 
     expect(bands).toEqual([
       // 紧贴后一个盒子画：200 - 80 = 120 起，宽 80
-      { kind: 'free', lineIndex: 0, x: 120, y: 0, width: 80, height: 200, flow: 'forward' },
-      { kind: 'free', lineIndex: 0, x: 300, y: 0, width: 100, height: 200, flow: 'reverse' },
+      { kind: 'free', lineIndex: 0, x: 120, y: 0, width: 80, height: 200, flow: 'forward', flowAxis: 'x' },
+      { kind: 'free', lineIndex: 0, x: 300, y: 0, width: 100, height: 200, flow: 'reverse', flowAxis: 'x' },
     ])
   })
 
@@ -97,7 +97,7 @@ describe('computeOverlay', () => {
     ])
 
     expect(computeOverlay(state, derived, measured).bands).toEqual([
-      { kind: 'free', lineIndex: 0, x: 0, y: 100, width: 400, height: 200, flow: 'reverse' },
+      { kind: 'free', lineIndex: 0, x: 0, y: 100, width: 400, height: 200, flow: 'reverse', flowAxis: 'y' },
     ])
   })
 
@@ -116,8 +116,8 @@ describe('computeOverlay', () => {
     ])
 
     expect(computeOverlay(state, derived, measured).bands).toEqual([
-      { kind: 'free', lineIndex: 0, x: 200, y: 0, width: 100, height: 90, flow: 'reverse' },
-      { kind: 'free', lineIndex: 1, x: 100, y: 110, width: 200, height: 90, flow: 'reverse' },
+      { kind: 'free', lineIndex: 0, x: 200, y: 0, width: 100, height: 90, flow: 'reverse', flowAxis: 'x' },
+      { kind: 'free', lineIndex: 1, x: 100, y: 110, width: 200, height: 90, flow: 'reverse', flowAxis: 'x' },
     ])
   })
 
@@ -171,7 +171,7 @@ describe('computeOverlay', () => {
     expect(lines).toHaveLength(1)
     // 720 - 240 - 24 = 456
     expect(lines[0].actual).toBe(456)
-    expect(bands.at(-1)).toEqual({ kind: 'free', lineIndex: 0, x: 264, y: 0, width: 456, height: 320, flow: 'reverse' })
+    expect(bands.at(-1)).toEqual({ kind: 'free', lineIndex: 0, x: 264, y: 0, width: 456, height: 320, flow: 'reverse', flowAxis: 'x' })
   })
 })
 
@@ -258,5 +258,66 @@ describe('computeOverlay 的斜纹流向', () => {
     const [band] = computeOverlay(state, derived, measured).bands
     expect(band.kind).toBe('overflow')
     expect(band.flow).toBeUndefined()
+  })
+})
+
+/*
+ * 斜纹的纹路朝向由流动轴决定，不能靠色块自己的长宽比暗示。
+ * 实测过：row 下盒子一多，剩余空间被压成高瘦竖条；column 下只要行数不多，色块就是宽扁横条——
+ * 长宽比取决于「剩余空间量 vs 交叉轴尺寸」，跟 flex-direction 无关，拿它当方向线索会读反。
+ */
+describe('computeOverlay 的流动轴', () => {
+  it('row 下剩余空间沿水平轴流动', () => {
+    const state = createDefaultState()
+    state.container.width = 400
+    state.container.columnGap = 0
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: 300 }])
+    const measured = stage(400, 200, [
+      { id: 'item-1', left: 0, top: 0, width: 100, height: 200 },
+    ])
+
+    expect(computeOverlay(state, derived, measured).bands.map(band => band.flowAxis)).toEqual(['x'])
+  })
+
+  it('column 下剩余空间沿垂直轴流动，哪怕色块画出来是宽扁的', () => {
+    const state = createDefaultState()
+    state.container.direction = 'column'
+    state.container.height = 320
+    state.container.rowGap = 0
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: 56 }])
+    // 720 宽 × 56 高：极扁的横条，但它是沿垂直主轴流的
+    const measured = stage(720, 320, [
+      { id: 'item-1', left: 0, top: 0, width: 720, height: 264 },
+    ])
+
+    const [band] = computeOverlay(state, derived, measured).bands
+    expect(band.width).toBeGreaterThan(band.height)
+    expect(band.flowAxis).toBe('y')
+  })
+
+  it('column-reverse 的流动轴同样是垂直轴', () => {
+    const state = createDefaultState()
+    state.container.direction = 'column-reverse'
+    state.container.height = 320
+    state.container.rowGap = 0
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: 120 }])
+    const measured = stage(400, 320, [
+      { id: 'item-1', left: 0, top: 0, width: 400, height: 200 },
+    ])
+
+    expect(computeOverlay(state, derived, measured).bands.map(band => band.flowAxis)).toEqual(['y'])
+  })
+
+  it('溢出标记不吃斜纹，也就没有流动轴', () => {
+    const state = createDefaultState()
+    state.container.width = 200
+    state.container.columnGap = 0
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: -80 }])
+    const measured = stage(200, 200, [
+      { id: 'item-1', left: 0, top: 0, width: 280, height: 200 },
+    ])
+
+    const [band] = computeOverlay(state, derived, measured).bands
+    expect(band.flowAxis).toBeUndefined()
   })
 })

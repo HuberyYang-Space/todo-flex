@@ -21,6 +21,13 @@ export type BandKind = 'free' | 'overflow'
  */
 export type FlowDirection = 'forward' | 'reverse'
 
+/**
+ * 斜纹的流动轴，也就是主轴落在屏幕的哪根轴上：x = 水平，y = 垂直。
+ * 纹路朝向必须由它决定：色块的长宽比取决于「剩余空间量 vs 交叉轴尺寸」，与 direction 无关，
+ * row 下盒子一多色块就成了高瘦竖条，column 下行数不多色块就是宽扁横条——拿形状当线索会把方向读反。
+ */
+export type FlowAxis = 'x' | 'y'
+
 /** 叠加层里的一块矩形，坐标以演示区左上角为原点 */
 export interface OverlayBand {
   kind: BandKind
@@ -31,6 +38,8 @@ export interface OverlayBand {
   height: number
   /** 斜纹朝哪边流，只有 free 色块有——溢出标记不吃斜纹 */
   flow?: FlowDirection
+  /** 斜纹沿哪根轴流，与 flow 同进同出：纹路朝向垂直于它，方向才读得出来 */
+  flowAxis?: FlowAxis
 }
 
 /** 每行的剩余空间对照：理论值来自推导引擎，实际值由观测值反算 */
@@ -143,5 +152,5 @@ function makeBand(
     ? { x: mainFrom, y: crossFrom, width: mainLength, height: crossLength }
     : { x: crossFrom, y: mainFrom, width: crossLength, height: mainLength }
 
-  return { kind, lineIndex, ...rect, ...(flow ? { flow } : {}) }
+  return { kind, lineIndex, ...rect, ...(flow ? { flow, flowAxis: isRow ? 'x' as const : 'y' as const } : {}) }
 }
