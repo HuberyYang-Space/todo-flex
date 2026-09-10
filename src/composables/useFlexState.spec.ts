@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MAX_ITEMS, useFlexState } from './useFlexState'
 
 describe('useFlexState', () => {
@@ -64,5 +64,62 @@ describe('useFlexState', () => {
     })
     expect(derived.value.items[0].finalMainSize).toBe(192) // (600 - 24) / 3
     expect(css.value).toContain('flex: 1 1 0;')
+  })
+})
+
+/*
+ * 分享链接进来时要直接还原成对方的画面。
+ * 状态是模块级单例、在模块加载那一刻就定了，所以这里靠 resetModules + 动态 import 重现首屏时机。
+ */
+describe('useFlexState 的首屏初始化', () => {
+  const originalSearch = globalThis.location.search
+
+  afterEach(() => {
+    globalThis.history.replaceState(null, '', originalSearch || '/')
+    vi.restoreAllMocks()
+    vi.resetModules()
+  })
+
+  async function loadWith(search: string) {
+    globalThis.history.replaceState(null, '', search)
+    vi.resetModules()
+    return (await import('./useFlexState')).useFlexState()
+  }
+
+  it('地址栏带短码时按短码还原，而不是先给默认状态', async () => {
+    const { state } = await loadWith('?v=1&c=flex.column.wrap.between.center.normal.8.8.500.400&i=2-1-auto-0-fe-120-1-0,0-1-auto-0-auto-80-0-1')
+
+    expect(state.container.direction).toBe('column')
+    expect(state.container.justifyContent).toBe('space-between')
+    expect(state.container.width).toBe(500)
+    expect(state.items).toHaveLength(2)
+    expect(state.items[0].grow).toBe(2)
+    expect(state.items[0].alignSelf).toBe('flex-end')
+    expect(state.items[1].marginAuto).toBe(true)
+  })
+
+  it('地址栏是坏短码时回退默认状态，绝不白屏', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const { state } = await loadWith('?v=1&c=坏掉了&i=也坏了')
+
+    expect(state.container.direction).toBe('row')
+    expect(state.items).toHaveLength(3)
+  })
+
+  it('地址栏没有短码时就是默认状态', async () => {
+    const { state } = await loadWith('/')
+
+    expect(state.container.direction).toBe('row')
+    expect(state.items).toHaveLength(3)
+  })
+
+  it('新增盒子的序号接着还原出来的数量走，不撞号', async () => {
+    const { state, addItem } = await loadWith('?v=1&c=flex.row.nowrap.fs.stretch.normal.12.12.720.320&i=0-1-auto-0-auto-80-1-0,0-1-auto-0-auto-80-1-0')
+
+    addItem()
+
+    const ids = state.items.map(item => item.id)
+    expect(new Set(ids).size).toBe(ids.length)
   })
 })

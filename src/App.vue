@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import ThePlayground from '~/components/playground/ThePlayground.vue'
+
+// 布局状态持续写回地址栏，随时可以复制链接把当前画面分享出去
+useShareUrl()
 </script>
 
 <template>

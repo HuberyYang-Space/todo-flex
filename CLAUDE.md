@@ -33,6 +33,13 @@ M3 全部经浏览器实测：观测层 `useMeasure`、诊断层 `core/diagnosti
 SVG 叠加层 `OverlayLayer`（剩余空间斜纹色块、溢出标记、轴向箭头、尺寸 HUD）、
 演示区右下角 resize 拖拽手柄 `StageResizer`（已替代原来的两个 range 滑块）。
 **M4（动效）进行中**：GSAP Flip 布局过渡、惯性水滴形变、观测层挂起机制、演示区质感升级已落地。
+**M6 的 URL 分享已提前落地并经浏览器验证**（i18n 与主题打磨还没动）：`core/urlCodec.ts` 纯函数编解码、
+`composables/useShareUrl.ts` 防抖 300ms 写回地址栏、`useFlexState` 首屏用 `decodeOrDefault(location.search)` 初始化。
+浏览器实测四条：带短码的链接直接打开能逐字段还原、改属性后地址栏跟着变、
+三次属性变化 `history.length` 纹丝不动（一律 `replaceState`）、A 标签页调出的链接在 B 标签页还原后位置数值精确一致。
+两条不要踩反的实现约束：**首屏必须在模块加载那一刻读地址栏**（晚到 `onMounted` 会先闪一帧默认布局，
+还会让 GSAP Flip 把这一帧当成真实布局变化播一遍过渡）；**写回一律防抖 + `replaceState`**
+（拖手柄时宽高每帧都变，不防抖就是每帧一次 `replaceState`，Safari 超量直接抛错；用 `pushState` 则调十次属性要按十次后退键才出得去）。
 **演示区的 3D 方案已试过并放弃**——立体面的投影高度是「厚度 × sin(倾角)」，小倾角下根本读不出体积感，
 大倾角又会压缩 column 方向的主轴；相关代码已删，决策记录见
 `docs/superpowers/specs/2026-09-09-stage-3d-motion-design.md`（已标作废）。

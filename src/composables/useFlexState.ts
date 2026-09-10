@@ -1,13 +1,23 @@
-import type { FlexItemState } from '~/core/types'
+import type { FlexItemState, FlexState } from '~/core/types'
 import { computed, reactive } from 'vue'
 import { emitCss } from '~/core/cssEmit'
 import { createDefaultItem, createDefaultState } from '~/core/defaults'
 import { deriveLayout } from '~/core/deriveLayout'
+import { decodeOrDefault } from '~/core/urlCodec'
 
 /** 盒子数量上限：再多面板与演示区都会失去可读性 */
 export const MAX_ITEMS = 8
 
-const state = reactive(createDefaultState())
+/**
+ * 首屏状态。带分享短码进来时直接还原成对方的画面——
+ * **必须在模块加载这一刻就读**，晚到 onMounted 再改会先闪一帧默认布局，
+ * 还会让 GSAP Flip 把这一帧当成真实的布局变化播一遍过渡。
+ */
+function createInitialState(): FlexState {
+  return typeof location === 'undefined' ? createDefaultState() : decodeOrDefault(location.search)
+}
+
+const state = reactive(createInitialState())
 
 // 自增序号保证 id 唯一，删除后再新增不会撞号
 let sequence = state.items.length
