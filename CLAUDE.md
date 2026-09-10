@@ -82,6 +82,10 @@ column 下相应翻成 `y-reverse` / `y-forward`；四份 pattern 都在 defs �
 3. 等距实体块三项：wrap 换行时跨行的面是否互压、悬停时厚度加大与接触阴影拉开的手感、重排后面有无残留。
 4. `align-items: stretch` 时盒子顶边与容器上沿齐平，10px 的顶面会画到容器外面
    （容器不能加 padding，红线 6），观感是否可接受未定。
+5. 顺带排除一个存疑观察：column 下三个盒子的宽度曾读到 632/542/422 递减（stretch 下本该都是 720），
+   且连续 8 秒三次快照完全一致。`.stage-item` 的 width/height transition 只有 0.28s、不可能持续 8 秒，
+   所以几乎可以断定是窗口转入后台导致的 transition 冻帧（紧接着扩展就断开了，时间点吻合），
+   与斜纹改动无关。**别把它当成新缺陷重查一遍**，在真实窗口里扫一眼就能排除。
 
 **浏览器验证的环境坑**（每一条都实际踩过，不要再踩）：
 
@@ -113,6 +117,11 @@ column 下相应翻成 `y-reverse` / `y-forward`；四份 pattern 都在 defs �
 
 > 注意：`docs/superpowers/plans/` 里的计划文档 checkbox 全是未勾选状态，但代码与 git 历史证明 M1+M2 已实现完毕。
 > 判断进度以 git 历史和实际代码为准，不要被 checkbox 误导。
+
+**下一件是 M5（内容层）**：5 个陷阱板块 + ScrollTrigger 三拍叙事（现象 → 归因 → 修复）+ 一键复现。
+陷阱清单见设计文档 8.2 节，模块位置 `data/traps.ts` + `components/traps/*`（两者都还没建）。
+**原本的阻塞点已经拆掉**：设计文档 308 行规定「载入 Playground 复现」是「写入 URL 后滚动到 Playground」，
+而 `core/urlCodec.ts` 与地址栏同步都已就绪，直接用 `encode(state)` 拼链接即可，不必再绕开或临时改用内部 setState。
 
 设计与计划文档（改动前务必先读）：
 
