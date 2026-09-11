@@ -22,6 +22,7 @@ declare module 'vue' {
     StageResizer: typeof import('./src/components/playground/StageResizer.vue')['default']
     ThePlayground: typeof import('./src/components/playground/ThePlayground.vue')['default']
     TrapDiff: typeof import('./src/components/traps/TrapDiff.vue')['default']
+    TrapSection: typeof import('./src/components/traps/TrapSection.vue')['default']
     TrapStage: typeof import('./src/components/traps/TrapStage.vue')['default']
   }
 }
