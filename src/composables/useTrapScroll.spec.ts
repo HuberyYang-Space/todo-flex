@@ -1,5 +1,8 @@
+import { mount } from '@vue/test-utils'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { BEAT_COUNT, beatFromProgress, prefersReducedMotion, shouldDegrade } from './useTrapScroll'
+import { defineComponent, ref } from 'vue'
+import { BEAT_COUNT, beatFromProgress, prefersReducedMotion, shouldDegrade, useTrapScroll } from './useTrapScroll'
 
 describe('beatFromProgress', () => {
   it('三拍平分整段进度', () => {
@@ -73,5 +76,46 @@ describe('降级判断', () => {
     stubMatchMedia(() => false)
 
     expect(shouldDegrade()).toBe(false)
+  })
+})
+
+describe('useTrapScroll 挂载时机', () => {
+  /** 用一个最小组件包一层，好让 onMounted / 模板 ref 这些生命周期设施跑起来 */
+  function mountHarness() {
+    const Harness = defineComponent({
+      setup() {
+        const el = ref<HTMLElement>()
+        const { beat, degraded } = useTrapScroll(el)
+        return { el, beat, degraded }
+      },
+      template: '<div ref="el" />',
+    })
+    return mount(Harness, { attachTo: document.body })
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('setup 期 degraded 就已经是正确值，不必等任何 tick', () => {
+    vi.spyOn(window, 'matchMedia').mockReturnValue({ matches: false } as MediaQueryList)
+    vi.spyOn(ScrollTrigger, 'create').mockReturnValue({ kill: vi.fn() } as unknown as ScrollTrigger)
+
+    const wrapper = mountHarness()
+
+    // mount() 一返回就该是对的——不是 ref(true) 晚一拍等 onMounted 才纠正
+    expect(wrapper.vm.degraded).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('降级命中时一次都不建 ScrollTrigger', () => {
+    vi.spyOn(window, 'matchMedia').mockReturnValue({ matches: true } as MediaQueryList)
+    const createSpy = vi.spyOn(ScrollTrigger, 'create').mockReturnValue({ kill: vi.fn() } as unknown as ScrollTrigger)
+
+    const wrapper = mountHarness()
+
+    expect(wrapper.vm.degraded).toBe(true)
+    expect(createSpy).not.toHaveBeenCalled()
+    wrapper.unmount()
   })
 })

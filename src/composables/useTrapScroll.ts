@@ -70,12 +70,13 @@ export function useTrapScroll(el: Ref<HTMLElement | undefined>): {
   degraded: Ref<boolean>
 } {
   const beat = ref(0)
-  // 先按降级算：服务端与测试环境没有 window，挂载后才有资格判断
-  const degraded = ref(true)
+  // 组件创建时就地判断，不等 onMounted——晚一拍会先渲染一帧默认（降级）形态，
+  // 等 ScrollTrigger.create() 建 pin-spacer 时读到的还是这一帧的错误布局高度。
+  // shouldDegrade() 本身兼容 SSR/测试环境（无 window 时直接判定降级），无需等挂载。
+  const degraded = ref(shouldDegrade())
   let trigger: ScrollTrigger | undefined
 
   onMounted(() => {
-    degraded.value = shouldDegrade()
     if (degraded.value || !el.value)
       return
 
