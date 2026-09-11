@@ -770,6 +770,11 @@ Run: `cat src/composables/useFlexState.spec.ts`
 
 ```ts
 describe('loadState', () => {
+  beforeEach(() => {
+    // 状态是模块级单例，每个用例前必须复位
+    useFlexState().resetState()
+  })
+
   it('整体替换状态，容器与盒子都换成传入的那一份', () => {
     const { state, loadState } = useFlexState()
     const next = createDefaultState()
@@ -784,14 +789,16 @@ describe('loadState', () => {
     expect(state.items[0].grow).toBe(1)
   })
 
-  it('载入盒子数量不同的状态后，新增盒子的 id 不与现有的撞号', () => {
+  it('载入 id 不连续的状态后，新增盒子不与现有的撞号', () => {
     const { state, loadState, addItem } = useFlexState()
     const next = createDefaultState()
-    next.items = next.items.slice(0, 2)
+    // 模拟「删掉中间那个盒子」之后的状态：id 跳号
+    next.items = [next.items[0], next.items[2]]
 
     loadState(next)
     addItem()
 
+    expect(state.items.map(item => item.id)).toEqual(['item-1', 'item-3', 'item-4'])
     expect(new Set(state.items.map(item => item.id)).size).toBe(state.items.length)
   })
 
@@ -801,8 +808,10 @@ describe('loadState', () => {
 
     loadState(next)
     next.container.width = 999
+    next.items[0].grow = 99
 
     expect(state.container.width).not.toBe(999)
+    expect(state.items[0].grow).not.toBe(99)
   })
 })
 ```
@@ -820,7 +829,25 @@ Expected: FAIL，报错类似 `loadState is not a function`
 
 - [ ] **Step 4: 实现**
 
-在 `src/composables/useFlexState.ts` 里 `resetState` 函数**下方**加：
+在 `src/composables/useFlexState.ts` 里 `resetState` 函数**上方**加：
+
+```ts
+/**
+ * 下一个可用的自增序号：取现有 id 的数字后缀最大值。
+ *
+ * 不能图省事用 `state.items.length`——载入进来的状态未必是 item-1..item-N 连续编号，
+ * 一旦中间有跳号（[item-1, item-3]），长度算出来是 2，下一个 addItem 就生成 item-3 直接撞上。
+ * resetState 那边入参恒定是 createDefaultState()，不存在这个问题，所以保持原样不动。
+ */
+function maxSequence(items: FlexItemState[]): number {
+  return items.reduce((max, item) => {
+    const suffix = Number(item.id.replace(/^item-/, ''))
+    return Number.isFinite(suffix) ? Math.max(max, suffix) : max
+  }, 0)
+}
+```
+
+然后在 `resetState` **下方**加：
 
 ```ts
 /**
@@ -835,8 +862,8 @@ Expected: FAIL，报错类似 `loadState is not a function`
  */
 function loadState(next: FlexState): void {
   Object.assign(state, structuredClone(next))
-  // 与 resetState 一致：重置自增序号，避免后续 addItem 撞上已有的 id
-  sequence = state.items.length
+  // 从载入的 id 里推下一个序号，不能用 length —— 见 maxSequence 的注释
+  sequence = maxSequence(state.items)
 }
 ```
 

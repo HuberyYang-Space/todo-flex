@@ -52,6 +52,20 @@ function removeItem(id: string): void {
     state.selectedId = null
 }
 
+/**
+ * 下一个可用的自增序号：取现有 id 的数字后缀最大值。
+ *
+ * 不能图省事用 `state.items.length`——载入进来的状态未必是 item-1..item-N 连续编号，
+ * 一旦中间有跳号（[item-1, item-3]），长度算出来是 2，下一个 addItem 就生成 item-3 直接撞上。
+ * resetState 那边入参恒定是 createDefaultState()，不存在这个问题，所以保持原样不动。
+ */
+function maxSequence(items: FlexItemState[]): number {
+  return items.reduce((max, item) => {
+    const suffix = Number(item.id.replace(/^item-/, ''))
+    return Number.isFinite(suffix) ? Math.max(max, suffix) : max
+  }, 0)
+}
+
 function resetState(): void {
   Object.assign(state, createDefaultState())
   sequence = state.items.length
@@ -69,8 +83,8 @@ function resetState(): void {
  */
 function loadState(next: FlexState): void {
   Object.assign(state, structuredClone(next))
-  // 与 resetState 一致：重置自增序号，避免后续 addItem 撞上已有的 id
-  sequence = state.items.length
+  // 从载入的 id 里推下一个序号，不能用 length —— 见 maxSequence 的注释
+  sequence = maxSequence(state.items)
 }
 
 /** 全站唯一的状态源 */

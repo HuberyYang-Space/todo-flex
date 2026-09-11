@@ -145,14 +145,16 @@ describe('loadState', () => {
     expect(state.items[0].grow).toBe(1)
   })
 
-  it('载入盒子数量不同的状态后，新增盒子的 id 不与现有的撞号', () => {
+  it('载入 id 不连续的状态后，新增盒子不与现有的撞号', () => {
     const { state, loadState, addItem } = useFlexState()
     const next = createDefaultState()
-    next.items = next.items.slice(0, 2)
+    // 模拟「删掉中间那个盒子」之后的状态：id 跳号
+    next.items = [next.items[0], next.items[2]]
 
     loadState(next)
     addItem()
 
+    expect(state.items.map(item => item.id)).toEqual(['item-1', 'item-3', 'item-4'])
     expect(new Set(state.items.map(item => item.id)).size).toBe(state.items.length)
   })
 
@@ -162,7 +164,9 @@ describe('loadState', () => {
 
     loadState(next)
     next.container.width = 999
+    next.items[0].grow = 99
 
     expect(state.container.width).not.toBe(999)
+    expect(state.items[0].grow).not.toBe(99)
   })
 })
