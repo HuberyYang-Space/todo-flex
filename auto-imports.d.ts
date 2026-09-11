@@ -8,10 +8,12 @@
 // biome-ignore lint: disable
 export {}
 declare global {
+  const BEAT_COUNT: typeof import('./src/composables/useTrapScroll').BEAT_COUNT
   const EffectScope: typeof import('vue').EffectScope
   const MAX_ITEMS: typeof import('./src/composables/useFlexState').MAX_ITEMS
   const asyncComputed: typeof import('@vueuse/core').asyncComputed
   const autoResetRef: typeof import('@vueuse/core').autoResetRef
+  const beatFromProgress: typeof import('./src/composables/useTrapScroll').beatFromProgress
   const computed: typeof import('vue').computed
   const computedAsync: typeof import('@vueuse/core').computedAsync
   const computedEager: typeof import('@vueuse/core').computedEager
@@ -75,6 +77,7 @@ declare global {
   const onUpdated: typeof import('vue').onUpdated
   const onWatcherCleanup: typeof import('vue').onWatcherCleanup
   const pausableWatch: typeof import('@vueuse/core').pausableWatch
+  const prefersReducedMotion: typeof import('./src/composables/useTrapScroll').prefersReducedMotion
   const provide: typeof import('vue').provide
   const provideLocal: typeof import('@vueuse/core').provideLocal
   const reactify: typeof import('@vueuse/core').reactify
@@ -95,6 +98,7 @@ declare global {
   const shallowReactive: typeof import('vue').shallowReactive
   const shallowReadonly: typeof import('vue').shallowReadonly
   const shallowRef: typeof import('vue').shallowRef
+  const shouldDegrade: typeof import('./src/composables/useTrapScroll').shouldDegrade
   const syncRef: typeof import('@vueuse/core').syncRef
   const syncRefs: typeof import('@vueuse/core').syncRefs
   const templateRef: typeof import('@vueuse/core').templateRef
@@ -274,6 +278,7 @@ declare global {
   const useToString: typeof import('@vueuse/core').useToString
   const useToggle: typeof import('@vueuse/core').useToggle
   const useTransition: typeof import('@vueuse/core').useTransition
+  const useTrapScroll: typeof import('./src/composables/useTrapScroll').useTrapScroll
   const useUrlSearchParams: typeof import('@vueuse/core').useUrlSearchParams
   const useUserMedia: typeof import('@vueuse/core').useUserMedia
   const useVModel: typeof import('@vueuse/core').useVModel
@@ -317,10 +322,12 @@ import { UnwrapRef } from 'vue'
 declare module 'vue' {
   interface GlobalComponents {}
   interface ComponentCustomProperties {
+    readonly BEAT_COUNT: UnwrapRef<typeof import('./src/composables/useTrapScroll')['BEAT_COUNT']>
     readonly EffectScope: UnwrapRef<typeof import('vue')['EffectScope']>
     readonly MAX_ITEMS: UnwrapRef<typeof import('./src/composables/useFlexState')['MAX_ITEMS']>
     readonly asyncComputed: UnwrapRef<typeof import('@vueuse/core')['asyncComputed']>
     readonly autoResetRef: UnwrapRef<typeof import('@vueuse/core')['autoResetRef']>
+    readonly beatFromProgress: UnwrapRef<typeof import('./src/composables/useTrapScroll')['beatFromProgress']>
     readonly computed: UnwrapRef<typeof import('vue')['computed']>
     readonly computedAsync: UnwrapRef<typeof import('@vueuse/core')['computedAsync']>
     readonly computedEager: UnwrapRef<typeof import('@vueuse/core')['computedEager']>
@@ -384,6 +391,7 @@ declare module 'vue' {
     readonly onUpdated: UnwrapRef<typeof import('vue')['onUpdated']>
     readonly onWatcherCleanup: UnwrapRef<typeof import('vue')['onWatcherCleanup']>
     readonly pausableWatch: UnwrapRef<typeof import('@vueuse/core')['pausableWatch']>
+    readonly prefersReducedMotion: UnwrapRef<typeof import('./src/composables/useTrapScroll')['prefersReducedMotion']>
     readonly provide: UnwrapRef<typeof import('vue')['provide']>
     readonly provideLocal: UnwrapRef<typeof import('@vueuse/core')['provideLocal']>
     readonly reactify: UnwrapRef<typeof import('@vueuse/core')['reactify']>
@@ -404,6 +412,7 @@ declare module 'vue' {
     readonly shallowReactive: UnwrapRef<typeof import('vue')['shallowReactive']>
     readonly shallowReadonly: UnwrapRef<typeof import('vue')['shallowReadonly']>
     readonly shallowRef: UnwrapRef<typeof import('vue')['shallowRef']>
+    readonly shouldDegrade: UnwrapRef<typeof import('./src/composables/useTrapScroll')['shouldDegrade']>
     readonly syncRef: UnwrapRef<typeof import('@vueuse/core')['syncRef']>
     readonly syncRefs: UnwrapRef<typeof import('@vueuse/core')['syncRefs']>
     readonly templateRef: UnwrapRef<typeof import('@vueuse/core')['templateRef']>
@@ -582,6 +591,7 @@ declare module 'vue' {
     readonly useToString: UnwrapRef<typeof import('@vueuse/core')['useToString']>
     readonly useToggle: UnwrapRef<typeof import('@vueuse/core')['useToggle']>
     readonly useTransition: UnwrapRef<typeof import('@vueuse/core')['useTransition']>
+    readonly useTrapScroll: UnwrapRef<typeof import('./src/composables/useTrapScroll')['useTrapScroll']>
     readonly useUrlSearchParams: UnwrapRef<typeof import('@vueuse/core')['useUrlSearchParams']>
     readonly useUserMedia: UnwrapRef<typeof import('@vueuse/core')['useUserMedia']>
     readonly useVModel: UnwrapRef<typeof import('@vueuse/core')['useVModel']>
