@@ -79,4 +79,15 @@ describe('陷阱数据', () => {
     expect(resolveVariant(trap, 'before').container.justifyContent).toBe('space-between')
     expect(resolveVariant(trap, 'after').container.justifyContent).toBe('space-between')
   })
+
+  it('陷阱五的现象态留有 456px 剩余空间给 auto margin 吃', () => {
+    // 文案里「456px」「每个 228px」就是从这儿算出来的，改了 base 数值这条会先红
+    const trap = traps.find(item => item.id === 'margin-auto')!
+    const state = resolveVariant(trap, 'before')
+    const content = state.items.reduce((sum, item) => sum + item.size, 0)
+    const gaps = state.container.columnGap * (state.items.length - 1)
+
+    expect(state.container.width - content - gaps).toBe(456)
+    expect(state.items[0].marginAuto).toBe(true)
+  })
 })

@@ -152,18 +152,18 @@ export const traps: Trap[] = [
   {
     id: 'margin-auto',
     title: 'margin: auto 一旦生效，justify-content 就靠边站',
-    hook: 'justify-content 写着 space-between，盒子却挤作一团。',
+    hook: 'justify-content 写着 space-between，三个盒子的位置却完全不是那么回事。',
     base: { container: { justifyContent: 'space-between' } },
     before: { items: [{ index: 0, patch: { marginAuto: true } }] },
     after: { items: [{ index: 0, patch: { marginAuto: false } }] },
     beats: [
       {
         title: '现象',
-        body: 'space-between 本该把三个盒子推到两端、间隔均分。实际却是 B 和 C 紧贴着 A，右边空出一大片——属性明明写了，却像没写一样。',
+        body: 'space-between 本该把 A 顶在左边缘、C 顶在右边缘、B 摆在正中。实际却是 A 被推到离左边 228px 的地方，B 一路飘到右侧紧挨着 C——属性明明写了，却像没写一样。',
       },
       {
         title: '归因',
-        body: '规范规定的顺序是：auto margin 先分,justify-content 后分。A 的 margin: auto 把 456px 的剩余空间一口气吃光，轮到 justify-content 时已经无空间可分——它不是被覆盖，是被饿死了。',
+        body: '规范规定的顺序是：auto margin 先分，justify-content 后分。A 的 margin: auto 在主轴上是左右各一个，456px 的剩余空间被这两个 auto margin 对半吃光（每个 228px），轮到 justify-content 时已经无空间可分——它不是被覆盖，是被饿死了。',
       },
       {
         title: '修复',

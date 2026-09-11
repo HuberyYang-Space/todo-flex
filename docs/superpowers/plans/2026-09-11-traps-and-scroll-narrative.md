@@ -525,6 +525,17 @@ describe('陷阱数据', () => {
     expect(resolveVariant(trap, 'before').container.justifyContent).toBe('space-between')
     expect(resolveVariant(trap, 'after').container.justifyContent).toBe('space-between')
   })
+
+  it('陷阱五的现象态留有 456px 剩余空间给 auto margin 吃', () => {
+    // 文案里「456px」「每个 228px」就是从这儿算出来的，改了 base 数值这条会先红
+    const trap = traps.find(item => item.id === 'margin-auto')!
+    const state = resolveVariant(trap, 'before')
+    const content = state.items.reduce((sum, item) => sum + item.size, 0)
+    const gaps = state.container.columnGap * (state.items.length - 1)
+
+    expect(state.container.width - content - gaps).toBe(456)
+    expect(state.items[0].marginAuto).toBe(true)
+  })
 })
 ```
 
@@ -690,18 +701,18 @@ export const traps: Trap[] = [
   {
     id: 'margin-auto',
     title: 'margin: auto 一旦生效，justify-content 就靠边站',
-    hook: 'justify-content 写着 space-between，盒子却挤作一团。',
+    hook: 'justify-content 写着 space-between，三个盒子的位置却完全不是那么回事。',
     base: { container: { justifyContent: 'space-between' } },
     before: { items: [{ index: 0, patch: { marginAuto: true } }] },
     after: { items: [{ index: 0, patch: { marginAuto: false } }] },
     beats: [
       {
         title: '现象',
-        body: 'space-between 本该把三个盒子推到两端、间隔均分。实际却是 B 和 C 紧贴着 A，右边空出一大片——属性明明写了，却像没写一样。',
+        body: 'space-between 本该把 A 顶在左边缘、C 顶在右边缘、B 摆在正中。实际却是 A 被推到离左边 228px 的地方，B 一路飘到右侧紧挨着 C——属性明明写了，却像没写一样。',
       },
       {
         title: '归因',
-        body: '规范规定的顺序是：auto margin 先分,justify-content 后分。A 的 margin: auto 把 456px 的剩余空间一口气吃光，轮到 justify-content 时已经无空间可分——它不是被覆盖，是被饿死了。',
+        body: '规范规定的顺序是：auto margin 先分，justify-content 后分。A 的 margin: auto 在主轴上是左右各一个，456px 的剩余空间被这两个 auto margin 对半吃光（每个 228px），轮到 justify-content 时已经无空间可分——它不是被覆盖，是被饿死了。',
       },
       {
         title: '修复',
