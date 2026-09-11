@@ -74,6 +74,39 @@ describe('trapDiff', () => {
     expect(rows([])).toHaveLength(0)
   })
 
+  it('三个盒子同一属性发生同样变化时折成一行，标签里三个盒子都在', () => {
+    const diffs: PropertyDiff[] = [
+      { scope: 'item', itemIndex: 0, key: 'basis', from: 'auto', to: '0' },
+      { scope: 'item', itemIndex: 1, key: 'basis', from: 'auto', to: '0' },
+      { scope: 'item', itemIndex: 2, key: 'basis', from: 'auto', to: '0' },
+    ]
+
+    const output = rows(diffs)
+    expect(output).toHaveLength(1)
+    expect(output[0]).toContain('A')
+    expect(output[0]).toContain('B')
+    expect(output[0]).toContain('C')
+  })
+
+  it('同一盒子的多个属性发生变化时不会被错误折叠', () => {
+    const diffs: PropertyDiff[] = [
+      { scope: 'item', itemIndex: 0, key: 'grow', from: '0', to: '1' },
+      { scope: 'item', itemIndex: 0, key: 'shrink', from: '0', to: '1' },
+      { scope: 'item', itemIndex: 0, key: 'basis', from: 'auto', to: '0' },
+    ]
+
+    expect(rows(diffs)).toHaveLength(3)
+  })
+
+  it('同一属性变化但盒子的 from/to 不同时不会被错误折叠', () => {
+    const diffs: PropertyDiff[] = [
+      { scope: 'item', itemIndex: 0, key: 'grow', from: '0', to: '1' },
+      { scope: 'item', itemIndex: 1, key: 'grow', from: '0', to: '2' },
+    ]
+
+    expect(rows(diffs)).toHaveLength(2)
+  })
+
   it('推导层可能产出的每个字段都有对应的中文/CSS 译名', () => {
     // 类型绑定挡得住「漏写一条」，挡不住「译成了空串或原样返回字段名」，所以这条还得跑一遍
     const keys = [...CONTAINER_KEYS, ...ITEM_KEYS]

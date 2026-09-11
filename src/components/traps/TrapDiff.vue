@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CONTAINER_KEYS, ITEM_KEYS } from '~/core/trapPatch'
 import type { PropertyDiff } from '~/core/types'
+import { computed } from 'vue'
 import { itemLabel } from '~/core/labels'
 
 /**
@@ -9,7 +10,45 @@ import { itemLabel } from '~/core/labels'
  * 数据来自 `diffStates()` 两份完整状态相减，不是手写的——
  * 手写的文案会跟实际渲染悄悄脱节，而这张表恰恰是用来取信于人的。
  */
-defineProps<{ diffs: PropertyDiff[] }>()
+const props = defineProps<{ diffs: PropertyDiff[] }>()
+
+/** 折叠后的一行：scope/key/from/to 全同、只有 itemIndex 不同的差异合并到一起 */
+interface DiffRow {
+  rowKey: string
+  scopeLabel: string
+  key: string
+  from: string
+  to: string
+}
+
+/**
+ * 把「三个盒子同一属性发生同样变化」的三条差异折成一行。
+ *
+ * `diffStates()` 逐条吐出「盒子 A 的 basis 从 auto 变成 0」「盒子 B 的……」是正确的契约——
+ * core 不管展示（见该函数的注释）。但盒子一多，同一次改动会被拆成好几条一模一样的行，
+ * 反而把「一个简写背后是三个属性」这类教学话稀释掉，所以折叠放在这一层做，
+ * `diffStates` 本身不动。
+ */
+const rows = computed<DiffRow[]>(() => {
+  const groups = new Map<string, PropertyDiff[]>()
+
+  for (const diff of props.diffs) {
+    const groupKey = `${diff.scope}|${diff.key}|${diff.from}|${diff.to}`
+    const group = groups.get(groupKey)
+    if (group)
+      group.push(diff)
+    else
+      groups.set(groupKey, [diff])
+  }
+
+  return [...groups.entries()].map(([groupKey, diffs]) => ({
+    rowKey: groupKey,
+    key: diffs[0].key,
+    from: diffs[0].from,
+    to: diffs[0].to,
+    scopeLabel: mergedScopeLabel(diffs),
+  }))
+})
 
 /**
  * 差异表可能遇到的全部字段名。直接从推导层那两份清单派生——
@@ -60,24 +99,27 @@ function valueLabel(key: string, raw: string): string {
   return raw
 }
 
-function scopeLabel(diff: PropertyDiff): string {
-  return diff.scope === 'container' ? '容器' : `盒子 ${itemLabel(diff.itemIndex ?? 0)}`
+/** 合并后一行的作用域标签。同一行可能对应多个盒子，用「/」并列列出 */
+function mergedScopeLabel(diffs: PropertyDiff[]): string {
+  if (diffs[0].scope === 'container')
+    return '容器'
+  return `盒子 ${diffs.map(diff => itemLabel(diff.itemIndex ?? 0)).join(' / ')}`
 }
 </script>
 
 <template>
   <ul class="flex flex-col gap-1 text-xs font-mono">
     <li
-      v-for="diff in diffs"
-      :key="`${diff.scope}-${diff.itemIndex ?? ''}-${diff.key}`"
+      v-for="row in rows"
+      :key="row.rowKey"
       data-testid="trap-diff-row"
       class="flex flex-wrap items-center gap-2 rounded-2 bg-panel px-2 py-1"
     >
-      <span class="op-60">{{ scopeLabel(diff) }}</span>
-      <span class="font-bold">{{ keyLabel(diff.key) }}</span>
-      <span class="line-through op-60">{{ valueLabel(diff.key, diff.from) }}</span>
+      <span class="op-60">{{ row.scopeLabel }}</span>
+      <span class="font-bold">{{ keyLabel(row.key) }}</span>
+      <span class="line-through op-60">{{ valueLabel(row.key, row.from) }}</span>
       <span class="op-40">→</span>
-      <span class="text-accent font-bold">{{ valueLabel(diff.key, diff.to) }}</span>
+      <span class="text-accent font-bold">{{ valueLabel(row.key, row.to) }}</span>
     </li>
   </ul>
 </template>
