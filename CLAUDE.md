@@ -118,10 +118,40 @@ column 下相应翻成 `y-reverse` / `y-forward`；四份 pattern 都在 defs �
 > 注意：`docs/superpowers/plans/` 里的计划文档 checkbox 全是未勾选状态，但代码与 git 历史证明 M1+M2 已实现完毕。
 > 判断进度以 git 历史和实际代码为准，不要被 checkbox 误导。
 
-**下一件是 M5（内容层）**：5 个陷阱板块 + ScrollTrigger 三拍叙事（现象 → 归因 → 修复）+ 一键复现。
-陷阱清单见设计文档 8.2 节，模块位置 `data/traps.ts` + `components/traps/*`（两者都还没建）。
-**原本的阻塞点已经拆掉**：设计文档 308 行规定「载入 Playground 复现」是「写入 URL 后滚动到 Playground」，
-而 `core/urlCodec.ts` 与地址栏同步都已就绪，直接用 `encode(state)` 拼链接即可，不必再绕开或临时改用内部 setState。
+**M5（内容层）已完成并经浏览器实测**：`data/traps.ts` 五个陷阱 + `core/trapPatch.ts`（patch 合并 / 差异提取纯函数）
++ `composables/useTrapScroll.ts`（ScrollTrigger pin + 滚动进度映射成离散拍号）+ `components/traps/*`
+（TrapsSection / TrapSection / TrapStage / TrapDiff）+ `useFlexState.loadState` 一键复现。
+
+**实测通过的（数字都是真实浏览器量出来的，不是推的）**：五个陷阱的现象全部成立——
+陷阱一 A 被 min-content 撑在 320（推导值 296）、三盒溢出 24px；陷阱二 312/192/192 分得不均、切 basis:0 后均分 232；
+陷阱三 `flex:none` 三盒各 200 溢出 144 且拒不收缩、`flex:1` 后各 152 正好填满；陷阱四 nowrap 下 align-content 纹丝不动、
+换 wrap 后分两行；陷阱五 A.offsetLeft=228、B=548、C=640 顶在右缘（与 2026-09-08 文档那条 offsetLeft 实测记录吻合）。
+一键复现后明细表如实报出「A 理论 296px 实际 320px ⚠ min-width:auto 撑住了内容固有尺寸」——**陷阱→复现→诊断的闭环是通的**。
+三拍：pin 生效、滚动 3 屏、beat 0→1→2，**第 2 拍演示区不动**；滞回四个边界（0.345 不换 / 0.39 换 / 0.32 不退 / 0.28 退）全对，
+回滚能反复对比修复前后。
+
+**M5 踩到并已修掉的坑**（别再犯）：
+
+- **陷阱板块左栏必须写 `min-w-0`**。grid 轨道 `1fr` 的最小尺寸默认是 `auto`（不得小于内容），
+  720px 的演示区会把轨道顶开、连带撑破页面（实测 vw=1120 时横向溢出 46px），
+  `TrapStage` 里的 `overflow-auto` 就永远没东西可裁。**站点自己踩了陷阱一在教的那条规则。**
+- **`useTrapScroll` 的 `degraded` 必须在模块/setup 那一刻就 `ref(shouldDegrade())` 算出来**，不能先 `ref(true)` 再到
+  `onMounted` 里补判——后者会让首帧渲染降级形态（5 板块 × 3 演示区 = 15 个白挂载），
+  而 `ScrollTrigger.create({pin:true})` 在同一个 onMounted 里同步执行，会照着降级形态的 DOM 高度建 pin-spacer。
+  这与「首屏必须在模块加载那一刻读地址栏」是同一形状的坑。`shouldDegrade()` 自带 `typeof window === 'undefined'` 兜底，SSR 语义不受影响。
+- **归因表要折叠重复行**。`diffStates` 逐条输出是对的契约，但三个盒子改同一个属性会渲染成三行一模一样的文案，
+  陷阱三会出现 9 行、把「一个简写背后是三个属性」这句教学话稀释掉。折叠放展示层（`TrapDiff`），不要动纯函数。
+- **陷阱文案里的推导数字必须有测试钉在 `deriveLayout` 上**。296/312/192/232/152/456/228 这些数字全是硬编码在中文正文里的，
+  跟推导引擎零耦合；只做 `Σsize + Σgap` 的算术近似守卫是碰不到 `finalMainSize` 的，改个 base 数值测试照样绿、文案当场变谎话。
+
+**M5 未能验证的两项**（本机 `resize_window` 不可控，三次请求 1100/720/500 分别得到 1280/1120/1920，压不到 768 以下）：
+窄屏（<768px）降级、`prefers-reduced-motion` 降级。两者的判断逻辑有 `useTrapScroll.spec.ts` 覆盖、
+降级形态的渲染有 `TrapSection.spec.ts` 覆盖，但**真实环境是空白，需要人眼拖窄窗口扫一遍**。
+
+**下一件是 M6 的剩余部分**（URL 分享已提前落地）：i18n 与暗亮主题打磨。M6 动手时顺带清掉这几笔已知技术债：
+① 状态→CSS 的映射逻辑现在有三份（`TrapStage` / `DemoStage` / `cssEmit`），前两份是逐字复制，
+   该提到 `src/core/` 去——但那要连带改经过三轮浏览器试错的 `DemoStage`，所以单独排一次并重新过浏览器；
+② `TrapSection` 正常/降级两套模板里卡片渲染重复约 18 行 ×2，抽成子组件的时机正好与文案抽 i18n key 撞在一起，一次动完。
 
 设计与计划文档（改动前务必先读）：
 
