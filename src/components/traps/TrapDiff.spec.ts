@@ -1,6 +1,7 @@
 import type { PropertyDiff } from '~/core/types'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
+import { CONTAINER_KEYS, ITEM_KEYS } from '~/core/trapPatch'
 import TrapDiff from './TrapDiff.vue'
 
 function rows(diffs: PropertyDiff[]): string[] {
@@ -71,5 +72,24 @@ describe('trapDiff', () => {
 
   it('没有差异时不渲染任何行', () => {
     expect(rows([])).toHaveLength(0)
+  })
+
+  it('推导层可能产出的每个字段都有对应的中文/CSS 译名', () => {
+    // 类型绑定挡得住「漏写一条」，挡不住「译成了空串或原样返回字段名」，所以这条还得跑一遍
+    const keys = [...CONTAINER_KEYS, ...ITEM_KEYS]
+    // display/direction/wrap/grow/shrink/basis/order 的译名包含字段名本身（如 flex-grow 包含 grow）
+    // 这些情况下 not.toContain 会误报，需要排除
+    const keysWithoutIdentityLabels = keys.filter(
+      k => !['display', 'direction', 'wrap', 'grow', 'shrink', 'basis', 'order'].includes(k),
+    )
+
+    for (const key of keysWithoutIdentityLabels) {
+      const diff: PropertyDiff = { scope: 'container', key: key as any, from: 'a', to: 'b' }
+      const label = mount(TrapDiff, { props: { diffs: [diff] } })
+        .get('[data-testid="trap-diff-row"]')
+        .text()
+
+      expect(label, `${key} 没有译名`).not.toContain(key)
+    }
   })
 })

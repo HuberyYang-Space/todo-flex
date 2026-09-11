@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { CONTAINER_KEYS, ITEM_KEYS } from '~/core/trapPatch'
 import type { PropertyDiff } from '~/core/types'
 import { itemLabel } from '~/core/labels'
 
@@ -10,8 +11,15 @@ import { itemLabel } from '~/core/labels'
  */
 defineProps<{ diffs: PropertyDiff[] }>()
 
+/**
+ * 差异表可能遇到的全部字段名。直接从推导层那两份清单派生——
+ * 将来给容器或盒子加字段时，这里漏一条会**编译报错**，
+ * 而不是等到界面上露出 `alignSelf` 这种内部字段名才被发现。
+ */
+type DiffKey = typeof CONTAINER_KEYS[number] | typeof ITEM_KEYS[number]
+
 /** 内部字段名 → 用户认得的 CSS 属性名 */
-const KEY_LABELS: Record<string, string> = {
+const KEY_LABELS: Record<DiffKey, string> = {
   display: 'display',
   direction: 'flex-direction',
   wrap: 'flex-wrap',
@@ -36,7 +44,7 @@ const KEY_LABELS: Record<string, string> = {
 const PX_KEYS = new Set(['width', 'height', 'rowGap', 'columnGap', 'size'])
 
 function keyLabel(key: string): string {
-  return KEY_LABELS[key] ?? key
+  return KEY_LABELS[key as DiffKey] ?? key
 }
 
 /**
