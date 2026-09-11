@@ -67,7 +67,12 @@ function reproduce(which: 'before' | 'after'): void {
 
       <!-- 正常形态：一个演示区随拍切状态，三张卡片叠在同一格里淡入淡出 -->
       <div v-if="!degraded" class="grid items-start gap-6 lg:grid-cols-[1fr_380px]">
-        <div class="panel p-3">
+        <!--
+          左栏必须显式写 min-w-0。grid 轨道 1fr 的最小尺寸默认是 auto（不得小于内容），
+          720px 的演示区会把轨道从可用宽顶开、连带撑破页面，TrapStage 里的 overflow-auto
+          就永远没东西可裁——这正是本站陷阱一讲的那条规则，站点自己也得守。
+        -->
+        <div class="min-w-0 panel p-3">
           <TrapStage :state="stageState" />
         </div>
 
@@ -115,7 +120,9 @@ function reproduce(which: 'before' | 'after'): void {
             class="overflow-x-auto rounded-2 bg-panel p-2 text-xs leading-relaxed font-mono"
           ><code v-html="highlight(item.code)" /></pre>
           <TrapDiff v-if="index === 1" :diffs="diffs" />
-          <div class="panel p-3">
+          <!-- 同一条 min-width: auto 规则：flex 容器里的子项默认也不得小于内容宽度，
+               窄屏下 720px 的演示区一样会把这层撑开，理由同上一处正常形态的注释。 -->
+          <div class="min-w-0 panel p-3">
             <TrapStage :state="stateForBeat(index)" />
           </div>
         </article>
