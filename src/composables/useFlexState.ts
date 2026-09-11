@@ -57,7 +57,23 @@ function resetState(): void {
   sequence = state.items.length
 }
 
+/**
+ * 整体替换布局状态。陷阱区的「载入 Playground 复现」用它。
+ *
+ * 不走地址栏：本模块只在加载那一刻读一次 `location.search`，之后没有任何人监听它，
+ * 光写 URL 是不会生效的。改 state 反而够了——`useShareUrl` 一直 watch 着，
+ * 300ms 后地址栏自己就跟上了。
+ *
+ * 深拷贝一次再赋值：入参多半是 `resolveVariant()` 每次新造的对象，但调用方
+ * 万一传了个会复用的引用进来，单例就会跟外面那份悄悄共享 items。
+ */
+function loadState(next: FlexState): void {
+  Object.assign(state, structuredClone(next))
+  // 与 resetState 一致：重置自增序号，避免后续 addItem 撞上已有的 id
+  sequence = state.items.length
+}
+
 /** 全站唯一的状态源 */
 export function useFlexState() {
-  return { state, selectedItem, derived, css, selectItem, addItem, removeItem, resetState }
+  return { state, selectedItem, derived, css, selectItem, addItem, removeItem, resetState, loadState }
 }

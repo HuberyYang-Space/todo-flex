@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createDefaultState } from '~/core/defaults'
 import { MAX_ITEMS, useFlexState } from './useFlexState'
 
 describe('useFlexState', () => {
@@ -121,5 +122,47 @@ describe('useFlexState 的首屏初始化', () => {
 
     const ids = state.items.map(item => item.id)
     expect(new Set(ids).size).toBe(ids.length)
+  })
+})
+
+describe('loadState', () => {
+  beforeEach(() => {
+    // 状态是模块级单例，每个用例前必须复位
+    useFlexState().resetState()
+  })
+
+  it('整体替换状态，容器与盒子都换成传入的那一份', () => {
+    const { state, loadState } = useFlexState()
+    const next = createDefaultState()
+    next.container.width = 480
+    next.container.justifyContent = 'space-between'
+    next.items[0].grow = 1
+
+    loadState(next)
+
+    expect(state.container.width).toBe(480)
+    expect(state.container.justifyContent).toBe('space-between')
+    expect(state.items[0].grow).toBe(1)
+  })
+
+  it('载入盒子数量不同的状态后，新增盒子的 id 不与现有的撞号', () => {
+    const { state, loadState, addItem } = useFlexState()
+    const next = createDefaultState()
+    next.items = next.items.slice(0, 2)
+
+    loadState(next)
+    addItem()
+
+    expect(new Set(state.items.map(item => item.id)).size).toBe(state.items.length)
+  })
+
+  it('载入后修改原对象不会再影响单例', () => {
+    const { state, loadState } = useFlexState()
+    const next = createDefaultState()
+
+    loadState(next)
+    next.container.width = 999
+
+    expect(state.container.width).not.toBe(999)
   })
 })
