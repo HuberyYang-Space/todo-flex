@@ -1188,6 +1188,7 @@ feat(traps): 新增陷阱专用的精简演示区
 
 ```ts
 import type { PropertyDiff } from '~/core/types'
+import { CONTAINER_KEYS, ITEM_KEYS } from '~/core/trapPatch'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import TrapDiff from './TrapDiff.vue'
@@ -1261,6 +1262,25 @@ describe('trapDiff', () => {
   it('没有差异时不渲染任何行', () => {
     expect(rows([])).toHaveLength(0)
   })
+
+  it('推导层可能产出的每个字段都有对应的中文/CSS 译名', () => {
+    // 类型绑定挡得住「漏写一条」，挡不住「译成了空串或原样返回字段名」，所以这条还得跑一遍
+    const keys = [...CONTAINER_KEYS, ...ITEM_KEYS]
+    // display/direction/wrap/grow/shrink/basis/order 的译名包含字段名本身（如 flex-grow 包含 grow）
+    // 这些情况下 not.toContain 会误报，需要排除
+    const keysWithoutIdentityLabels = keys.filter(
+      k => !['display', 'direction', 'wrap', 'grow', 'shrink', 'basis', 'order'].includes(k),
+    )
+
+    for (const key of keysWithoutIdentityLabels) {
+      const diff: PropertyDiff = { scope: 'container', key: key as any, from: 'a', to: 'b' }
+      const label = mount(TrapDiff, { props: { diffs: [diff] } })
+        .get('[data-testid="trap-diff-row"]')
+        .text()
+
+      expect(label, `${key} 没有译名`).not.toContain(key)
+    }
+  })
 })
 ```
 
@@ -1274,6 +1294,7 @@ Expected: FAIL，报错类似 `Failed to resolve import "./TrapDiff.vue"`
 ```vue
 <script setup lang="ts">
 import type { PropertyDiff } from '~/core/types'
+import type { CONTAINER_KEYS, ITEM_KEYS } from '~/core/trapPatch'
 import { itemLabel } from '~/core/labels'
 
 /**
@@ -1284,8 +1305,15 @@ import { itemLabel } from '~/core/labels'
  */
 defineProps<{ diffs: PropertyDiff[] }>()
 
+/**
+ * 差异表可能遇到的全部字段名。直接从推导层那两份清单派生——
+ * 将来给容器或盒子加字段时，这里漏一条会**编译报错**，
+ * 而不是等到界面上露出 `alignSelf` 这种内部字段名才被发现。
+ */
+type DiffKey = typeof CONTAINER_KEYS[number] | typeof ITEM_KEYS[number]
+
 /** 内部字段名 → 用户认得的 CSS 属性名 */
-const KEY_LABELS: Record<string, string> = {
+const KEY_LABELS: Record<DiffKey, string> = {
   display: 'display',
   direction: 'flex-direction',
   wrap: 'flex-wrap',
@@ -1310,7 +1338,7 @@ const KEY_LABELS: Record<string, string> = {
 const PX_KEYS = new Set(['width', 'height', 'rowGap', 'columnGap', 'size'])
 
 function keyLabel(key: string): string {
-  return KEY_LABELS[key] ?? key
+  return KEY_LABELS[key as DiffKey] ?? key
 }
 
 /**
