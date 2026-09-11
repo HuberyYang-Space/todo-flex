@@ -153,13 +153,13 @@ describe('diffStates', () => {
 })
 
 describe('差异表的字段清单', () => {
-  it('cONTAINER_KEYS 覆盖了 FlexContainerState 的全部字段', () => {
+  it('差异表的容器字段清单是完整的', () => {
     expect([...CONTAINER_KEYS].sort()).toEqual(
       Object.keys(createDefaultState().container).sort(),
     )
   })
 
-  it('iTEM_KEYS 覆盖了 FlexItemState 除 id 外的全部字段', () => {
+  it('差异表的盒子字段清单是完整的', () => {
     const itemKeys = Object.keys(createDefaultState().items[0]).filter(key => key !== 'id')
     expect([...ITEM_KEYS].sort()).toEqual(itemKeys.sort())
   })
