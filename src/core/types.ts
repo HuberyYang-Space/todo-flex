@@ -123,3 +123,53 @@ export interface Diagnostic {
   params: Record<string, number>
   messageKey: string
 }
+
+/** 陷阱状态的一处局部改动。item 按索引定位——陷阱数据不关心 id 是怎么生成的 */
+export interface TrapItemPatch {
+  index: number
+  patch: Partial<Omit<FlexItemState, 'id'>>
+}
+
+/**
+ * 一层状态改动。只写要改的字段，其余从上一层继承。
+ * 陷阱大多只差一两个字段，写完整 state 会被噪音淹掉真正的差异点，
+ * 而「差异点是什么」恰恰是陷阱要教的东西。
+ */
+export interface TrapVariant {
+  container?: Partial<FlexContainerState>
+  /** 盒子数量。给了就按这个数量重建 items，不给则沿用上一层 */
+  itemCount?: number
+  items?: TrapItemPatch[]
+}
+
+export interface TrapBeat {
+  title: string
+  body: string
+  /** 可选的展示用代码块，交给 prismjs 高亮 */
+  code?: string
+}
+
+export interface Trap {
+  id: string
+  title: string
+  /** 一句话钩子，放在板块标题下 */
+  hook: string
+  /** 这个陷阱的公共起点，打在 createDefaultState() 上 */
+  base: TrapVariant
+  /** 现象态 = default + base + before */
+  before: TrapVariant
+  /** 修复态 = default + base + after */
+  after: TrapVariant
+  /** 恰好三拍：现象 / 归因 / 修复 */
+  beats: [TrapBeat, TrapBeat, TrapBeat]
+}
+
+/** 归因拍展示的一条属性差异。值一律转成字符串，格式化成人话是展示层的事 */
+export interface PropertyDiff {
+  scope: 'container' | 'item'
+  /** scope 为 item 时才有 */
+  itemIndex?: number
+  key: string
+  from: string
+  to: string
+}
