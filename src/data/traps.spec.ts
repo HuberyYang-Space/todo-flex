@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { deriveLayout } from '~/core/deriveLayout'
 import { diffStates, resolveVariant } from '~/core/trapPatch'
 import { traps } from './traps'
 
@@ -89,5 +90,66 @@ describe('陷阱数据', () => {
 
     expect(state.container.width - content - gaps).toBe(456)
     expect(state.items[0].marginAuto).toBe(true)
+  })
+})
+
+/**
+ * 陷阱文案里引用的每一个推导数字，都在这里直接跑一遍 deriveLayout 钉住。
+ *
+ * 之前的守卫测试只用 Σsize + Σgap 做算术近似，碰不到 finalMainSize，
+ * 谁调一下某个 base 的 width/size，文案照样能说谎而测试全绿。
+ * 这组测试改用真实推导结果比对，任何字面量与实现脱节都会先在这里红。
+ */
+describe('陷阱文案的数字钉在 deriveLayout 上', () => {
+  it('陷阱一 min-width-auto：现象态推导值 296/80/80，free=296（推导引擎故意不模拟 min-width:auto 截断，红线 3）', () => {
+    // 浏览器实际渲染会截到 320，这里的 296 是「不截断」的理论值，正是产品要演示的缝隙
+    const trap = traps.find(item => item.id === 'min-width-auto')!
+    const layout = deriveLayout(resolveVariant(trap, 'before'))
+
+    expect(layout.items.map(item => item.finalMainSize)).toEqual([296, 80, 80])
+    expect(layout.lines[0].freeSpace).toBe(296)
+  })
+
+  it('陷阱二 basis-source：现象态 312/192/192（free=336），修复态 232/232/232（free=696）', () => {
+    const trap = traps.find(item => item.id === 'basis-source')!
+
+    const before = deriveLayout(resolveVariant(trap, 'before'))
+    expect(before.items.map(item => item.finalMainSize)).toEqual([312, 192, 192])
+    expect(before.lines[0].freeSpace).toBe(336)
+
+    const after = deriveLayout(resolveVariant(trap, 'after'))
+    expect(after.items.map(item => item.finalMainSize)).toEqual([232, 232, 232])
+    expect(after.lines[0].freeSpace).toBe(696)
+  })
+
+  it('陷阱三 flex-shorthand：现象态 200/200/200（free=-144，shrink 全 0 拒不收缩），修复态 152/152/152（free=456）', () => {
+    const trap = traps.find(item => item.id === 'flex-shorthand')!
+
+    const before = deriveLayout(resolveVariant(trap, 'before'))
+    expect(before.items.map(item => item.finalMainSize)).toEqual([200, 200, 200])
+    expect(before.lines[0].freeSpace).toBe(-144)
+
+    const after = deriveLayout(resolveVariant(trap, 'after'))
+    expect(after.items.map(item => item.finalMainSize)).toEqual([152, 152, 152])
+    expect(after.lines[0].freeSpace).toBe(456)
+  })
+
+  it('陷阱四 align-content-single-line：现象态单行 free=-76，修复态两行 free=36 与 260', () => {
+    const trap = traps.find(item => item.id === 'align-content-single-line')!
+
+    const before = deriveLayout(resolveVariant(trap, 'before'))
+    expect(before.lines).toHaveLength(1)
+    expect(before.lines[0].freeSpace).toBe(-76)
+
+    const after = deriveLayout(resolveVariant(trap, 'after'))
+    expect(after.lines.map(line => line.freeSpace)).toEqual([36, 260])
+  })
+
+  it('陷阱五 margin-auto：三盒都是 80，free=456（就是被 A 左右两个 auto margin 各吃 228 的那笔钱）', () => {
+    const trap = traps.find(item => item.id === 'margin-auto')!
+    const layout = deriveLayout(resolveVariant(trap, 'before'))
+
+    expect(layout.items.map(item => item.finalMainSize)).toEqual([80, 80, 80])
+    expect(layout.lines[0].freeSpace).toBe(456)
   })
 })
