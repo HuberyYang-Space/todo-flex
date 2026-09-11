@@ -24,7 +24,6 @@ export function deriveLayout(state: FlexState): DerivedLayout {
       kind: 'lineBreak',
       lineIndex: 0,
       params: { lineCount: lineIds.length },
-      messageKey: 'derive.lineBreak',
     })
   }
 
@@ -38,7 +37,6 @@ export function deriveLayout(state: FlexState): DerivedLayout {
       kind: 'freeSpace',
       lineIndex,
       params: { containerMain, used: containerMain - freeSpace, freeSpace },
-      messageKey: 'derive.freeSpace',
     })
 
     const growDeltas = freeSpace > 0 ? distributeGrow(lineItems, freeSpace) : null
@@ -65,7 +63,6 @@ export function deriveLayout(state: FlexState): DerivedLayout {
         lineIndex,
         itemId: item.id,
         params: { basisResolved, size: item.size },
-        messageKey: 'derive.resolveBasis',
       })
 
       if (deltaFromGrow > 0) {
@@ -74,7 +71,6 @@ export function deriveLayout(state: FlexState): DerivedLayout {
           lineIndex,
           itemId: item.id,
           params: { grow: item.grow, totalGrow, freeSpace, delta: deltaFromGrow },
-          messageKey: 'derive.growDistribute',
         })
       }
 
@@ -90,7 +86,6 @@ export function deriveLayout(state: FlexState): DerivedLayout {
             overflow: freeSpace,
             delta: deltaFromShrink,
           },
-          messageKey: 'derive.shrinkDistribute',
         })
       }
     }

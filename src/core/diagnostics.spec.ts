@@ -179,12 +179,4 @@ describe('diagnose', () => {
 
     expect(diagnose(state, deriveLayout(state), measured)).toEqual([])
   })
-
-  it('每条诊断都带上供 i18n 渲染的 messageKey', () => {
-    const state = stateWith([{ basis: '100px', size: 80 }])
-
-    const [diagnostic] = diagnoseWith(state, { i1: { width: 130 } })
-
-    expect(diagnostic.messageKey).toBe('diag.max-size-clamp')
-  })
 })

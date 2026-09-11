@@ -26,7 +26,7 @@ todo-flex 的定位由此确定：**不是又一个 flex playground，而是 fle
 3. 理论值与浏览器实际值并排校验，不一致时高亮解释是哪条规则介入了。
 4. 沉淀 5 个高频陷阱案例，可一键载入 Playground 复现。
 5. 状态可通过 URL 分享与还原。
-6. 中英双语、暗亮双主题。
+6. 暗亮双主题。（原定的中英双语已从首版移出，见第 9 节）
 7. 视觉上有辨识度：暗色科技感 + 分层动效（GSAP Flip / SVG 叠加层 / three.js 氛围 / ScrollTrigger 叙事）。
 
 ### 非目标
@@ -110,7 +110,6 @@ state ──→ 渲染 ──→ 观测 ──→ 诊断 ──→ 展示
 | `core/cssEmit.ts` | 由状态生成可复制的 CSS 文本 | 否 |
 | `composables/useMeasure.ts` | 观测层：读取容器与每个 item 的真实布局尺寸与位置 | 是 |
 | `composables/useFlip.ts` | GSAP Flip 封装，状态变化时驱动布局过渡 | 是 |
-| `composables/useI18n.ts` | 轻量双语 | 否 |
 | `components/playground/DemoStage.vue` | 真实 flex 容器与盒子渲染，只吃 state，不含逻辑 | 是 |
 | `components/playground/OverlayLayer.vue` | SVG 叠加：剩余空间、轴向箭头、尺寸 HUD、选中光晕 | 是 |
 | `components/playground/ControlPanel.vue` | 由属性元信息表驱动生成的控件面板 | — |
@@ -155,7 +154,6 @@ interface DerivationStep {
   lineIndex: number
   itemId?: string
   params: Record<string, number>
-  messageKey: string // 交给 i18n 渲染成公式文案
 }
 
 interface DerivedLayout {
@@ -307,21 +305,34 @@ B  0       2     200px   240px   ⚠ min-width:auto 撑住了内容宽度
 
 每个陷阱含：现象演示 → 规则归因 → 修复演示 → 「载入 Playground 复现」按钮（写入 URL 后滚动到 Playground）。
 
-## 9. 国际化
+## 9. 国际化（首版不做，2026-09-11 决定）
 
-不引入 vue-i18n（单页站点为 ~20kb 不值），自建轻量方案：
+**站点首版是纯简体中文单语站**，`src/i18n/` 与 `useI18n.ts` 都不建。要不要上双语留待后续版本重新评估。
 
-- `src/i18n/zh.ts` 与 `en.ts`，按模块分块（`controls` / `metrics` / `traps` / `hero`）。
-- **类型安全**：`en.ts` 用 `satisfies typeof zh` 约束，漏翻一个 key 就编译报错。
-- 语言存 localStorage，同时支持 URL 参数 `?lang=en` 覆盖。
-- 中文为默认语言（作者主要受众），简体。
+原方案（存档，重启时可作为起点、但不必照搬）：不引入 vue-i18n（单页站点为 ~20kb 不值），
+自建 `src/i18n/zh.ts` 与 `en.ts` 按模块分块，`en.ts` 用 `satisfies typeof zh` 约束漏翻即编译报错，
+语言存 localStorage 并支持 `?lang=en` 覆盖。
+
+### 已一并删除的预埋字段
+
+M1 时曾为这套方案预埋两个字段，M5 结束仍无任何消费方，已在本次决定时删净：
+
+- `PropertyDef.labelKey`（属性元信息表）—— 控制面板从头到尾显示的都是 `cssName`，CSS 属性名本身不需要翻译。
+- `DerivationStep.messageKey` / `Diagnostic.messageKey` —— 两者恒等于 `'derive.' + kind` 与 `'diag.' + rule`，
+  是纯冗余；真正的标识是 `kind` 与 `rule`，它们保留。
+
+> 将来真要做 i18n，**按届时的实际需要重新设计 key 结构，不要考古这批字段名**。
+> 它们是在没有一个消费方的情况下凭空设计的，从未被任何界面验证过。
+
+规则文案与推导文案现在住在展示层（`MetricsTable.vue` 的 `ruleText`、`data/traps.ts` 的中文正文），
+`src/core/` 依旧一个字的文案都不出——这条约束与 i18n 无关，是红线 2 的一部分，不随本次决定变动。
 
 ## 10. URL 序列化
 
 **不用 base64(JSON)**：不可读、不可手写、改一个字符全废。改用带版本前缀的短码紧凑格式。
 
 ```
-?v=1&c=<container>&i=<items>&sel=<id>&lang=zh
+?v=1&c=<container>&i=<items>&sel=<id>
 ```
 
 - **container**：固定顺序、点号分隔
@@ -364,7 +375,6 @@ src/
     useFlexState.ts
     useMeasure.ts
     useFlip.ts
-    useI18n.ts
     useDark.ts
   components/
     playground/         # ControlPanel / DemoStage / OverlayLayer / MetricsTable / CssOutput
@@ -373,8 +383,6 @@ src/
   visual/
     HeroScene.ts        # three.js
     motion.ts           # 动效 token
-  i18n/
-    zh.ts / en.ts
   data/
     flexProperties.ts   # 属性元信息表，驱动控制面板
     traps.ts            # 陷阱案例定义
@@ -406,7 +414,7 @@ src/
 | M3 | 透明化核心 | 观测层、诊断层、明细表、剩余空间与轴向叠加层、容器拖拽 | 理论/实际并排显示，不一致时高亮解释 |
 | M4 | 动效 | GSAP Flip 布局过渡、叠加层动画、`prefers-reduced-motion` 降级 | 属性切换时盒子平滑移动且数字不抖 |
 | M5 | 内容层 | 5 个陷阱板块 + ScrollTrigger 叙事 + 一键复现 | 陷阱可从 Traps 跳回 Playground 还原 |
-| M6 | 分享与双语 | URL codec、i18n、暗亮主题打磨 | 分享链接可还原、中英可切换 |
+| M6 | 分享与主题 | URL codec、暗亮主题打磨（i18n 已移出首版，见第 9 节） | 分享链接可还原、暗亮主题各自可读 |
 | M7 | 首屏与收尾 | three.js Hero、性能预算核对、可访问性检查、部署 | 构建产物达标并上线 |
 
 M1 与 M2 是骨干，M3 是差异化所在——若时间受限，M4 之后的内容可以顺延，但 M3 不可裁剪。

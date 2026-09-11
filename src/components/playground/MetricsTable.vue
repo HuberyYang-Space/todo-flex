@@ -10,7 +10,7 @@ import { itemLabel } from '~/core/labels'
 const { state, derived } = useFlexState()
 const { measured } = useMeasure()
 
-// i18n 要到 M6 才落地，规则文案先放在组件里，core/ 保持零文案
+// 规则文案住在展示层：core/ 只产出 rule 标识与数值，一个字的文案都不出（红线 2 的同一条思路）
 const ruleText: Record<DiagnosticRule, (diagnostic: Diagnostic) => string> = {
   'min-width-auto': () => 'min-width:auto 撑住了内容固有尺寸，收缩到此为止',
   'margin-auto': d => `margin:auto 吃掉了 ${px(d.params.freeSpace)} 剩余空间，justify-content 已失效`,

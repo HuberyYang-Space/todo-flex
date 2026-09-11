@@ -62,7 +62,7 @@ export function diagnose(
 
     if (Math.abs(actual - theoretical) > TOLERANCE) {
       const rule = matchSizeRule(item, actual)
-      return { ...base, rule, severity: 'warn', params: {}, messageKey: `diag.${rule}` }
+      return { ...base, rule, severity: 'warn', params: {} }
     }
 
     // 尺寸吻合不代表没事：margin:auto 正在悄悄吃掉本该由 justify-content 分配的空间
@@ -72,7 +72,6 @@ export function diagnose(
         rule: 'margin-auto',
         severity: 'info',
         params: { freeSpace: lineFreeSpace },
-        messageKey: 'diag.margin-auto',
       }
     }
 

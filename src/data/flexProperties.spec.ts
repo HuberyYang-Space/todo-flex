@@ -38,11 +38,9 @@ describe('属性元信息表', () => {
     expect(itemProperties.map(prop => prop.key).sort()).toEqual(controllable.sort())
   })
 
-  it('每个属性都带 MDN 链接与文案 key', () => {
-    for (const prop of allProperties) {
+  it('每个属性都带 MDN 链接', () => {
+    for (const prop of allProperties)
       expect(prop.mdn).toMatch(/^https:\/\/developer\.mozilla\.org\//)
-      expect(prop.labelKey.length).toBeGreaterThan(0)
-    }
   })
 
   it('表里的默认值与 createDefaultState 一致', () => {

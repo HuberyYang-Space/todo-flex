@@ -10,7 +10,6 @@ interface PropertyBase {
   key: string
   /** 对应的 CSS 属性名，直接展示在面板上 */
   cssName: string
-  labelKey: string
   mdn: string
 }
 
@@ -25,7 +24,6 @@ export const containerProperties: PropertyDef[] = [
     kind: 'enum',
     key: 'display',
     cssName: 'display',
-    labelKey: 'prop.display',
     mdn: `${MDN}/display`,
     options: [{ value: 'flex' }, { value: 'inline-flex' }],
     default: 'flex',
@@ -34,7 +32,6 @@ export const containerProperties: PropertyDef[] = [
     kind: 'enum',
     key: 'direction',
     cssName: 'flex-direction',
-    labelKey: 'prop.direction',
     mdn: `${MDN}/flex-direction`,
     options: [
       { value: 'row' },
@@ -48,7 +45,6 @@ export const containerProperties: PropertyDef[] = [
     kind: 'enum',
     key: 'wrap',
     cssName: 'flex-wrap',
-    labelKey: 'prop.wrap',
     mdn: `${MDN}/flex-wrap`,
     options: [{ value: 'nowrap' }, { value: 'wrap' }, { value: 'wrap-reverse' }],
     default: 'nowrap',
@@ -57,7 +53,6 @@ export const containerProperties: PropertyDef[] = [
     kind: 'enum',
     key: 'justifyContent',
     cssName: 'justify-content',
-    labelKey: 'prop.justifyContent',
     mdn: `${MDN}/justify-content`,
     options: [
       { value: 'flex-start' },
@@ -77,7 +72,6 @@ export const containerProperties: PropertyDef[] = [
     kind: 'enum',
     key: 'alignItems',
     cssName: 'align-items',
-    labelKey: 'prop.alignItems',
     mdn: `${MDN}/align-items`,
     options: [
       { value: 'stretch' },
@@ -96,7 +90,6 @@ export const containerProperties: PropertyDef[] = [
     kind: 'enum',
     key: 'alignContent',
     cssName: 'align-content',
-    labelKey: 'prop.alignContent',
     mdn: `${MDN}/align-content`,
     options: [
       { value: 'normal' },
@@ -114,7 +107,6 @@ export const containerProperties: PropertyDef[] = [
     kind: 'number',
     key: 'rowGap',
     cssName: 'row-gap',
-    labelKey: 'prop.rowGap',
     mdn: `${MDN}/row-gap`,
     min: 0,
     max: 64,
@@ -125,7 +117,6 @@ export const containerProperties: PropertyDef[] = [
     kind: 'number',
     key: 'columnGap',
     cssName: 'column-gap',
-    labelKey: 'prop.columnGap',
     mdn: `${MDN}/column-gap`,
     min: 0,
     max: 64,
@@ -139,7 +130,6 @@ export const itemProperties: PropertyDef[] = [
     kind: 'number',
     key: 'grow',
     cssName: 'flex-grow',
-    labelKey: 'prop.grow',
     mdn: `${MDN}/flex-grow`,
     min: 0,
     max: 10,
@@ -150,7 +140,6 @@ export const itemProperties: PropertyDef[] = [
     kind: 'number',
     key: 'shrink',
     cssName: 'flex-shrink',
-    labelKey: 'prop.shrink',
     mdn: `${MDN}/flex-shrink`,
     min: 0,
     max: 10,
@@ -161,7 +150,6 @@ export const itemProperties: PropertyDef[] = [
     kind: 'text',
     key: 'basis',
     cssName: 'flex-basis',
-    labelKey: 'prop.basis',
     mdn: `${MDN}/flex-basis`,
     presets: ['auto', 'content', '0', '100px', '30%'],
     default: 'auto',
@@ -170,7 +158,6 @@ export const itemProperties: PropertyDef[] = [
     kind: 'number',
     key: 'order',
     cssName: 'order',
-    labelKey: 'prop.order',
     mdn: `${MDN}/order`,
     min: -5,
     max: 5,
@@ -181,7 +168,6 @@ export const itemProperties: PropertyDef[] = [
     kind: 'enum',
     key: 'alignSelf',
     cssName: 'align-self',
-    labelKey: 'prop.alignSelf',
     mdn: `${MDN}/align-self`,
     options: [
       { value: 'auto' },
@@ -197,7 +183,6 @@ export const itemProperties: PropertyDef[] = [
     kind: 'number',
     key: 'size',
     cssName: '内容尺寸',
-    labelKey: 'prop.size',
     mdn: `${MDN}/width`,
     min: 20,
     max: 400,
@@ -208,7 +193,6 @@ export const itemProperties: PropertyDef[] = [
     kind: 'boolean',
     key: 'minWidthAuto',
     cssName: 'min-width: auto',
-    labelKey: 'prop.minWidthAuto',
     mdn: `${MDN}/min-width`,
     default: true,
   },
@@ -216,7 +200,6 @@ export const itemProperties: PropertyDef[] = [
     kind: 'boolean',
     key: 'marginAuto',
     cssName: 'margin: auto',
-    labelKey: 'prop.marginAuto',
     mdn: `${MDN}/margin`,
     default: false,
   },

@@ -33,7 +33,7 @@ M3 全部经浏览器实测：观测层 `useMeasure`、诊断层 `core/diagnosti
 SVG 叠加层 `OverlayLayer`（剩余空间斜纹色块、溢出标记、轴向箭头、尺寸 HUD）、
 演示区右下角 resize 拖拽手柄 `StageResizer`（已替代原来的两个 range 滑块）。
 **M4（动效）进行中**：GSAP Flip 布局过渡、惯性水滴形变、观测层挂起机制、演示区质感升级已落地。
-**M6 的 URL 分享已提前落地并经浏览器验证**（i18n 与主题打磨还没动）：`core/urlCodec.ts` 纯函数编解码、
+**M6 的 URL 分享已提前落地并经浏览器验证**（暗亮主题打磨还没动）：`core/urlCodec.ts` 纯函数编解码、
 `composables/useShareUrl.ts` 防抖 300ms 写回地址栏、`useFlexState` 首屏用 `decodeOrDefault(location.search)` 初始化。
 浏览器实测四条：带短码的链接直接打开能逐字段还原、改属性后地址栏跟着变、
 三次属性变化 `history.length` 纹丝不动（一律 `replaceState`）、A 标签页调出的链接在 B 标签页还原后位置数值精确一致。
@@ -148,10 +148,19 @@ column 下相应翻成 `y-reverse` / `y-forward`；四份 pattern 都在 defs �
 窄屏（<768px）降级、`prefers-reduced-motion` 降级。两者的判断逻辑有 `useTrapScroll.spec.ts` 覆盖、
 降级形态的渲染有 `TrapSection.spec.ts` 覆盖，但**真实环境是空白，需要人眼拖窄窗口扫一遍**。
 
-**下一件是 M6 的剩余部分**（URL 分享已提前落地）：i18n 与暗亮主题打磨。M6 动手时顺带清掉这几笔已知技术债：
+**i18n 已从首版整体移出（2026-09-11 决定）**：站点首版就是纯简体中文单语站，`src/i18n/` 与 `useI18n.ts` 都不建，
+陷阱文案与规则文案的中文硬编码就是终态、不再有「待抽取」这一步。当年为它预埋的
+`PropertyDef.labelKey` 与 `DerivationStep.messageKey` / `Diagnostic.messageKey` 已一并删净——
+前者从来没有消费方（面板显示的一直是 `cssName`，CSS 属性名本身不需要翻译），
+后两者恒等于 `'derive.' + kind` 与 `'diag.' + rule`，是纯冗余；真正的标识 `kind` 与 `rule` 保留。
+**将来若重启 i18n，按届时的实际需要重新设计 key 结构，不要考古这批字段名**——
+它们是在零消费方的情况下凭空设计的，从未被任何界面验证过。决策全文见设计文档第 9 节。
+
+**下一件是 M6 的剩余部分**：暗亮主题打磨（URL 分享已提前落地，i18n 已移出）。动手时顺带清掉这两笔已知技术债：
 ① 状态→CSS 的映射逻辑现在有三份（`TrapStage` / `DemoStage` / `cssEmit`），前两份是逐字复制，
    该提到 `src/core/` 去——但那要连带改经过三轮浏览器试错的 `DemoStage`，所以单独排一次并重新过浏览器；
-② `TrapSection` 正常/降级两套模板里卡片渲染重复约 18 行 ×2，抽成子组件的时机正好与文案抽 i18n key 撞在一起，一次动完。
+② `TrapSection` 正常/降级两套模板里卡片渲染重复约 18 行 ×2，抽成子组件。
+   原计划是「与文案抽 i18n key 撞在一起一次动完」，i18n 没了之后这件可以独立做，不必再等谁。
 
 设计与计划文档（改动前务必先读）：
 

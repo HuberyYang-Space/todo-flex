@@ -71,13 +71,12 @@ export type DerivationStepKind
     | 'growDistribute'
     | 'shrinkDistribute'
 
-/** 一条可展示给用户的推导步骤，params 交给 i18n 渲染成公式文案 */
+/** 一条可展示给用户的推导步骤，params 是公式里的各项数值 */
 export interface DerivationStep {
   kind: DerivationStepKind
   lineIndex: number
   itemId?: string
   params: Record<string, number>
-  messageKey: string
 }
 
 export interface DerivedLayout {
@@ -119,9 +118,8 @@ export interface Diagnostic {
   severity: 'warn' | 'info'
   theoretical: number
   actual: number
-  /** 补充数值，交给文案渲染（如被 margin 吃掉的剩余空间） */
+  /** 补充数值，供展示层写进文案（如被 margin 吃掉的剩余空间） */
   params: Record<string, number>
-  messageKey: string
 }
 
 /** 陷阱状态的一处局部改动。item 按索引定位——陷阱数据不关心 id 是怎么生成的 */
