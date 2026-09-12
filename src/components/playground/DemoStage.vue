@@ -6,8 +6,8 @@ import { useFlexState } from '~/composables/useFlexState'
 import { useFlip } from '~/composables/useFlip'
 import { useMeasure } from '~/composables/useMeasure'
 import { useOverlay } from '~/composables/useOverlay'
-import { isRowDirection } from '~/core/axis'
 import { itemLabel } from '~/core/labels'
+import { containerStyle as mapContainer, contentStyle as mapContent, itemStyle as mapItem } from '~/core/styleMap'
 import { motion } from '~/visual/motion'
 import OverlayLayer from './OverlayLayer.vue'
 import StageResizer from './StageResizer.vue'
@@ -20,21 +20,12 @@ const stageEl = ref<HTMLElement>()
 useMeasure().observeStage(stageEl)
 useFlip().observeFlip(stageEl)
 
-const isRow = computed(() => isRowDirection(state.container.direction))
-
-// 容器样式全部来自状态，交给浏览器真实排版——不做任何位置计算
-const containerStyle = computed<CSSProperties>(() => ({
-  display: state.container.display,
-  flexDirection: state.container.direction,
-  flexWrap: state.container.wrap,
-  justifyContent: state.container.justifyContent,
-  alignItems: state.container.alignItems,
-  alignContent: state.container.alignContent,
-  rowGap: `${state.container.rowGap}px`,
-  columnGap: `${state.container.columnGap}px`,
-  width: `${state.container.width}px`,
-  height: `${state.container.height}px`,
-}))
+/*
+ * 状态 → CSS 的映射统一在 core/styleMap，与陷阱区的 TrapStage 共用同一份。
+ * 容器样式全部来自状态，交给浏览器真实排版——不做任何位置计算（红线 1）。
+ * 这里只做一层取值 + 类型收口：core 不 import vue，返回的是自己的 StyleDecls（红线 2）。
+ */
+const containerStyle = computed(() => mapContainer(state.container) as CSSProperties)
 
 // 悬停手感的参数下发给 CSS——CSS 读不到 TS 常量，只能这样保住 motion.ts 的唯一权威
 const stageVars = computed<CSSProperties>(() => ({
@@ -63,21 +54,11 @@ const boxStyle = computed<CSSProperties>(() => ({
 } as CSSProperties))
 
 function itemStyle(item: FlexItemState): CSSProperties {
-  return {
-    flexGrow: item.grow,
-    flexShrink: item.shrink,
-    flexBasis: item.basis,
-    order: item.order,
-    alignSelf: item.alignSelf,
-    // 关掉自动最小尺寸时，要关的是主轴方向上的那一个
-    ...(item.minWidthAuto ? {} : { [isRow.value ? 'minWidth' : 'minHeight']: '0px' }),
-    ...(item.marginAuto ? { margin: 'auto' } : {}),
-  }
+  return mapItem(item, state.container.direction) as CSSProperties
 }
 
-// 内容占位块撑出 min-content 尺寸，这样 min-width:auto 的下限才有真实来源
 function contentStyle(item: FlexItemState): CSSProperties {
-  return isRow.value ? { width: `${item.size}px` } : { height: `${item.size}px` }
+  return mapContent(item, state.container.direction) as CSSProperties
 }
 </script>
 

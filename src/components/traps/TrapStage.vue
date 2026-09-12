@@ -2,8 +2,8 @@
 import type { CSSProperties } from 'vue'
 import type { FlexItemState, FlexState } from '~/core/types'
 import { computed } from 'vue'
-import { isRowDirection } from '~/core/axis'
 import { itemLabel } from '~/core/labels'
+import { containerStyle as mapContainer, contentStyle as mapContent, itemStyle as mapItem } from '~/core/styleMap'
 
 /**
  * 陷阱专用的精简演示区。
@@ -16,37 +16,18 @@ import { itemLabel } from '~/core/labels'
  */
 const props = defineProps<{ state: FlexState }>()
 
-const isRow = computed(() => isRowDirection(props.state.container.direction))
-
-const containerStyle = computed<CSSProperties>(() => ({
-  display: props.state.container.display,
-  flexDirection: props.state.container.direction,
-  flexWrap: props.state.container.wrap,
-  justifyContent: props.state.container.justifyContent,
-  alignItems: props.state.container.alignItems,
-  alignContent: props.state.container.alignContent,
-  rowGap: `${props.state.container.rowGap}px`,
-  columnGap: `${props.state.container.columnGap}px`,
-  width: `${props.state.container.width}px`,
-  height: `${props.state.container.height}px`,
-}))
+/*
+ * 状态 → CSS 的映射统一在 core/styleMap，与 DemoStage 共用同一份，
+ * 这里只做一层取值 + 类型收口：core 不 import vue，返回的是自己的 StyleDecls（红线 2）。
+ */
+const containerStyle = computed(() => mapContainer(props.state.container) as CSSProperties)
 
 function itemStyle(item: FlexItemState): CSSProperties {
-  return {
-    flexGrow: item.grow,
-    flexShrink: item.shrink,
-    flexBasis: item.basis,
-    order: item.order,
-    alignSelf: item.alignSelf,
-    // 关掉自动最小尺寸时，要关的是主轴方向上的那一个
-    ...(item.minWidthAuto ? {} : { [isRow.value ? 'minWidth' : 'minHeight']: '0px' }),
-    ...(item.marginAuto ? { margin: 'auto' } : {}),
-  }
+  return mapItem(item, props.state.container.direction) as CSSProperties
 }
 
-// 内容占位块撑出 min-content 尺寸，这样 min-width:auto 的下限才有真实来源
 function contentStyle(item: FlexItemState): CSSProperties {
-  return isRow.value ? { width: `${item.size}px` } : { height: `${item.size}px` }
+  return mapContent(item, props.state.container.direction) as CSSProperties
 }
 </script>
 
