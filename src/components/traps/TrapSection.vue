@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { FlexState, Trap } from '~/core/types'
-import Prism from 'prismjs'
 import { computed, ref } from 'vue'
 import { useFlexState } from '~/composables/useFlexState'
 import { prefersReducedMotion, useTrapScroll } from '~/composables/useTrapScroll'
 import { diffStates, resolveVariant } from '~/core/trapPatch'
-import TrapDiff from './TrapDiff.vue'
+import TrapBeatCard from './TrapBeatCard.vue'
 import TrapStage from './TrapStage.vue'
 
 const props = defineProps<{ trap: Trap }>()
@@ -27,10 +26,6 @@ const stageState = computed(() => (beat.value < 2 ? beforeState.value : afterSta
 /** 降级时每一拍各配一个演示区：前两拍现象、最后一拍修复 */
 function stateForBeat(index: number): FlexState {
   return index < 2 ? beforeState.value : afterState.value
-}
-
-function highlight(code: string): string {
-  return Prism.highlight(code, Prism.languages.css, 'css')
 }
 
 /**
@@ -77,55 +72,35 @@ function reproduce(which: 'before' | 'after'): void {
         </div>
 
         <div class="beats grid">
-          <article
+          <TrapBeatCard
             v-for="(item, index) in trap.beats"
             :key="item.title"
-            data-testid="trap-beat"
-            class="beat flex flex-col gap-3 panel p-4"
-            :class="{ 'is-active': beat === index }"
-          >
-            <h3 class="flex items-center gap-2 text-sm font-bold">
-              <span class="text-accent font-mono">{{ index + 1 }}</span>
-              {{ item.title }}
-            </h3>
-            <p class="text-sm leading-relaxed op-80">
-              {{ item.body }}
-            </p>
-            <pre
-              v-if="item.code"
-              class="overflow-x-auto rounded-2 bg-panel p-2 text-xs leading-relaxed font-mono"
-            ><code v-html="highlight(item.code)" /></pre>
-            <TrapDiff v-if="index === 1" :diffs="diffs" />
-          </article>
+            class="panel p-4"
+            :beat="item"
+            :index="index"
+            :active="beat === index"
+            :diffs="diffs"
+          />
         </div>
       </div>
 
       <!-- 降级形态：三拍全展开，各配一个演示区。不 pin、不劫持滚动 -->
       <div v-else class="flex flex-col gap-8">
-        <article
+        <!-- 降级形态每一拍都是展开的，所以 active 恒为真 -->
+        <TrapBeatCard
           v-for="(item, index) in trap.beats"
           :key="item.title"
-          data-testid="trap-beat"
-          class="beat is-active flex flex-col gap-3"
+          :beat="item"
+          :index="index"
+          :active="true"
+          :diffs="diffs"
         >
-          <h3 class="flex items-center gap-2 text-sm font-bold">
-            <span class="text-accent font-mono">{{ index + 1 }}</span>
-            {{ item.title }}
-          </h3>
-          <p class="text-sm leading-relaxed op-80">
-            {{ item.body }}
-          </p>
-          <pre
-            v-if="item.code"
-            class="overflow-x-auto rounded-2 bg-panel p-2 text-xs leading-relaxed font-mono"
-          ><code v-html="highlight(item.code)" /></pre>
-          <TrapDiff v-if="index === 1" :diffs="diffs" />
           <!-- 同一条 min-width: auto 规则：flex 容器里的子项默认也不得小于内容宽度，
                窄屏下 720px 的演示区一样会把这层撑开，理由同上一处正常形态的注释。 -->
           <div class="min-w-0 panel p-3">
             <TrapStage :state="stateForBeat(index)" />
           </div>
-        </article>
+        </TrapBeatCard>
       </div>
 
       <footer class="flex flex-wrap gap-2">
@@ -143,30 +118,12 @@ function reproduce(which: 'before' | 'after'): void {
 <style scoped>
 /*
  * 三张卡片叠在同一个网格单元里：pin 住的是一屏，三拍轮流占据同一块地方，
- * 卡片才不会把这一屏撑爆。非当前拍要关掉指针事件，否则会挡住底下那张的按钮。
+ * 卡片才不会把这一屏撑爆。淡入淡出与指针事件归 TrapBeatCard 自己管。
+ *
+ * 选择器能命中子组件，是因为 Vue 会把父组件的 scope id 一并打在子组件根节点上；
+ * 堆叠是「三拍挤在一格里」这个父级布局决定的，所以留在这边而不是搬进子组件。
  */
 .beats > .beat {
   grid-area: 1 / 1;
-}
-
-.beat {
-  opacity: 0;
-  transform: translateY(12px);
-  transition:
-    opacity 0.4s ease,
-    transform 0.4s ease;
-  pointer-events: none;
-}
-
-.beat.is-active {
-  opacity: 1;
-  transform: none;
-  pointer-events: auto;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .beat {
-    transition: none;
-  }
 }
 </style>

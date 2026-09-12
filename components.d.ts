@@ -21,6 +21,7 @@ declare module 'vue' {
     PropertyField: typeof import('./src/components/playground/PropertyField.vue')['default']
     StageResizer: typeof import('./src/components/playground/StageResizer.vue')['default']
     ThePlayground: typeof import('./src/components/playground/ThePlayground.vue')['default']
+    TrapBeatCard: typeof import('./src/components/traps/TrapBeatCard.vue')['default']
     TrapDiff: typeof import('./src/components/traps/TrapDiff.vue')['default']
     TrapSection: typeof import('./src/components/traps/TrapSection.vue')['default']
     TrapsSection: typeof import('./src/components/traps/TrapsSection.vue')['default']
