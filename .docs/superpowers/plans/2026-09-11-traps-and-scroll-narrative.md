@@ -8,7 +8,7 @@
 
 **Tech Stack:** Vue 3 script setup · TypeScript · GSAP ScrollTrigger · UnoCSS · prismjs · Vitest + @vue/test-utils + happy-dom
 
-**Spec:** `docs/superpowers/specs/2026-09-11-traps-and-scroll-narrative-design.md`
+**Spec:** [2026-09-11-traps-and-scroll-narrative-design.md](../specs/2026-09-11-traps-and-scroll-narrative-design.md)
 
 ## Global Constraints
 

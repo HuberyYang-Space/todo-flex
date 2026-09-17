@@ -12,7 +12,7 @@
 
 **Tech Stack:** Vue 3 script setup · TypeScript · GSAP 3.15（Flip 插件，已在依赖内且全免费）· UnoCSS · CSS 3D transforms · Vitest + @vue/test-utils
 
-**Spec:** `docs/superpowers/specs/2026-09-09-stage-3d-motion-design.md`（配合总设计文档 `docs/superpowers/specs/2026-09-08-todo-flex-design.md` §7 一起读）
+**Spec:** [2026-09-09-stage-3d-motion-design.md](../specs/2026-09-09-stage-3d-motion-design.md)（配合总设计文档 [2026-09-08-todo-flex-design.md](../specs/2026-09-08-todo-flex-design.md) §7 一起读）
 
 ## Global Constraints
 

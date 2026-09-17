@@ -2,7 +2,7 @@
 
 - 日期：2026-09-11
 - 状态：已定稿，待出实现计划
-- 上游文档：`docs/superpowers/specs/2026-09-08-todo-flex-design.md`（第 8.2 节陷阱清单、第 7 节特效分层、第 15 节里程碑表）
+- 上游文档：[2026-09-08-todo-flex-design.md](./2026-09-08-todo-flex-design.md)（第 8.2 节陷阱清单、第 7 节特效分层、第 15 节里程碑表）
 
 ## 1. 目标与范围
 
@@ -36,7 +36,7 @@
 
 两个理由：
 
-1. `DemoStage` 的 scoped CSS 经过大量浏览器实测（见 `docs/superpowers/plans/2026-09-09-isometric-solid-block.md`），
+1. `DemoStage` 的 scoped CSS 经过大量浏览器实测（见 [2026-09-09-isometric-solid-block.md](../plans/2026-09-09-isometric-solid-block.md)），
    把它提成全局样式共享是白担风险——scoped 去掉后选择器优先级与作用域都会变。
 2. 等距块的顶面会画到容器外（CLAUDE.md 里记的待核对项 4），在陷阱区更小的演示里更碍眼。
 

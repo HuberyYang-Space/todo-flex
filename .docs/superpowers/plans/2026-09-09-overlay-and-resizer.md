@@ -8,7 +8,7 @@
 
 **Tech Stack:** Vue 3 script setup · TypeScript · UnoCSS · VueUse(`useEventListener`) · Vitest + @vue/test-utils · 内联 SVG（不引图形库）
 
-**Spec:** `docs/superpowers/specs/2026-09-08-todo-flex-design.md`（§3 信息架构、§5 模块表 `components/playground/OverlayLayer.vue`、§7 视觉分层「叠加层」一行、§15 里程碑 M3）
+**Spec:** [2026-09-08-todo-flex-design.md](../specs/2026-09-08-todo-flex-design.md)（§3 信息架构、§5 模块表 `components/playground/OverlayLayer.vue`、§7 视觉分层「叠加层」一行、§15 里程碑 M3）
 
 ## Global Constraints
 

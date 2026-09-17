@@ -8,7 +8,7 @@
 
 **Tech Stack:** Vue 3 (script setup) · Vite · TypeScript 6 · UnoCSS · VueUse · Vitest · happy-dom · @vue/test-utils · prismjs · @antfu/eslint-config
 
-**Spec:** `docs/superpowers/specs/2026-09-08-todo-flex-design.md`
+**Spec:** [2026-09-08-todo-flex-design.md](../specs/2026-09-08-todo-flex-design.md)
 
 ## Global Constraints
 
