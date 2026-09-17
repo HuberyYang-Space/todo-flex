@@ -105,7 +105,6 @@ function round(value: number): number {
             :x2="x"
             y2="8"
             stroke="var(--accent)"
-            stroke-opacity="0.35"
             stroke-width="3"
           />
         </g>
@@ -221,6 +220,15 @@ function round(value: number): number {
  */
 .stripe-flow {
   animation: stripe-flow 2.4s linear infinite;
+}
+
+/*
+ * 纹路的不透明度必须分主题，所以写在 CSS 里而不是 <line> 的 stroke-opacity 属性上——
+ * SVG 属性没法跟着 html.dark 走。亮色底接近白，0.35 的纹路只有 1.46:1、基本看不见；
+ * 暗色的 0.35 则已有 2.20，是取舍过的基准，再高会让 2.4s 的流动抢戏。
+ */
+.stripe-flow line {
+  stroke-opacity: var(--stripe-op);
 }
 
 .stripe-flow--reverse {

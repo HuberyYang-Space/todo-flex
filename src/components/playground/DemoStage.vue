@@ -175,20 +175,34 @@ function contentStyle(item: FlexItemState): CSSProperties {
   --face: color-mix(in srgb, var(--accent) 34%, var(--panel));
 
   border-radius: 3px;
-  outline: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--accent) var(--stage-line-k), transparent);
   outline-offset: -1px;
+
+  /*
+   * 正面也从 --face 派生，理由与顶面/右侧面完全一样：
+   * 曾经写成「accent 40% → 28% 混 panel」，看着只是深浅两档，
+   * 但混合比例的明暗方向取决于 accent 与 panel 谁更亮——亮色主题下 panel 是纯白，
+   * accent 掺得越多越暗，渐变整个翻过来变成上暗下亮（0.591 → 0.697），
+   * 读作光从下面打上来，跟顶面加白的左上光源正好打架。
+   */
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--accent) 40%, var(--panel)) 0%,
-    color-mix(in srgb, var(--accent) 28%, var(--panel)) 100%
+    color-mix(in srgb, white 8%, var(--face)) 0%,
+    color-mix(in srgb, black 6%, var(--face)) 100%
   );
 
   /*
    * 接触阴影 + 分层投影。第一层又紧又暗的那道才是接触阴影，
    * 物体贴不贴地全看它；后面几层模糊值倍增（1→2→4→8→16），模拟环境光的衰减。
    * 只用一层大模糊阴影的话，读起来是「物体的模糊剪影」而不是「落在台面上的影子」。
+   *
+   * 但落在台面上的黑影在暗色主题里几乎不成立：台面亮度只有 0.015、纯黑是 0，
+   * 没有可压的余量，对比度仅 1.12（亮色下有 2.35）。提亮台面换不来多少（上限 1.42）
+   * 却要改掉定案的暗色观感，所以接触的证据改由方块自己的底缘承担——
+   * inset 暗边落在有余量的正面上，暗色 1.65 / 亮色 3.03。台面的五层投影一层不动。
    */
   box-shadow:
+    inset 0 -1px 0 color-mix(in srgb, black 45%, transparent),
     0 1px 1px color-mix(in srgb, black 34%, transparent),
     0 2px 2px color-mix(in srgb, black 26%, transparent),
     0 4px 4px color-mix(in srgb, black 20%, transparent),
@@ -255,7 +269,7 @@ function contentStyle(item: FlexItemState): CSSProperties {
 
   translate: 0 calc(-1 * var(--lift, 6px));
   scale: var(--lift-scale, 1.03);
-  outline-color: color-mix(in srgb, var(--accent) 85%, transparent);
+  outline-color: color-mix(in srgb, var(--accent) var(--stage-line-hover-k), transparent);
   box-shadow:
     0 2px 2px color-mix(in srgb, black 30%, transparent),
     0 4px 4px color-mix(in srgb, black 24%, transparent),
@@ -276,16 +290,14 @@ function contentStyle(item: FlexItemState): CSSProperties {
     0 4px 4px color-mix(in srgb, black 14%, transparent);
 }
 
-/* 选中：只换体色，顶面与右侧面从 --face 派生，明暗关系自动保持一致 */
+/*
+ * 选中：只换体色。三个面连同正面渐变全部从 --face 派生，
+ * 明暗关系自动保持一致——这里不必也不该再写一遍 background。
+ */
 .stage-item.is-selected .stage-box {
   --face: color-mix(in srgb, var(--accent-2) 34%, var(--panel));
 
   outline-color: var(--accent-2);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--accent-2) 40%, var(--panel)) 0%,
-    color-mix(in srgb, var(--accent-2) 28%, var(--panel)) 100%
-  );
 }
 
 .content {

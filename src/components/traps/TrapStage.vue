@@ -78,7 +78,7 @@ function contentStyle(item: FlexItemState): CSSProperties {
   align-items: center;
   justify-content: center;
   border-radius: 3px;
-  outline: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--accent) var(--stage-line-k), transparent);
   outline-offset: -1px;
 
   /*

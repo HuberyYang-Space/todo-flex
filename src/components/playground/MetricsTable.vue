@@ -94,7 +94,7 @@ function px(value: number): string {
               {{ row.actual === null ? '—' : px(row.actual) }}
             </td>
             <td data-testid="diagnosis" class="py-1 font-sans">
-              <span v-if="row.actual === null" class="op-40">—</span>
+              <span v-if="row.actual === null" class="op-60">—</span>
               <span v-else-if="!row.diagnostic" class="op-60">✓</span>
               <span v-else-if="row.diagnostic.severity === 'info'" class="text-accent">
                 ℹ {{ ruleText[row.diagnostic.rule](row.diagnostic) }}
