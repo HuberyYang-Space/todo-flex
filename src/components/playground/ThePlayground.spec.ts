@@ -1,8 +1,11 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useFlexState } from '~/composables/useFlexState'
 import { useFlip } from '~/composables/useFlip'
 import { useOverlay } from '~/composables/useOverlay'
+import { motion } from '~/visual/motion'
 import ThePlayground from './ThePlayground.vue'
 
 describe('thePlayground', () => {
@@ -67,5 +70,27 @@ describe('thePlayground', () => {
     const wrapper = mount(ThePlayground)
     await wrapper.get('[data-testid="reset"]').trigger('click')
     expect(state.container.direction).toBe('row')
+  })
+
+  /*
+   * 这条守卫钉的是「滚动容器的内边距必须容得下伸出去的顶面」。
+   *
+   * 起因是浏览器实测：顶面往上伸 10px，而滚动容器只有 p-2（8px），
+   * 顶面上沿 2px 被裁掉。align-items 默认 stretch，盒子顶边必然贴着容器上沿，
+   * 所以这个裁切每次都发生，不是边界情况。
+   *
+   * 只能读源码断言：padding 是 UnoCSS 的原子类，happy-dom 里不会生成真实样式值，
+   * 挂载后量 computed style 恒为 0，测不出来。
+   */
+  it('演示区滚动容器的内边距容得下伸出去的顶面', () => {
+    const src = readFileSync(resolve(process.cwd(), 'src/components/playground/ThePlayground.vue'), 'utf-8')
+    const scroller = /<div class="([^"]*overflow-auto[^"]*)">\s*<DemoStage\s*\/>/.exec(src)
+    expect(scroller, '没找到包着 DemoStage 的滚动容器').toBeTruthy()
+
+    const pad = /(?:^|\s)p-(\d+)(?:\s|$)/.exec(scroller![1])
+    expect(pad, `滚动容器缺少 p-* 内边距：${scroller![1]}`).toBeTruthy()
+
+    // UnoCSS 默认 spacing 基数 4px（实测 p-2 === 8px）
+    expect(Number(pad![1]) * 4).toBeGreaterThanOrEqual(motion.blockDepth)
   })
 })

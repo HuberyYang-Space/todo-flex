@@ -91,6 +91,10 @@ pnpm build                    # 类型检查 + 生产构建
 - **不要写 `--d: calc(var(--d) + 3px)`**——CSS 自定义属性自引用无效，整条声明被丢弃且不报错。
   要改厚度改倍率 `--d-k`。
   → [详见](./.docs/pitfalls.md#--d-不能自引用)
+- **改 `motion.blockDepth` 时必须同步看 `ThePlayground.vue` 那层滚动容器的 padding**——
+  伸出去的顶面由外层 `.overflow-auto` 裁剪，padding 不够就被切掉（曾是 8px 装 10px 顶面，
+  稳定裁掉 2px）。`ThePlayground.spec.ts` 有守卫钉住 `padding ≥ blockDepth`。
+  → [详见](./.docs/pitfalls.md#滚动容器的内边距必须容得下伸出去的面)
 - **斜纹的方向感必须由纹路朝向承担，不要靠色块长宽比**——长宽比取决于「剩余空间量 vs 交叉轴尺寸」，
   跟 `flex-direction` 不相干，两个方向上都会读反。**通用教训：不要让「元素形状」去承担方向语义。**
   → [详见](./.docs/pitfalls.md#斜纹流向元素形状不能承担方向语义)

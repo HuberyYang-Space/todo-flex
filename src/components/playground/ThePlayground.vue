@@ -43,8 +43,15 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
           </span>
         </div>
 
-        <!-- p-2 加在滚动容器上而不是 .stage 上，给伸出去的手柄留位置，不影响布局推导 -->
-        <div class="overflow-auto p-2">
+        <!--
+          内边距加在滚动容器上而不是 .stage 上：.stage 加 padding 会占布局空间，
+          诊断层会把那份恒定偏差误报成「有规则介入」（红线 6）。
+          取 p-3 (12px) 而不是更小，是因为这里要同时容下两样伸出容器的东西：
+          右下角的 resize 手柄，以及等距实体块往上伸的顶面（motion.blockDepth = 10px）。
+          曾经是 p-2 (8px)，顶面上沿被这一层的 overflow 裁掉 2px——
+          stretch 下盒子顶边必然贴着容器上沿，所以那个裁切每次都发生。
+        -->
+        <div class="overflow-auto p-3">
           <DemoStage />
         </div>
       </div>

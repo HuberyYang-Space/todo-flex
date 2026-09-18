@@ -18,7 +18,11 @@
 ### 实现要点
 
 顶面与右侧面是 `.stage-box` 的两个伪元素画的二维平行四边形（`skewX` / `skewY`），
-厚度 `--d` 由 `DemoStage` 按 `min(rowGap, columnGap) - 2` 算出来下发，悬停 / 按下用倍率 `--d-k` 缩放。
+厚度 `--d` 由 `DemoStage` 下发，悬停 / 按下用倍率 `--d-k` 缩放。完整公式是
+`Math.max(blockDepthMin, Math.min(blockDepth, min(rowGap, columnGap) - 2))`——**双向钳制**，
+下限 3px（gap 收到 0 也要留一点，否则方块塌回平面）、上限 10px。
+别记成单纯的 `min(gap) - 2`：`gap < 5` 时下限生效，厚度会大于间距，
+那是有意为之的取舍而不是 bug，理由见 [progress.md](./progress.md#顺带查清的两件事)。
 
 ### `--d` 不能自引用
 
@@ -33,6 +37,21 @@
 （实测正面 0.79 > 顶面 0.67），左上光源就读不出来了。
 
 **这个缺陷只在亮色主题下出现，只看暗色发现不了。** 改配色相关的东西时两个主题都要过一遍。
+
+### 滚动容器的内边距必须容得下伸出去的面
+
+顶面往上伸 `--d`（上限 10px），右侧面往右伸同样多。这两个面**不受 `.stage-box` 自己控制**——
+裁掉它们的是更外层那个 `.overflow-auto`（在 `ThePlayground.vue`，为 resize 手柄留位置用的）。
+它的 padding 曾是 `p-2`（8px），装不下 10px 的顶面，**顶面上沿被稳定裁掉 2px**。
+
+`align-items` 默认 `stretch`，盒子顶边必然贴着容器上沿，所以这个裁切每次都发生，不是边界情况。
+现已改成 `p-3`（12px），`ThePlayground.spec.ts` 有守卫钉住 `padding ≥ motion.blockDepth`。
+
+**改 `motion.blockDepth` 时要连带想到这一层。** 两个值在不同文件里，改厚度的人不会自然想到
+另一个组件的 padding——守卫测试就是为这条准备的，它会在 `blockDepth` 超过 padding 时变红。
+
+水平方向暂时安全：滚动容器 1046px 宽、演示区 720px，右侧有余量。但容器宽度上限是 1200px，
+拖过约 1030px 后右侧面会开始被裁。
 
 ### `align-items: stretch` 下顶面会画出容器
 
