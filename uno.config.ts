@@ -16,6 +16,11 @@ export default defineConfig({
       accent: 'var(--accent)',
       accent2: 'var(--accent-2)',
     },
+    spacing: {
+      // 与 src/styles/main.css 的间距变量对应：p-space / gap-space / mb-space / gap-tight
+      space: 'var(--space)',
+      tight: 'var(--space-tight)',
+    },
     fontFamily: {
       mono: '"JetBrains Mono", "SF Mono", "Fira Code", Consolas, monospace',
       sans: '"Inter", -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif',

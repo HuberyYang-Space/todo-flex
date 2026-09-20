@@ -18,9 +18,9 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
     漏掉任何一级，多出来的高度都会一路顶到 body 上，整页重新开始滚。
     宽度封顶 max-w-480（1920px），比原来的 1440 多出的部分全部落给右侧演示区。
   -->
-  <div class="grid mx-auto max-w-480 w-full gap-4 p-4 lg:grid-cols-[320px_1fr] lg:min-h-0 lg:flex-1">
+  <div class="grid mx-auto max-w-480 w-full gap-space p-space lg:grid-cols-[320px_1fr] lg:min-h-0 lg:flex-1">
     <!-- 操作区 -->
-    <aside class="flex flex-col gap-5 panel p-3 lg:min-h-0 lg:overflow-y-auto">
+    <aside class="flex flex-col gap-space panel p-space lg:min-h-0 lg:overflow-y-auto">
       <ContainerControls />
       <ItemList />
       <ItemControls />
@@ -30,10 +30,10 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
     </aside>
 
     <!-- 演示区 + 检视面板 -->
-    <main class="flex flex-col gap-4 lg:min-h-0">
-      <div class="flex flex-col panel p-3 lg:min-h-0 lg:flex-1">
-        <div class="mb-3 flex shrink-0 flex-wrap items-center gap-4 text-xs">
-          <label class="flex cursor-pointer items-center gap-2">
+    <main class="flex flex-col gap-space lg:min-h-0">
+      <div class="flex flex-col gap-space panel p-space lg:min-h-0 lg:flex-1">
+        <div class="flex shrink-0 flex-wrap items-center gap-space text-xs">
+          <label class="flex cursor-pointer items-center gap-tight">
             <input
               data-testid="overlay-toggle"
               type="checkbox"
@@ -51,12 +51,13 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
         <!--
           内边距加在滚动容器上而不是 .stage 上：.stage 加 padding 会占布局空间，
           诊断层会把那份恒定偏差误报成「有规则介入」（红线 6）。
-          取 p-3 (12px) 而不是更小，是因为这里要同时容下两样伸出容器的东西：
+          这里用的是全局间距 --space（12px），它同时还得容下两样伸出容器的东西：
           右下角的 resize 手柄，以及等距实体块往上伸的顶面（motion.blockDepth = 10px）。
-          曾经是 p-2 (8px)，顶面上沿被这一层的 overflow 裁掉 2px——
+          曾经是 8px，顶面上沿被这一层的 overflow 裁掉 2px——
           stretch 下盒子顶边必然贴着容器上沿，所以那个裁切每次都发生。
+          调小 --space 之前先看 ThePlayground.spec.ts 里钉着的那条守卫。
         -->
-        <div class="overflow-auto p-3 lg:min-h-0 lg:flex-1">
+        <div class="overflow-auto p-space lg:min-h-0 lg:flex-1">
           <DemoStage />
         </div>
       </div>

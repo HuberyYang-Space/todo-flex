@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -90,11 +90,13 @@ describe('thePlayground', () => {
     const scroller = /<div class="([^"]*overflow-auto[^"]*)">\s*<DemoStage\s*\/>/.exec(src)
     expect(scroller, '没找到包着 DemoStage 的滚动容器').toBeTruthy()
 
-    const pad = /(?:^|\s)p-(\d+)(?:\s|$)/.exec(scroller![1])
-    expect(pad, `滚动容器缺少 p-* 内边距：${scroller![1]}`).toBeTruthy()
+    expect(scroller![1], `滚动容器要走全局间距 p-space：${scroller![1]}`).toMatch(/(?:^|\s)p-space(?:\s|$)/)
 
-    // UnoCSS 默认 spacing 基数 4px（实测 p-2 === 8px）
-    expect(Number(pad![1]) * 4).toBeGreaterThanOrEqual(motion.blockDepth)
+    // p-space 解析成 var(--space)，所以真正要守的阈值在 main.css 那个变量上
+    const css = readFileSync(resolve(process.cwd(), 'src/styles/main.css'), 'utf-8')
+    const space = /--space:\s*(\d+)px/.exec(css)
+    expect(space, 'main.css 里没有 --space').toBeTruthy()
+    expect(Number(space![1])).toBeGreaterThanOrEqual(motion.blockDepth)
   })
 
   /*
@@ -115,7 +117,7 @@ describe('thePlayground', () => {
      * 每一条都带 lg: 前缀，是有意的：窄屏两栏塌成一栏，一屏根本放不下，
      * 高度锁死只会把内容永久切掉，所以窄屏必须退回普通文档流滚动。
      */
-    const appRoot = /<div class="([^"]*)"[^>]*>\s*<header/.exec(app)
+    const appRoot = /<div class="([^"]*)"[^>]*>\s*(?:<!--[\s\S]*?-->\s*)?<header/.exec(app)
     expect(appRoot, '没找到 App.vue 的根容器').toBeTruthy()
     expect(appRoot![1], 'App 根容器要占满视口高度').toMatch(/(?:^|\s)lg:h-full(?:\s|$)/)
     expect(appRoot![1], '宽屏下整页不得滚动').toMatch(/(?:^|\s)lg:overflow-hidden(?:\s|$)/)
@@ -142,5 +144,42 @@ describe('thePlayground', () => {
     const scroller = /<div class="([^"]*overflow-auto[^"]*)">\s*<DemoStage\s*\/>/.exec(playground)!
     expect(scroller[1], '演示区滚动容器要吃满面板的剩余高度').toMatch(/(?:^|\s)lg:flex-1(?:\s|$)/)
     expect(scroller[1], '演示区滚动容器缺 min-h-0，超高的演示区会把面板顶破').toMatch(/(?:^|\s)lg:min-h-0(?:\s|$)/)
+  })
+
+  /*
+   * 这条守卫钉的是「全站只有两档间距」。
+   *
+   * 统一之前模块间距有四档（16 / 16 / 12 / 20），而且 margin 与 gap 混用：
+   * 字段各自带 margin-bottom，外层再叠一层 gap，边界处就是两份间距相加，
+   * 于是「分节之间」看起来远宽于「字段之间」——那不是设计意图，是叠加的副产物。
+   * 一旦有人再写回一个硬编码的 gap-4 / mb-2，这份对齐立刻又散掉，而且散得很不显眼。
+   *
+   * 只查竖向节奏用得上的那几个属性：gap / mb / mt / space-y / p。
+   * px-* 与 py-* 是控件自己的内边距（列表行、文本框），不参与模块之间的节奏，不在此列。
+   */
+  it('模块间距只走 --space / --space-tight，没有硬编码的数值类', () => {
+    const files = [
+      'src/App.vue',
+      ...readdirSync(resolve(process.cwd(), 'src/components/playground'))
+        .filter(name => name.endsWith('.vue'))
+        .map(name => `src/components/playground/${name}`),
+    ]
+
+    const offenders: string[] = []
+    for (const file of files) {
+      const src = readFileSync(resolve(process.cwd(), file), 'utf-8')
+      // 贪婪匹配到最后一个 </template>：组件里的 <template v-if> 会让非贪婪版本提前收尾，
+      // 那之后的模板就再也扫不到了（ItemControls 正是这种写法）
+      const template = /<template>([\s\S]*)<\/template>/.exec(src)?.[1] ?? ''
+      // 取捕获组而不是整段匹配：整段带着 class=" 和收尾的引号，首尾两个类名会被漏掉
+      for (const [, cls] of template.matchAll(/class="([^"]*)"/g)) {
+        for (const token of cls.split(/\s+/)) {
+          if (/^(?:lg:)?(?:gap|gap-x|gap-y|mb|mt|space-y|p)-\d+$/.test(token))
+            offenders.push(`${file}: ${token}`)
+        }
+      }
+    }
+
+    expect(offenders, `这些地方绕开了全局间距变量：\n${offenders.join('\n')}`).toEqual([])
   })
 })

@@ -19,7 +19,8 @@ const active = ref<TabKey>('metrics')
 
 <template>
   <section data-testid="inspector" class="flex flex-col overflow-hidden panel">
-    <div role="tablist" class="flex shrink-0 items-stretch gap-1 border-b border-bd px-2">
+    <!-- 标签条的左内边距与下方内容区一致，第一个标签的左沿才和表格对得齐 -->
+    <div role="tablist" class="flex shrink-0 items-stretch gap-space border-b border-bd px-space">
       <button
         v-for="tab in tabs"
         :key="tab.key"
@@ -40,7 +41,7 @@ const active = ref<TabKey>('metrics')
       flex 子项的 min-height 默认是 auto，不肯被压到内容高度以下，
       少了 min-h-0 这层就会把面板顶高，滚动条一路冒到 body 上，整页不滚动的前提当场作废。
     -->
-    <div class="min-h-0 flex-1 overflow-auto p-3">
+    <div class="min-h-0 flex-1 overflow-auto p-space">
       <MetricsTable v-if="active === 'metrics'" />
       <CssOutput v-else />
     </div>
@@ -49,7 +50,8 @@ const active = ref<TabKey>('metrics')
 
 <style scoped>
 .tab-btn {
-  padding: 6px 10px;
+  /* 左右不留内边距：靠 tablist 的 px-space 定左沿，标签之间靠 gap 拉开 */
+  padding: 6px 0;
   border-bottom: 2px solid transparent;
   color: color-mix(in srgb, var(--fg) 60%, transparent);
   font-size: 12px;

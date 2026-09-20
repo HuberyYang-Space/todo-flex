@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import type { PropertyDef } from '~/data/flexProperties'
 import { useFlip } from '~/composables/useFlip'
-import { visibleOptions } from '~/data/flexProperties'
 
 const props = defineProps<{
   prop: PropertyDef
   modelValue: string | number | boolean
-  showAdvanced: boolean
 }>()
 
 const emit = defineEmits<{
@@ -25,17 +23,18 @@ function onTextInput(event: Event): void {
 </script>
 
 <template>
-  <div class="mb-3">
-    <div class="mb-1 flex items-center justify-between text-xs op-70">
+  <!-- 字段自己不带 margin：外层用 gap 统一控制，边界处才不会出现两份间距相加 -->
+  <div class="flex flex-col gap-tight">
+    <div class="flex items-center justify-between text-xs op-70">
       <a :href="props.prop.mdn" target="_blank" rel="noopener" class="font-mono hover:underline">
         {{ props.prop.cssName }}
       </a>
       <span v-if="props.prop.kind === 'number'" class="font-mono">{{ props.modelValue }}</span>
     </div>
 
-    <div v-if="props.prop.kind === 'enum'" class="flex flex-wrap gap-1">
+    <div v-if="props.prop.kind === 'enum'" class="flex flex-wrap gap-tight">
       <button
-        v-for="option in visibleOptions(props.prop, props.showAdvanced)"
+        v-for="option in props.prop.options"
         :key="option.value"
         data-testid="option"
         :data-value="option.value"
@@ -59,7 +58,7 @@ function onTextInput(event: Event): void {
       @pointerdown="setScrubbing(true)"
     >
 
-    <div v-else-if="props.prop.kind === 'text'" class="flex flex-wrap gap-1">
+    <div v-else-if="props.prop.kind === 'text'" class="flex flex-wrap gap-tight">
       <button
         v-for="preset in props.prop.presets"
         :key="preset"
@@ -78,7 +77,7 @@ function onTextInput(event: Event): void {
       >
     </div>
 
-    <label v-else class="flex cursor-pointer items-center gap-2 text-xs">
+    <label v-else class="flex cursor-pointer items-center gap-tight text-xs">
       <input
         type="checkbox"
         :checked="Boolean(props.modelValue)"
@@ -173,7 +172,8 @@ function onTextInput(event: Event): void {
 }
 
 .option {
-  padding: 3px 10px;
+  /* 上下内边距与列表行、文本框一致，操作区里所有可点控件的上下边距对得齐 */
+  padding: var(--space-tight) 10px;
   border: 1px solid var(--border);
   border-radius: 999px;
   cursor: pointer;

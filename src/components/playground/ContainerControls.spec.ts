@@ -21,11 +21,20 @@ describe('containerControls', () => {
     expect(useFlexState().state.container.direction).toBe('column')
   })
 
-  it('默认不展示 advanced 选项，展开后可见', async () => {
+  it('每个枚举属性的取值一次全摆出来，没有折叠区', () => {
     const wrapper = mount(ContainerControls)
-    expect(wrapper.find('[data-value="left"]').exists()).toBe(false)
-    await wrapper.get('[data-testid="toggle-advanced"]').trigger('click')
+
+    // 原先收在「更多值」里的近义值，现在首屏就在
     expect(wrapper.find('[data-value="left"]').exists()).toBe(true)
+    expect(wrapper.find('[data-value="self-start"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="toggle-advanced"]').exists()).toBe(false)
+
+    for (const prop of containerProperties) {
+      if (prop.kind !== 'enum')
+        continue
+      for (const option of prop.options)
+        expect(wrapper.find(`[data-value="${option.value}"]`).exists(), `${prop.cssName} 缺了 ${option.value}`).toBe(true)
+    }
   })
 
   it('数值控件写回状态且为数字类型', async () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createDefaultState } from '~/core/defaults'
-import { containerProperties, flexShorthandPresets, itemProperties, visibleOptions } from './flexProperties'
+import { containerProperties, flexShorthandPresets, itemProperties } from './flexProperties'
 
 const allProperties = [...containerProperties, ...itemProperties]
 
@@ -69,20 +69,5 @@ describe('flex 简写预设', () => {
     const initial = flexShorthandPresets.find(preset => preset.label === 'initial')!
     const item = createDefaultState().items[0]
     expect([initial.grow, initial.shrink, initial.basis]).toEqual([item.grow, item.shrink, item.basis])
-  })
-})
-
-describe('visibleOptions', () => {
-  it('默认隐藏标记为 advanced 的近义值', () => {
-    const justify = containerProperties.find(prop => prop.key === 'justifyContent')!
-    if (justify.kind !== 'enum')
-      throw new Error('justifyContent 应当是枚举属性')
-
-    const common = visibleOptions(justify, false).map(option => option.value)
-    const all = visibleOptions(justify, true).map(option => option.value)
-    expect(common).toContain('space-between')
-    expect(common).not.toContain('left')
-    expect(all).toContain('left')
-    expect(all.length).toBeGreaterThan(common.length)
   })
 })

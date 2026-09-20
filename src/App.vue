@@ -12,7 +12,11 @@ useShareUrl()
     窄屏不锁——两栏塌成一栏后一屏放不下，锁死等于把下半页永久切掉。
   -->
   <div class="min-h-full flex flex-col font-sans lg:h-full lg:overflow-hidden">
-    <header class="mx-auto max-w-480 w-full flex shrink-0 items-center justify-between p-4">
+    <!--
+      只给上内边距不给下内边距：下方留白由 Playground 的 p-space 承担，
+      两边都写的话标题下面会叠成两份间距，看起来就是「标题上下不一样宽」。
+    -->
+    <header class="mx-auto max-w-480 w-full flex shrink-0 items-center justify-between px-space pt-space">
       <div>
         <h1 class="text-lg font-bold font-mono">
           todo-flex

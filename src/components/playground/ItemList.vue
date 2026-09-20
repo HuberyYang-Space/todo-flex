@@ -6,8 +6,8 @@ const { state, addItem, removeItem, selectItem } = useFlexState()
 </script>
 
 <template>
-  <section>
-    <header class="mb-2 flex items-center justify-between">
+  <section class="flex flex-col gap-space">
+    <header class="flex items-center justify-between">
       <h2 class="text-sm font-bold">
         盒子（{{ state.items.length }}/{{ MAX_ITEMS }}）
       </h2>
@@ -21,7 +21,7 @@ const { state, addItem, removeItem, selectItem } = useFlexState()
       </button>
     </header>
 
-    <ul class="flex flex-col gap-1">
+    <ul class="flex flex-col gap-tight">
       <li
         v-for="(item, index) in state.items"
         :key="item.id"

@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import type { FlexItemState } from '~/core/types'
 import type { FlexShorthandPreset } from '~/data/flexProperties'
-import { ref } from 'vue'
 import { useFlexState } from '~/composables/useFlexState'
 import { flexShorthandPresets, itemProperties } from '~/data/flexProperties'
 import PropertyField from './PropertyField.vue'
 
 const { selectedItem } = useFlexState()
-const showAdvanced = ref(false)
 
 function valueOf(item: FlexItemState, key: string): string | number | boolean {
   return item[key as keyof FlexItemState]
@@ -31,25 +29,23 @@ function isPresetActive(item: FlexItemState, preset: FlexShorthandPreset): boole
 </script>
 
 <template>
-  <section>
-    <header class="mb-2 flex items-center justify-between">
-      <h2 data-testid="item-title" class="text-sm font-bold">
-        盒子属性<template v-if="selectedItem">
-          · {{ selectedItem.id }}
-        </template>
-      </h2>
-    </header>
+  <section class="flex flex-col gap-space">
+    <h2 data-testid="item-title" class="text-sm font-bold">
+      盒子属性<template v-if="selectedItem">
+        · {{ selectedItem.id }}
+      </template>
+    </h2>
 
     <p v-if="!selectedItem" data-testid="item-empty" class="text-xs op-60">
       点击演示区里的任意盒子来编辑它的属性
     </p>
 
     <template v-else>
-      <div class="mb-3">
-        <div class="mb-1 text-xs op-70">
+      <div class="flex flex-col gap-tight">
+        <div class="text-xs op-70">
           <span class="font-mono">flex</span> 简写
         </div>
-        <div class="flex flex-wrap gap-1">
+        <div class="flex flex-wrap gap-tight">
           <button
             v-for="preset in flexShorthandPresets"
             :key="preset.label"
@@ -68,7 +64,6 @@ function isPresetActive(item: FlexItemState, preset: FlexShorthandPreset): boole
         v-for="prop in itemProperties"
         :key="prop.key"
         :prop="prop"
-        :show-advanced="showAdvanced"
         :model-value="valueOf(selectedItem, prop.key)"
         @update:model-value="update(selectedItem, prop.key, $event)"
       />
@@ -78,7 +73,7 @@ function isPresetActive(item: FlexItemState, preset: FlexShorthandPreset): boole
 
 <style scoped>
 .preset {
-  padding: 2px 10px;
+  padding: var(--space-tight) 10px;
   border: 1px solid var(--border);
   border-radius: 4px;
   cursor: pointer;

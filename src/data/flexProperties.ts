@@ -2,8 +2,6 @@ const MDN = 'https://developer.mozilla.org/zh-CN/docs/Web/CSS'
 
 export interface PropertyOption {
   value: string
-  /** 标记为 true 的选项收进「更多值」折叠区，避免面板被近义值撑爆 */
-  advanced?: boolean
 }
 
 interface PropertyBase {
@@ -61,10 +59,10 @@ export const containerProperties: PropertyDef[] = [
       { value: 'space-between' },
       { value: 'space-around' },
       { value: 'space-evenly' },
-      { value: 'start', advanced: true },
-      { value: 'end', advanced: true },
-      { value: 'left', advanced: true },
-      { value: 'right', advanced: true },
+      { value: 'start' },
+      { value: 'end' },
+      { value: 'left' },
+      { value: 'right' },
     ],
     default: 'flex-start',
   },
@@ -79,10 +77,10 @@ export const containerProperties: PropertyDef[] = [
       { value: 'center' },
       { value: 'flex-end' },
       { value: 'baseline' },
-      { value: 'first baseline', advanced: true },
-      { value: 'last baseline', advanced: true },
-      { value: 'self-start', advanced: true },
-      { value: 'self-end', advanced: true },
+      { value: 'first baseline' },
+      { value: 'last baseline' },
+      { value: 'self-start' },
+      { value: 'self-end' },
     ],
     default: 'stretch',
   },
@@ -219,10 +217,3 @@ export const flexShorthandPresets: FlexShorthandPreset[] = [
   { label: 'initial', grow: 0, shrink: 1, basis: 'auto' },
   { label: 'none', grow: 0, shrink: 0, basis: 'auto' },
 ]
-
-/** 折叠区未展开时，只给出常用值 */
-export function visibleOptions(prop: PropertyDef, showAdvanced: boolean): PropertyOption[] {
-  if (prop.kind !== 'enum')
-    return []
-  return showAdvanced ? prop.options : prop.options.filter(option => !option.advanced)
-}

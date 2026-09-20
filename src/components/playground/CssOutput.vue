@@ -17,8 +17,8 @@ async function copy(): Promise<void> {
 </script>
 
 <template>
-  <section>
-    <header class="mb-2 flex justify-end">
+  <section class="flex flex-col gap-tight">
+    <header class="flex justify-end">
       <button data-testid="copy-css" class="btn text-xs" @click="copy()">
         {{ copied ? '已复制' : '复制' }}
       </button>

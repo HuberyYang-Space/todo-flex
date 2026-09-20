@@ -48,8 +48,8 @@ function px(value: number): string {
 </script>
 
 <template>
-  <section data-testid="metrics">
-    <p class="mb-2 text-xs op-60">
+  <section data-testid="metrics" class="flex flex-col gap-tight">
+    <p class="text-xs op-60">
       理论值来自推导引擎，实际值取自浏览器渲染结果——不一致处即是规则介入的地方
     </p>
 
