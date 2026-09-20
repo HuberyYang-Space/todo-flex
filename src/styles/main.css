@@ -41,6 +41,20 @@
    */
   --space: 12px;
   --space-tight: 4px;
+
+  /*
+   * 滚动条外观对齐 Element Plus 的 el-scrollbar：6px 宽、4px 圆角、轨道透明，
+   * 滑块是 #909399 的半透明灰，悬停加深。取值就是 el 的
+   * --el-scrollbar-bg-color (#909399) 配 --el-scrollbar-opacity (.3) / hover (.5)。
+   * 这组中性灰在近白与近黑两种底色上都立得住，所以不分主题。
+   *
+   * 差别只有一处，且无法消除：el-scrollbar 是 JS 画的悬浮层，不占布局空间；
+   * 这里用的是原生滚动条伪元素，会占掉 6px 宽度。要抹平这点得自己实现一套
+   * 滚动容器组件，代价远大于收益——外观一致即可。
+   */
+  --scrollbar-size: 6px;
+  --scrollbar-thumb: rgb(144 147 153 / 30%);
+  --scrollbar-thumb-hover: rgb(144 147 153 / 50%);
 }
 
 html.dark {
@@ -63,6 +77,43 @@ html,
 body,
 #app {
   height: 100%;
+}
+
+/*
+ * 标准属性与伪元素必须互斥，不能两套都写。
+ *
+ * Chrome 一旦在某个元素上见到 scrollbar-width / scrollbar-color，就整个忽略
+ * ::-webkit-scrollbar 的样式，滚动条退回它自己的 thin 造型——浏览器实测只占 2px，
+ * 而 el-scrollbar 是 6px，圆角与配色也全都丢了。规则明明都在产物里，运行时却没生效，
+ * 这种失效只有真实渲染量得出来。
+ *
+ * 所以把标准属性隔离给「不认识伪元素」的浏览器（Firefox），
+ * Chrome / Safari 一律走下面的伪元素。
+ */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+}
+
+::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: var(--scrollbar-thumb);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
 }
 
 body {

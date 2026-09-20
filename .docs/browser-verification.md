@@ -1,4 +1,4 @@
-# 浏览器验证：为什么不可省，以及本机的七个环境坑
+# 浏览器验证：为什么不可省，以及本机的八个环境坑
 
 > 什么时候读：动手做任何浏览器验证之前。
 > 不读的后果：把 `visibilityState: hidden` 导致的冻帧误判成缺陷（已经踩过两次），
@@ -26,7 +26,7 @@ M3 有三个 bug 是单元测试原理上抓不到的（happy-dom 没有排版�
   不要把成本转嫁出去。
 - 动效一律让用户自己看——见下面第 1 条，冻帧下量到的动效数据全是假的。
 
-## 三、本机的七个环境坑（每一条都实际踩过）
+## 三、本机的八个环境坑（每一条都实际踩过）
 
 ### 1. Chrome 窗口反复掉回不可见状态
 
@@ -43,10 +43,22 @@ M3 有三个 bug 是单元测试原理上抓不到的（happy-dom 没有排版�
 
 否则读到的是冻住的过渡中间值——实测 `--d` 已经是 3px，伪元素的 `width` 还停在 10px。
 
-### 3. GSAP Flip 的内联样式要一并清掉
+### 3. GSAP Flip 的内联样式要一并清掉——但别用 `style.cssText = ''`
 
 GSAP Flip 会在 `.stage-item` 上写 `width / height / max-* / min-* / transform` 一整套内联样式，
 冻结时全留在中间帧。想量真实布局得把这些内联属性一并清掉，**只清 `transform` 不够**。
+
+> ⚠️ **`el.style.cssText = ''` 会把 Vue 的 `:style` 绑定一起抹掉。**
+> `.stage-item` 的内联样式同时是 `itemStyle()` 的出口（`flex` / `order` / `align-self` 都在里面），
+> 清空之后盒子退回 `flex: 0 1 auto`，Vue 不重渲染就不会恢复——
+> 之后量到的是**被清理动作自己破坏过的布局**，而不是真实布局。
+>
+> 实际踩到的样子：面板列表行显示 `flex: 1 1 0`，而 `getComputedStyle` 读出来是 `0 1 auto`，
+> 本该 1200px 宽的盒子只有 80px。状态与渲染对不上时，先怀疑是不是自己刚把绑定清了。
+>
+> 正确做法：**逐个删掉 Flip 写的那几个属性**（`el.style.removeProperty('width')` 等），
+> 或者干脆先 `location.reload()` 让 Vue 重新渲染一遍再量——窗口可见时动画会自己跑完，
+> 多数情况下根本没有残留需要清。
 
 ### 4. `localhost:5175` 未必是本项目
 
@@ -61,7 +73,17 @@ GSAP Flip 会在 `.stage-item` 上写 `width / height / max-* / min-* / transfor
 
 **内存充足时直接重启一次即可**，不必先去查 OOM。查过一次：`memory_pressure` 报 42% 空闲，与内存无关。
 
-### 7. 页面里 `await` 长 `setTimeout` 不能跨过 `location.reload()`
+### 7. 探针脚本里不要写依赖 DOM 更新的 `while` 循环
+
+Vue 的 DOM 更新是异步的。`while (删除按钮数量 > 1) 点一下` 这种写法，
+循环内重新查询到的还是**这一帧的旧节点**，点击落在已经删掉的那条上，条件永远不变——
+死循环直接把渲染进程卡死，CDP 的 `Runtime.evaluate` 45 秒后超时，看起来像是浏览器扩展挂了。
+真踩到的话重载标签页即可恢复。
+
+要连续操作就**用固定次数的循环 + 每次 `await` 一次 nextTick**，
+或者更省事：直接用分享短码把状态一次性拼进 URL，免掉全部点击。
+
+### 8. 页面里 `await` 长 `setTimeout` 不能跨过 `location.reload()`
 
 会直接报「Inspected target navigated or closed」。要刷新就把刷新和读数拆成两次调用；
 改了源码其实靠 Vite HMR 就够，多数时候不需要 reload。

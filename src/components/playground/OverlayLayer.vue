@@ -72,106 +72,124 @@ function round(value: number): number {
 </script>
 
 <template>
-  <svg
-    v-if="visible && measured && geometry"
-    data-testid="overlay"
-    class="overlay"
-    :width="measured.width"
-    :height="measured.height"
-    :viewBox="`0 0 ${measured.width} ${measured.height}`"
-  >
-    <defs>
-      <!--
+  <!--
+    分两层，不是一层。
+    色块与箭头沉到盒子下面，读起来才像「铺在台面上、被方块压住」的一层，而不是盖在方块脸上的膜。
+    但 HUD 是标签，跟着沉下去就会被它要标注的那个盒子挡住——盒子贴容器顶时 HUD 本来就要翻到盒子内侧，
+    那一翻正好翻到盒子底下去了。所以 HUD 单独一层浮在上面。
+    两层共用同一个 v-if，收起叠加层时一起消失。
+  -->
+  <template v-if="visible && measured && geometry">
+    <svg
+      data-testid="overlay"
+      class="overlay overlay--under"
+      :width="measured.width"
+      :height="measured.height"
+      :viewBox="`0 0 ${measured.width} ${measured.height}`"
+    >
+      <defs>
+        <!--
         剩余空间用斜纹填充：与实心色块拉开区别，一眼看出「这里没有盒子」。
         「流动轴 × 流向」四份，纹路朝「这块空间一旦被分配会流向谁」的方向动。
         三条线是为了平移时无缝：走完一个周期（8px）时，邻位那条正好补上离场那条的位置。
       -->
-      <pattern
-        v-for="stripe in STRIPE_PATTERNS"
-        :id="`overlay-stripes-${stripe.axis}-${stripe.flow}`"
-        :key="`${stripe.axis}-${stripe.flow}`"
-        width="8"
-        height="8"
-        patternUnits="userSpaceOnUse"
-        :patternTransform="stripe.axis === 'y' ? 'rotate(90)' : undefined"
-      >
-        <rect width="8" height="8" fill="var(--accent)" fill-opacity="0.08" />
-        <g class="stripe-flow" :class="`stripe-flow--${stripe.flow}`">
-          <line
-            v-for="x in [-8, 0, 8]"
-            :key="x"
-            :x1="x"
-            y1="0"
-            :x2="x"
-            y2="8"
-            stroke="var(--accent)"
-            stroke-width="3"
-          />
-        </g>
-      </pattern>
-      <marker
-        id="overlay-arrow-main"
-        viewBox="0 0 8 8"
-        refX="7"
-        refY="4"
-        markerWidth="6"
-        markerHeight="6"
-        orient="auto"
-      >
-        <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent)" />
-      </marker>
-      <marker
-        id="overlay-arrow-cross"
-        viewBox="0 0 8 8"
-        refX="7"
-        refY="4"
-        markerWidth="6"
-        markerHeight="6"
-        orient="auto"
-      >
-        <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent-2)" />
-      </marker>
-    </defs>
+        <pattern
+          v-for="stripe in STRIPE_PATTERNS"
+          :id="`overlay-stripes-${stripe.axis}-${stripe.flow}`"
+          :key="`${stripe.axis}-${stripe.flow}`"
+          width="8"
+          height="8"
+          patternUnits="userSpaceOnUse"
+          :patternTransform="stripe.axis === 'y' ? 'rotate(90)' : undefined"
+        >
+          <rect width="8" height="8" fill="var(--accent)" fill-opacity="0.08" />
+          <g class="stripe-flow" :class="`stripe-flow--${stripe.flow}`">
+            <line
+              v-for="x in [-8, 0, 8]"
+              :key="x"
+              :x1="x"
+              y1="0"
+              :x2="x"
+              y2="8"
+              stroke="var(--accent)"
+              stroke-width="3"
+            />
+          </g>
+        </pattern>
+        <marker
+          id="overlay-arrow-main"
+          viewBox="0 0 8 8"
+          refX="7"
+          refY="4"
+          markerWidth="6"
+          markerHeight="6"
+          orient="auto"
+        >
+          <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent)" />
+        </marker>
+        <marker
+          id="overlay-arrow-cross"
+          viewBox="0 0 8 8"
+          refX="7"
+          refY="4"
+          markerWidth="6"
+          markerHeight="6"
+          orient="auto"
+        >
+          <path d="M0,0 L8,4 L0,8 Z" fill="var(--accent-2)" />
+        </marker>
+      </defs>
 
-    <!-- 剩余空间与溢出 -->
-    <rect
-      v-for="(band, index) in geometry.bands"
-      :key="`${band.lineIndex}-${index}`"
-      data-testid="overlay-band"
-      :data-kind="band.kind"
-      :x="band.x"
-      :y="band.y"
-      :width="band.width"
-      :height="band.height"
-      :class="band.kind === 'free' ? ['band-free', `band-free--${band.flowAxis ?? 'x'}-${band.flow ?? 'forward'}`] : 'band-overflow'"
-    />
-
-    <!-- 轴向箭头 -->
-    <g class="axis">
-      <line
-        data-testid="overlay-axis-main"
-        v-bind="mainArrow"
-        stroke="var(--accent)"
-        stroke-width="2"
-        marker-end="url(#overlay-arrow-main)"
+      <!-- 剩余空间与溢出 -->
+      <rect
+        v-for="(band, index) in geometry.bands"
+        :key="`${band.lineIndex}-${index}`"
+        data-testid="overlay-band"
+        :data-kind="band.kind"
+        :x="band.x"
+        :y="band.y"
+        :width="band.width"
+        :height="band.height"
+        :class="band.kind === 'free' ? ['band-free', `band-free--${band.flowAxis ?? 'x'}-${band.flow ?? 'forward'}`] : 'band-overflow'"
       />
-      <line
-        data-testid="overlay-axis-cross"
-        v-bind="crossArrow"
-        stroke="var(--accent-2)"
-        stroke-width="2"
-        stroke-dasharray="4 3"
-        marker-end="url(#overlay-arrow-cross)"
-      />
-    </g>
 
-    <!-- 尺寸 HUD -->
-    <g v-if="hud" data-testid="overlay-hud" class="hud">
-      <text :x="hud.x + 4" :y="hud.y" :class="{ mismatch: hud.mismatch }">
-        {{ hud.label }} {{ hud.text }} · 理论 {{ hud.theoretical }}
-      </text>
-    </g>
-  </svg>
+      <!-- 轴向箭头 -->
+      <g class="axis">
+        <line
+          data-testid="overlay-axis-main"
+          v-bind="mainArrow"
+          stroke="var(--accent)"
+          stroke-width="2"
+          marker-end="url(#overlay-arrow-main)"
+        />
+        <line
+          data-testid="overlay-axis-cross"
+          v-bind="crossArrow"
+          stroke="var(--accent-2)"
+          stroke-width="2"
+          stroke-dasharray="4 3"
+          marker-end="url(#overlay-arrow-cross)"
+        />
+      </g>
+
+    </svg>
+
+    <!-- 尺寸 HUD：单独一层，浮在盒子之上 -->
+    <svg
+      v-if="hud"
+      data-testid="overlay-hud-layer"
+      class="overlay overlay--over"
+      :width="measured.width"
+      :height="measured.height"
+      :viewBox="`0 0 ${measured.width} ${measured.height}`"
+    >
+      <g data-testid="overlay-hud" class="hud">
+        <text :x="hud.x + 4" :y="hud.y" :class="{ mismatch: hud.mismatch }">
+          {{ hud.label }} {{ hud.text }} · 理论 {{ hud.theoretical }}
+        </text>
+      </g>
+    </svg>
+  </template>
 </template>
 
 <style scoped>
@@ -187,6 +205,20 @@ function round(value: number): number {
    */
   overflow: visible;
   pointer-events: none;
+}
+
+/*
+ * 层序必须显式写出来，不能靠 DOM 顺序碰运气：.stage 与 .stage-wrapper 都是
+ * position: relative + z-index: auto，两者都不构成层叠上下文，
+ * 所以这两层是直接和 .stage-item（z-index: 1）比大小的。
+ * 0 在 .stage 的背景之上、盒子之下；2 在盒子之上。
+ */
+.overlay--under {
+  z-index: 0;
+}
+
+.overlay--over {
+  z-index: 2;
 }
 
 .band-free--x-forward {

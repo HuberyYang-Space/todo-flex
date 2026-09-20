@@ -95,6 +95,8 @@ function onKeydown(event: KeyboardEvent): void {
  */
 .resizer {
   position: absolute;
+  /* 盒子现在是 z-index: 1，手柄不抬到它上面会被贴着右下角的盒子压住 */
+  z-index: 2;
   right: -6px;
   bottom: -6px;
   width: 16px;

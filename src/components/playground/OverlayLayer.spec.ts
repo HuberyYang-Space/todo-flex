@@ -1,4 +1,6 @@
 import type { MeasuredStage } from '~/core/types'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useFlexState } from '~/composables/useFlexState'
@@ -144,5 +146,44 @@ describe('overlayLayer', () => {
     const bands = wrapper.findAll('[data-testid="overlay-band"]')
     expect(bands).toHaveLength(1)
     expect(bands[0].attributes('data-kind')).toBe('overflow')
+  })
+
+  /*
+   * 叠加层要读成「铺在台面上、被方块压住」的一层，而不是盖在方块脸上的一张膜。
+   * 但 HUD 是标签，跟着沉下去就会被它要标注的那个盒子挡住——标签看不见等于没有。
+   * 所以色块/箭头沉底、HUD 单独浮在上层，两层分开。
+   */
+  it('hUD 与色块分属两层，HUD 不在沉底的那一层里', async () => {
+    const wrapper = mount(OverlayLayer)
+    useOverlay().setHovered('item-2')
+    await wrapper.vm.$nextTick()
+
+    const under = wrapper.get('[data-testid="overlay"]')
+    expect(under.find('[data-testid="overlay-band"]').exists()).toBe(true)
+    expect(under.find('[data-testid="overlay-hud"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="overlay-hud"]').exists()).toBe(true)
+
+    // 光是「分成两层」不够：两层各自挂对 class，下面那条 z-index 守卫才管得住它们
+    expect(under.classes()).toContain('overlay--under')
+    expect(wrapper.get('[data-testid="overlay-hud-layer"]').classes()).toContain('overlay--over')
+  })
+
+  it('层序写死在样式里：色块低于盒子，HUD 高于盒子', () => {
+    const overlayCss = readFileSync(resolve(process.cwd(), 'src/components/playground/OverlayLayer.vue'), 'utf-8')
+    const stageCss = readFileSync(resolve(process.cwd(), 'src/components/playground/DemoStage.vue'), 'utf-8')
+
+    const zOf = (src: string, selector: string): number => {
+      const block = new RegExp(`${selector}\\s*\\{[^}]*\\}`).exec(src)?.[0] ?? ''
+      const z = /z-index:\s*(-?\d+)/.exec(block)
+      expect(z, `${selector} 没有显式 z-index，层序就只能靠 DOM 顺序碰运气`).toBeTruthy()
+      return Number(z![1])
+    }
+
+    const 色块层 = zOf(overlayCss, '\\.overlay--under')
+    const HUD层 = zOf(overlayCss, '\\.overlay--over')
+    const 盒子 = zOf(stageCss, '\\.stage-item')
+
+    expect(色块层, '色块层没沉到盒子下面').toBeLessThan(盒子)
+    expect(HUD层, 'HUD 没浮在盒子上面').toBeGreaterThan(盒子)
   })
 })

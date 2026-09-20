@@ -34,6 +34,7 @@ const stageVars = computed<CSSProperties>(() => ({
   '--lift-duration': `${motion.liftDuration}s`,
   '--d-hover-k': `${motion.blockDepthHover}`,
   '--d-active-k': `${motion.blockDepthActive}`,
+  '--overhang': `${motion.stageOverhang}px`,
 } as CSSProperties))
 
 /**
@@ -106,6 +107,14 @@ function contentStyle(item: FlexItemState): CSSProperties {
 
 <style scoped>
 /*
+ * 伸出容器的那些面（顶面、右侧面）和悬停时的抬升、放大都靠这圈外边距活着，
+ * 不够就会被外层滚动容器裁掉。取值的推导见 motion.stageOverhang。
+ */
+.stage-wrapper {
+  margin: var(--overhang);
+}
+
+/*
  * 演示区的描边一律用 outline，绝不用 border。
  *
  * border 会占据布局空间：容器少 2px 可用宽度、每个盒子实际尺寸比推导值多 2px，
@@ -131,6 +140,15 @@ function contentStyle(item: FlexItemState): CSSProperties {
 
 .stage-item {
   display: flex;
+
+  /*
+   * 层序：叠加层的色块沉在 0（铺在台面上），盒子在 1（压住色块），HUD 在 2。
+   * 三者都不在各自独立的层叠上下文里（.stage 与 .stage-wrapper 都是
+   * position: relative + z-index: auto，不成上下文），所以直接比较得出来。
+   * 盒子彼此同为 1，仍按 DOM 顺序决定谁压谁——换行时第二行压住第一行底部的
+   * 那个既定行为不受影响。
+   */
+  z-index: 1;
 
   /*
    * 绝不能加 overflow: hidden。

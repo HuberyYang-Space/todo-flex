@@ -11,6 +11,24 @@ describe('demoStage', () => {
     useFlexState().resetState()
   })
 
+  /*
+   * 这两条钉的是「悬停时整块方块都看得见」。
+   *
+   * 块体伸出演示区边界的量不是一个常数：顶面本身伸出一个厚度，悬停时厚度乘以
+   * blockDepthHover 变厚，再整体抬升 liftHeight，外加 liftScale 的放大。
+   * 余量小于这个总和，外层滚动容器就会把顶面切掉——而 align-items 默认 stretch，
+   * 盒子顶边必然贴着容器上沿，所以那个切口每次悬停都出现。
+   */
+  it('悬停时伸出去的量有足够余量兜住', () => {
+    const 悬停时伸出 = motion.blockDepth * motion.blockDepthHover + motion.liftHeight
+    expect(motion.stageOverhang).toBeGreaterThanOrEqual(悬停时伸出)
+  })
+
+  it('余量以 --overhang 下发给演示区外层，CSS 才拿得到这个数', () => {
+    const wrapper = mount(DemoStage)
+    expect(wrapper.get('.stage-wrapper').attributes('style')).toContain(`--overhang: ${motion.stageOverhang}px`)
+  })
+
   it('按状态渲染出对应数量的盒子', () => {
     const wrapper = mount(DemoStage)
     expect(wrapper.findAll('[data-testid="stage-item"]')).toHaveLength(3)

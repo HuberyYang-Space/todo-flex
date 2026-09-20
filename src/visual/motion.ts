@@ -39,4 +39,19 @@ export const motion = {
   blockDepthHover: 1.3,
   /** 按下时的厚度倍率，块体被压回台面 */
   blockDepthActive: 0.35,
+
+  /*
+   * 演示区四周要留出的余量（px）——块体伸到容器外面的部分全靠它才不被裁掉。
+   *
+   * 悬停时伸出的量是三项叠加：顶面厚度 blockDepth × blockDepthHover = 13，
+   * 整体抬升 liftHeight = 6，再加 liftScale 的放大（按 0.03 算，盒子越大涨得越多，
+   * 演示区高度上限 600 时单边约 9）。13 + 6 + 9 = 28，取 32 留一点富余。
+   * align-items 默认 stretch，盒子顶边必然贴着容器上沿，所以这个余量不够时
+   * 每一次悬停都会被切——不是边界情况。
+   *
+   * 这份余量做成 .stage-wrapper 的外边距而不是滚动容器的内边距：
+   * 叠加层是相对 wrapper 绝对定位的，wrapper 一旦有内边距，
+   * 叠加层的 top/left:0 会对到内边距盒而不是 .stage 的左上角，整层就错位了。
+   */
+  stageOverhang: 32,
 } as const
