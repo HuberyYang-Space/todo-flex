@@ -2,20 +2,25 @@
 import { useFlexState } from '~/composables/useFlexState'
 import { useOverlay } from '~/composables/useOverlay'
 import ContainerControls from './ContainerControls.vue'
-import CssOutput from './CssOutput.vue'
 import DemoStage from './DemoStage.vue'
+import InspectorTabs from './InspectorTabs.vue'
 import ItemControls from './ItemControls.vue'
 import ItemList from './ItemList.vue'
-import MetricsTable from './MetricsTable.vue'
 
 const { state, resetState } = useFlexState()
 const { visible: overlayVisible, toggleVisible } = useOverlay()
 </script>
 
 <template>
-  <div class="grid mx-auto max-w-360 w-full gap-4 p-4 lg:grid-cols-[320px_1fr]">
+  <!--
+    高度链：App 根锁死整页高度 → 这里 flex-1 吃满 header 之外的剩余 → 两列各自内部滚。
+    每一级都要写 min-h-0：flex 子项的 min-height 默认是 auto，不肯被压到内容高度以下，
+    漏掉任何一级，多出来的高度都会一路顶到 body 上，整页重新开始滚。
+    宽度封顶 max-w-480（1920px），比原来的 1440 多出的部分全部落给右侧演示区。
+  -->
+  <div class="grid mx-auto max-w-480 w-full gap-4 p-4 lg:grid-cols-[320px_1fr] lg:min-h-0 lg:flex-1">
     <!-- 操作区 -->
-    <aside class="h-fit flex flex-col gap-5 panel p-3">
+    <aside class="flex flex-col gap-5 panel p-3 lg:min-h-0 lg:overflow-y-auto">
       <ContainerControls />
       <ItemList />
       <ItemControls />
@@ -24,10 +29,10 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
       </button>
     </aside>
 
-    <!-- 演示区 + CSS 输出 -->
-    <main class="flex flex-col gap-4">
-      <div class="panel p-3">
-        <div class="mb-3 flex flex-wrap items-center gap-4 text-xs">
+    <!-- 演示区 + 检视面板 -->
+    <main class="flex flex-col gap-4 lg:min-h-0">
+      <div class="flex flex-col panel p-3 lg:min-h-0 lg:flex-1">
+        <div class="mb-3 flex shrink-0 flex-wrap items-center gap-4 text-xs">
           <label class="flex cursor-pointer items-center gap-2">
             <input
               data-testid="overlay-toggle"
@@ -51,14 +56,17 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
           曾经是 p-2 (8px)，顶面上沿被这一层的 overflow 裁掉 2px——
           stretch 下盒子顶边必然贴着容器上沿，所以那个裁切每次都发生。
         -->
-        <div class="overflow-auto p-3">
+        <div class="overflow-auto p-3 lg:min-h-0 lg:flex-1">
           <DemoStage />
         </div>
       </div>
 
-      <MetricsTable />
-
-      <CssOutput />
+      <!--
+        明细表与 CSS 输出合成一块固定高度（208px）的标签面板。
+        固定而不是自适应：行数随盒子增删变化，高度跟着跳的话演示区会被挤得忽大忽小，
+        而演示区正是这个站唯一的真实布局来源，它的可视高度不该被下面的表格牵着走。
+      -->
+      <InspectorTabs class="h-52 shrink-0" />
     </main>
   </div>
 </template>

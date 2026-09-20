@@ -13,12 +13,15 @@ describe('thePlayground', () => {
     useFlexState().resetState()
   })
 
-  it('同时渲染操作区、演示区与 CSS 输出', () => {
+  it('同时渲染操作区、演示区与 CSS 输出', async () => {
     const wrapper = mount(ThePlayground)
     expect(wrapper.find('[data-testid="stage"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="css-code"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('容器属性')
     expect(wrapper.text()).toContain('盒子属性')
+
+    // CSS 输出挪进了检视面板的第二个标签，默认不渲染
+    await wrapper.get('[data-testid="inspector-tab-css"]').trigger('click')
+    expect(wrapper.find('[data-testid="css-code"]').exists()).toBe(true)
   })
 
   it('明细区随演示区一起呈现，每个盒子一行', () => {
@@ -92,5 +95,52 @@ describe('thePlayground', () => {
 
     // UnoCSS 默认 spacing 基数 4px（实测 p-2 === 8px）
     expect(Number(pad![1]) * 4).toBeGreaterThanOrEqual(motion.blockDepth)
+  })
+
+  /*
+   * 这条守卫钉的是「整页不滚动，只有操作区和检视面板内部滚」这个布局前提。
+   *
+   * flex 子项的 min-height 默认是 auto——内容多高它就多高，不肯被父容器压缩。
+   * 所以从锁死滚动的那一层到真正该滚的那一层之间，中间每一级都得写 min-h-0，
+   * 漏掉任何一级，多出来的高度就会一路顶到 body 上，整页重新开始滚，
+   * 用户为了调属性又得把演示区滚出视野——这次改版要消灭的正是这件事。
+   *
+   * 与上面那条同理，只能读源码断言：UnoCSS 是原子类，happy-dom 里不生成真实样式值。
+   */
+  it('整页不滚动的滚动链一层不缺', () => {
+    const app = readFileSync(resolve(process.cwd(), 'src/App.vue'), 'utf-8')
+    const playground = readFileSync(resolve(process.cwd(), 'src/components/playground/ThePlayground.vue'), 'utf-8')
+
+    /*
+     * 每一条都带 lg: 前缀，是有意的：窄屏两栏塌成一栏，一屏根本放不下，
+     * 高度锁死只会把内容永久切掉，所以窄屏必须退回普通文档流滚动。
+     */
+    const appRoot = /<div class="([^"]*)"[^>]*>\s*<header/.exec(app)
+    expect(appRoot, '没找到 App.vue 的根容器').toBeTruthy()
+    expect(appRoot![1], 'App 根容器要占满视口高度').toMatch(/(?:^|\s)lg:h-full(?:\s|$)/)
+    expect(appRoot![1], '宽屏下整页不得滚动').toMatch(/(?:^|\s)lg:overflow-hidden(?:\s|$)/)
+
+    const pgRoot = /<div class="([^"]*)"[^>]*>\s*<!-- 操作区 -->/.exec(playground)
+    expect(pgRoot, '没找到 ThePlayground 的根容器').toBeTruthy()
+    expect(pgRoot![1], 'Playground 要吃满 header 之外的剩余高度').toMatch(/(?:^|\s)lg:flex-1(?:\s|$)/)
+    expect(pgRoot![1], 'Playground 根容器缺 min-h-0，高度会顶破父级').toMatch(/(?:^|\s)lg:min-h-0(?:\s|$)/)
+
+    const aside = /<aside class="([^"]*)"/.exec(playground)
+    expect(aside, '没找到操作区 aside').toBeTruthy()
+    expect(aside![1], '操作区必须自己滚，而不是把页面撑长').toMatch(/(?:^|\s)lg:overflow-y-auto(?:\s|$)/)
+    expect(aside![1], '操作区缺 min-h-0，滚动条会跑到外层去').toMatch(/(?:^|\s)lg:min-h-0(?:\s|$)/)
+
+    const main = /<main class="([^"]*)"/.exec(playground)
+    expect(main, '没找到右侧 main').toBeTruthy()
+    expect(main![1], '右列缺 min-h-0，演示区就压不下来').toMatch(/(?:^|\s)lg:min-h-0(?:\s|$)/)
+
+    const stagePanel = /<div class="([^"]*\bpanel\b[^"]*)"/.exec(playground)
+    expect(stagePanel, '没找到演示区面板').toBeTruthy()
+    expect(stagePanel![1], '演示区面板要吃满右列的剩余高度').toMatch(/(?:^|\s)lg:flex-1(?:\s|$)/)
+    expect(stagePanel![1], '演示区面板缺 min-h-0，里面的滚动容器就压不下来').toMatch(/(?:^|\s)lg:min-h-0(?:\s|$)/)
+
+    const scroller = /<div class="([^"]*overflow-auto[^"]*)">\s*<DemoStage\s*\/>/.exec(playground)!
+    expect(scroller[1], '演示区滚动容器要吃满面板的剩余高度').toMatch(/(?:^|\s)lg:flex-1(?:\s|$)/)
+    expect(scroller[1], '演示区滚动容器缺 min-h-0，超高的演示区会把面板顶破').toMatch(/(?:^|\s)lg:min-h-0(?:\s|$)/)
   })
 })

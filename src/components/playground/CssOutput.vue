@@ -17,11 +17,8 @@ async function copy(): Promise<void> {
 </script>
 
 <template>
-  <section class="panel p-3">
-    <header class="mb-2 flex items-center justify-between">
-      <h2 class="text-sm font-bold">
-        CSS
-      </h2>
+  <section>
+    <header class="mb-2 flex justify-end">
       <button data-testid="copy-css" class="btn text-xs" @click="copy()">
         {{ copied ? '已复制' : '复制' }}
       </button>
@@ -29,7 +26,7 @@ async function copy(): Promise<void> {
 
     <pre
       data-testid="css-code"
-      class="overflow-x-auto text-xs leading-relaxed font-mono"
+      class="text-xs leading-relaxed font-mono"
     ><code v-html="highlighted" /></pre>
   </section>
 </template>

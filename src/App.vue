@@ -6,8 +6,13 @@ useShareUrl()
 </script>
 
 <template>
-  <div class="min-h-full font-sans">
-    <header class="mx-auto max-w-360 w-full flex items-center justify-between p-4">
+  <!--
+    宽屏下整页锁死不滚（lg:h-full + lg:overflow-hidden）：调属性要滚的是左边的操作区，
+    演示区必须一直钉在视野里，用户不该为了改一个属性把它滚出去。
+    窄屏不锁——两栏塌成一栏后一屏放不下，锁死等于把下半页永久切掉。
+  -->
+  <div class="min-h-full flex flex-col font-sans lg:h-full lg:overflow-hidden">
+    <header class="mx-auto max-w-480 w-full flex shrink-0 items-center justify-between p-4">
       <div>
         <h1 class="text-lg font-bold font-mono">
           todo-flex

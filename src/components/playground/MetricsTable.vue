@@ -48,17 +48,12 @@ function px(value: number): string {
 </script>
 
 <template>
-  <section data-testid="metrics" class="panel p-3">
-    <header class="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-      <h2 class="text-sm font-bold">
-        理论 vs 实际
-      </h2>
-      <p class="text-xs op-60">
-        理论值来自推导引擎，实际值取自浏览器渲染结果——不一致处即是规则介入的地方
-      </p>
-    </header>
+  <section data-testid="metrics">
+    <p class="mb-2 text-xs op-60">
+      理论值来自推导引擎，实际值取自浏览器渲染结果——不一致处即是规则介入的地方
+    </p>
 
-    <div class="overflow-x-auto">
+    <div>
       <table class="w-full text-xs font-mono">
         <thead class="op-60">
           <tr>
