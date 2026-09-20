@@ -23,13 +23,12 @@ state ──→ 渲染 ──→ 观测 ──→ 诊断 ──→ 展示
 | 元信息 | `src/data/flexProperties.ts` | 属性元信息表（`PropertyDef` 四种 kind：enum/number/boolean/text），控制面板遍历它生成控件 |
 | 状态源 | `src/composables/useFlexState.ts` | **模块级单例** `reactive(createDefaultState())`——全站唯一状态源，组件各自 `useFlexState()` 拿到的是同一份。`derived` / `css` 是从它派生的 computed |
 | 视图 | `src/components/playground/` | 只负责渲染与事件。`DemoStage` 是真实 flex 容器，`PropertyField` 是表驱动的通用控件 |
-| 内容层 | `src/components/traps/` | 陷阱叙事。数据在 `src/data/traps.ts`，patch 合并 / 差异提取的纯函数在 `src/core/trapPatch.ts`，滚动编排在 `src/composables/useTrapScroll.ts` |
 
 ## 关键类型
 
 全部在 `src/core/types.ts`：
 
-- `FlexState`——可序列化，无 DOM 引用。URL 短码编解码（`src/core/urlCodec.ts`）与陷阱一键复现都直接吃它
+- `FlexState`——可序列化，无 DOM 引用。URL 短码编解码（`src/core/urlCodec.ts`）直接吃它
 - `DerivedLayout` / `DerivedLine` / `DerivedItem`——推导引擎的输出
 - `DerivationStep`——推导过程的分步记录，`kind` 是它的标识
 - `Diagnostic`——诊断层输出，`rule` 是它的标识

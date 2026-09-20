@@ -24,10 +24,9 @@ todo-flex 的定位由此确定：**不是又一个 flex playground，而是 fle
 1. 覆盖 flex 容器与项目的全部属性，可自由排列组合，演示区实时反映效果。
 2. 把「剩余空间」与「尺寸分配」可视化：色块画出 free space，公式展开 grow/shrink 的分配过程。
 3. 理论值与浏览器实际值并排校验，不一致时高亮解释是哪条规则介入了。
-4. 沉淀 5 个高频陷阱案例，可一键载入 Playground 复现。
-5. 状态可通过 URL 分享与还原。
-6. 暗亮双主题。（原定的中英双语已从首版移出，见第 9 节）
-7. 视觉上有辨识度：暗色科技感 + 分层动效（GSAP Flip / SVG 叠加层 / three.js 氛围 / ScrollTrigger 叙事）。
+4. 状态可通过 URL 分享与还原。
+5. 暗亮双主题。（原定的中英双语已从首版移出，见第 9 节）
+6. 视觉上有辨识度：暗色科技感 + 分层动效（GSAP Flip / SVG 叠加层 / three.js 氛围）。
 
 ### 非目标
 
@@ -47,7 +46,6 @@ todo-flex 的定位由此确定：**不是又一个 flex playground，而是 fle
 │   左 · 操作区   容器属性 / 选中盒子属性 / 盒子增删排序
 │   右 · 演示区   真实 flex 容器 + SVG 叠加层 + 右下角 resize 手柄
 │   下 · 明细区   理论 vs 实际计算表 + 实时 CSS 输出与复制
-├ Traps（5 个陷阱，一个一屏，ScrollTrigger 驱动）
 └ Footer
 ```
 
@@ -115,11 +113,9 @@ state ──→ 渲染 ──→ 观测 ──→ 诊断 ──→ 展示
 | `components/playground/ControlPanel.vue` | 由属性元信息表驱动生成的控件面板 | — |
 | `components/playground/MetricsTable.vue` | 理论 vs 实际明细表与公式展开 | — |
 | `components/playground/CssOutput.vue` | CSS 输出与复制（prismjs 高亮） | — |
-| `components/traps/*` | 陷阱板块 | 是 |
 | `visual/HeroScene.ts` | three.js 场景，与业务零耦合，lazy import | 是 |
 | `visual/motion.ts` | 动效 token（duration / ease），避免各处硬编码 | 否 |
 | `data/flexProperties.ts` | 属性元信息表 | 否 |
-| `data/traps.ts` | 陷阱案例定义 | 否 |
 
 ## 6. 核心机制：推导 / 观测 / 诊断
 
@@ -225,8 +221,7 @@ interface Diagnostic {
 > 若将来要做成真正的「理论 vs 实际」发现，需要给推导引擎新增位置推导
 > （`justify-content` 六种分布 + auto margin 吸收规则），那是独立的一块工作。
 
-`basis-vs-width` 不属于运行时诊断——`flex-basis` 覆盖 `width` 是确定性规则，不产生理论与实际的偏差，
-它作为陷阱案例（8.2 之二）在 Traps 板块讲解。
+`basis-vs-width` 不属于运行时诊断——`flex-basis` 覆盖 `width` 是确定性规则，不产生理论与实际的偏差。
 
 **这是整个产品的高光时刻**：初学者踩 flex 坑，十次有八次撞在这个缝隙上；
 现有工具无一例外只给结果、不给缝隙。todo-flex 在用户自由玩耍时就自动发现并当场解释。
@@ -249,11 +244,10 @@ B  0       2     200px   240px   ⚠ min-width:auto 撑住了内容宽度
 | 布局过渡 | GSAP Flip | 属性变化时盒子从旧位置平滑滑到新位置。既是炫技也是教学：能看清元素「怎么移过去的」 |
 | 叠加层 | SVG（`pointer-events: none`） | 剩余空间流动斜纹、主/交叉轴箭头随 direction 旋转、尺寸 HUD、选中光晕 |
 | 首屏 | three.js | 氛围背景（shader 网格 + 鼠标视差），不参与布局，可整层降级 |
-| 陷阱叙事 | GSAP ScrollTrigger | pin + scrub，三拍节奏：现象 → 归因 → 修复 |
 
 实现约束：
 
-- GSAP 插件按需注册：`gsap.registerPlugin(Flip, ScrollTrigger)`。
+- GSAP 插件按需注册：`gsap.registerPlugin(Flip)`。
 - Flip 的接入点：`watch(state, ..., { flush: 'pre' })` 中调用 `Flip.getState()`，`await nextTick()` 后 `Flip.from()`；换行场景启用 `absolute: true`。
 - three.js 按需 import 具体模块，禁止 `import * as THREE`；`IntersectionObserver` 离屏即停渲染循环；lazy import 保证不进主 chunk。
 - `prefers-reduced-motion` 是一等公民：装饰动效全部关闭，布局过渡降为瞬时，three.js 场景渲染静态帧。
@@ -295,16 +289,6 @@ B  0       2     200px   240px   ⚠ min-width:auto 撑住了内容宽度
 
 `flex-flow` 作为只读简写展示在 CSS 输出区，不单独提供控件（与 direction/wrap 重复）。
 
-### 8.2 陷阱清单（v1 五个）
-
-1. **`min-width: auto` 导致不收缩** —— 最高频。`flex: 1` 的子元素装了长内容，不但不收缩还撑爆容器；修复：`min-width: 0`。
-2. **`flex-basis` 与 `width` 的优先级** —— 两者同时存在时 `flex-basis` 胜出（除非 basis 为 auto）。
-3. **`flex` 简写四种取值展开对照** —— `1` / `auto` / `initial` / `none` 分别等于什么三元组，行为差在哪。
-4. **`align-content` 单行失效** —— `nowrap` 时该属性完全无效，是最常见的「改了没反应」。
-5. **`margin: auto` 吃掉全部剩余空间** —— 一旦生效，`justify-content` 就不再起作用。
-
-每个陷阱含：现象演示 → 规则归因 → 修复演示 → 「载入 Playground 复现」按钮（写入 URL 后滚动到 Playground）。
-
 ## 9. 国际化（首版不做，2026-09-11 决定）
 
 **站点首版是纯简体中文单语站**，`src/i18n/` 与 `useI18n.ts` 都不建。要不要上双语留待后续版本重新评估。
@@ -324,7 +308,7 @@ M1 时曾为这套方案预埋两个字段，M5 结束仍无任何消费方，�
 > 将来真要做 i18n，**按届时的实际需要重新设计 key 结构，不要考古这批字段名**。
 > 它们是在没有一个消费方的情况下凭空设计的，从未被任何界面验证过。
 
-规则文案与推导文案现在住在展示层（`MetricsTable.vue` 的 `ruleText`、`data/traps.ts` 的中文正文），
+规则文案与推导文案现在住在展示层（`MetricsTable.vue` 的 `ruleText` 等），
 `src/core/` 依旧一个字的文案都不出——这条约束与 i18n 无关，是红线 2 的一部分，不随本次决定变动。
 
 ## 10. URL 序列化
@@ -378,14 +362,12 @@ src/
     useDark.ts
   components/
     playground/         # ControlPanel / DemoStage / OverlayLayer / MetricsTable / CssOutput
-    traps/              # TrapSection 等
     hero/               # HeroCanvas
   visual/
     HeroScene.ts        # three.js
     motion.ts           # 动效 token
   data/
     flexProperties.ts   # 属性元信息表，驱动控制面板
-    traps.ts            # 陷阱案例定义
   styles/
     main.css            # CSS 变量主题
 ```
@@ -413,7 +395,6 @@ src/
 | M2 | 可用的 Playground | 状态源、属性元信息表、控制面板、演示区真实渲染、CSS 输出 | 能自由调属性并复制 CSS |
 | M3 | 透明化核心 | 观测层、诊断层、明细表、剩余空间与轴向叠加层、容器拖拽 | 理论/实际并排显示，不一致时高亮解释 |
 | M4 | 动效 | GSAP Flip 布局过渡、叠加层动画、`prefers-reduced-motion` 降级 | 属性切换时盒子平滑移动且数字不抖 |
-| M5 | 内容层 | 5 个陷阱板块 + ScrollTrigger 叙事 + 一键复现 | 陷阱可从 Traps 跳回 Playground 还原 |
 | M6 | 分享与主题 | URL codec、暗亮主题打磨（i18n 已移出首版，见第 9 节） | 分享链接可还原、暗亮主题各自可读 |
 | M7 | 首屏与收尾 | three.js Hero、性能预算核对、可访问性检查、部署 | 构建产物达标并上线 |
 
@@ -421,7 +402,7 @@ M1 与 M2 是骨干，M3 是差异化所在——若时间受限，M4 之后的�
 
 ## 16. 技术栈
 
-Vue 3（script setup）· Vite · TypeScript · UnoCSS · VueUse · GSAP（Flip / ScrollTrigger）· three.js · prismjs · Vitest · @antfu/eslint-config
+Vue 3（script setup）· Vite · TypeScript · UnoCSS · VueUse · GSAP（Flip）· three.js · prismjs · Vitest · @antfu/eslint-config
 
 工程约定沿用作者模板：pnpm、husky + commitlint（Conventional Commits）、lint-staged 自动修复暂存文件、`.vscode` 按 antfu README 配置。
 

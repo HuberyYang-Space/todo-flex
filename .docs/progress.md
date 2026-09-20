@@ -11,7 +11,6 @@
 | M2 可用的 Playground | ✅ 完成 | 表驱动控制面板 + 真实 flex 演示区 |
 | M3 透明化核心 | ✅ 完成，经浏览器实测 | 观测 / 诊断 / 明细表 / 叠加层 / resize 手柄 |
 | M4 动效 | 🚧 进行中 | GSAP Flip、惯性水滴形变、观测层挂起、演示区质感升级已落地 |
-| M5 内容层 | ✅ 完成，经浏览器实测 | 五个陷阱 + 滚动叙事 |
 | M6 打磨 | ✅ URL 分享 + 暗亮主题打磨均已完成；i18n 已移出 | 判据由 `theme.spec.ts` 钉住 |
 
 > ⚠️ `.docs/superpowers/plans/` 里的计划文档 checkbox 全是未勾选状态，但代码与 git 历史证明这些里程碑已实现完毕。
@@ -62,33 +61,6 @@ M3 暴露的三个「单元测试原理上抓不到」的 bug，见
 - column 下相应翻成 `y-reverse` / `y-forward`
 - 四份 pattern 都在 defs 里，两个 y 的带 `rotate(90)`，四条动画均在跑
 - `@media (prefers-reduced-motion: reduce)` 的规则确认进了 CSSOM（解析结果 `animation-name: none`）
-
-## M5：内容层（已完成并经浏览器实测）
-
-落地的东西：`data/traps.ts` 五个陷阱 + `core/trapPatch.ts`（patch 合并 / 差异提取纯函数）
-+ `composables/useTrapScroll.ts`（ScrollTrigger pin + 滚动进度映射成离散拍号）
-+ `components/traps/*`（TrapsSection / TrapSection / TrapStage / TrapDiff / TrapBeatCard）
-+ `useFlexState.loadState` 一键复现。
-
-### 实测通过的（数字都是真实浏览器量出来的，不是推的）
-
-五个陷阱的现象全部成立：
-
-| 陷阱 | 实测现象 |
-| --- | --- |
-| 一 `min-width: auto` | A 被 min-content 撑在 320（推导值 296）、三盒溢出 24px |
-| 二 `flex-basis` | 312 / 192 / 192 分得不均；切 `basis: 0` 后均分 232 |
-| 三 `flex: none` | 三盒各 200 溢出 144 且拒不收缩；`flex: 1` 后各 152 正好填满 |
-| 四 `align-content` | nowrap 下纹丝不动；换 wrap 后分两行 |
-| 五 `margin: auto` | A.offsetLeft=228、B=548、C=640 顶在右缘（与 2026-09-08 文档那条 offsetLeft 实测记录吻合）|
-
-一键复现后明细表如实报出「A 理论 296px 实际 320px ⚠ `min-width:auto` 撑住了内容固有尺寸」——
-**陷阱 → 复现 → 诊断的闭环是通的**。
-
-滚动叙事三拍：pin 生效、滚动 3 屏、beat 0→1→2，**第 2 拍演示区不动**；
-滞回四个边界（0.345 不换 / 0.39 换 / 0.32 不退 / 0.28 退）全对，回滚能反复对比修复前后。
-
-M5 踩到并已修掉的四个坑，见 [pitfalls.md](./pitfalls.md#m5-陷阱板块的四个坑)。
 
 ## M6：暗亮主题打磨（已完成）
 
@@ -167,24 +139,20 @@ M5 踩到并已修掉的四个坑，见 [pitfalls.md](./pitfalls.md#m5-陷阱板
 4. 重排后面有没有残留。GSAP Flip 写的内联样式在冻帧下会留在中间帧，
    自动化读到的"残留"分不清是真残留还是冻结假象。
 5. 系统打开「减少动态效果」后是否真的完全静止。CSSOM 规则已复验确实存在
-   （`.stripe-flow → animation: none`、`.beat` / `.trap-stage-item → transition: none`，
-   外加全局 `animation-duration: 0.01ms`），但**规则存在不等于运行时真停**。
+   （`.stripe-flow → animation: none`，外加全局 `animation-duration: 0.01ms`），
+   但**规则存在不等于运行时真停**。
 
 ### 视口（本机压不到）
 
-6. 窄屏（<768px）降级，以及同一条件下陷阱区的 `prefers-reduced-motion` 降级。
-   本机 `resize_window` 不可控（三次请求 1100 / 720 / 500 分别得到 1280 / 1120 / 1920）。
-   1920px 下已确认陷阱区正常未降级：5 个 pin-spacer、15 个 beat（5 板块 × 3 拍）。
-   判断逻辑有 `useTrapScroll.spec.ts` 覆盖、降级渲染有 `TrapSection.spec.ts` 覆盖，
-   但**真实窄屏需要人眼拖窄窗口扫一遍**。
+6. 窄屏（<768px）下 Playground 的两栏塌成一栏是否可读。
+   本机 `resize_window` 不可控（三次请求 1100 / 720 / 500 分别得到 1280 / 1120 / 1920），
+   **真实窄屏需要人眼拖窄窗口扫一遍**。
 
 ## 下一件事
 
 M6 的两块（URL 分享、暗亮主题打磨）都已落地，i18n 已移出，两笔技术债也都还清了：
 
-> 已还清：状态 → CSS 的映射曾经有三份（`TrapStage` / `DemoStage` / `cssEmit`），
-> 已统一到 `src/core/styleMap.ts`（`5adae3c`）。
-> 已还清：`TrapSection` 正常 / 降级两套模板里重复的卡片渲染，已抽成 `TrapBeatCard`（`2e51f3e`）。
+> 已还清：状态 → CSS 的映射曾经散落多份，已统一到 `src/core/styleMap.ts`（`5adae3c`）。
 
 代码侧没有排着队的活了，剩下的是：
 
@@ -199,11 +167,9 @@ M6 的两块（URL 分享、暗亮主题打磨）都已落地，i18n 已移出�
 ### 设计文档（specs）
 
 - [2026-09-08-todo-flex-design.md](./superpowers/specs/2026-09-08-todo-flex-design.md)
-  —— 定稿的总设计文档，含状态模型、模块划分、诊断层优先级、URL 短码格式、陷阱清单、里程碑表
+  —— 定稿的总设计文档，含状态模型、模块划分、诊断层优先级、URL 短码格式、里程碑表
 - [2026-09-09-stage-3d-motion-design.md](./superpowers/specs/2026-09-09-stage-3d-motion-design.md)
   —— 演示区 3D 方案（**已作废**，保留作决策记录）
-- [2026-09-11-traps-and-scroll-narrative-design.md](./superpowers/specs/2026-09-11-traps-and-scroll-narrative-design.md)
-  —— M5 陷阱与滚动叙事
 
 ### 实现计划（plans）
 
@@ -212,4 +178,3 @@ M6 的两块（URL 分享、暗亮主题打磨）都已落地，i18n 已移出�
 - [2026-09-09-stage-3d-motion.md](./superpowers/plans/2026-09-09-stage-3d-motion.md) —— 3D 方案（**已作废**）
 - [2026-09-09-isometric-solid-block.md](./superpowers/plans/2026-09-09-isometric-solid-block.md)
   —— 等距实体块，**开头的「三轮试错的结论」是动这块视觉前的必读**
-- [2026-09-11-traps-and-scroll-narrative.md](./superpowers/plans/2026-09-11-traps-and-scroll-narrative.md) —— M5

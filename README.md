@@ -17,19 +17,9 @@ todo-flex 把这段被隐藏的计算过程显式画出来：
 
 演示区是真实 DOM + 真实 CSS flex 渲染，不用 JS 模拟盒子位置——所以「把这段 CSS 复制到项目里」这句承诺是成立的。
 
-## 五个经典陷阱
-
-滚动叙事按「现象 → 归因 → 修复」三拍拆开，每个都能一键载入 Playground 复现：
-
-1. `min-width: auto` 让 `flex: 1` 不肯收缩
-2. `flex-basis` 才是主轴尺寸的起点
-3. `flex` 简写背后是三个属性
-4. `align-content` 在单行容器上完全无效
-5. `margin: auto` 一旦生效，`justify-content` 就靠边站
-
 ## 技术栈
 
-Vue 3 (script setup) · Vite · TypeScript · UnoCSS · VueUse · GSAP (Flip / ScrollTrigger) · Vitest · @antfu/eslint-config
+Vue 3 (script setup) · Vite · TypeScript · UnoCSS · VueUse · GSAP (Flip) · Vitest · @antfu/eslint-config
 
 ## 开发
 

@@ -75,10 +75,6 @@ pnpm build                    # 类型检查 + 生产构建
 - **URL 写回一律防抖 + `replaceState`**
   （拖手柄时每帧都变，不防抖 Safari 超量抛错；用 `pushState` 则调十次属性要按十次后退键才出得去）。
   → [详见](./.docs/pitfalls.md#写回一律防抖--replacestate)
-- **`useTrapScroll` 的 `degraded` 必须在模块 / setup 那一刻就 `ref(shouldDegrade())` 算出来**，
-  不要先 `ref(true)` 再到 `onMounted` 里补判（首帧会渲染降级形态，同一个 onMounted 里同步执行的
-  `ScrollTrigger.create({ pin: true })` 会照着降级形态的 DOM 高度建 pin-spacer）。
-  → [详见](./.docs/pitfalls.md#2-usetrapscroll-的-degraded-必须在模块--setup-那一刻就算出来)
 
 ### 演示区视觉
 
@@ -115,17 +111,6 @@ pnpm build                    # 类型检查 + 生产构建
 - **方块的接触阴影靠底缘 inset 暗边，不要改回加深台面投影**——暗色台面亮度只有 0.015，
   没有可压的余量（对比度 1.12，提亮台面上限也才 1.42）。台面那五层投影负责环境光衰减，一层不动。
   → 以上四条详见 [`.docs/pitfalls.md`](./.docs/pitfalls.md#暗亮主题六条只能算不能看的缺陷)
-
-### 陷阱板块
-
-- **陷阱板块左栏必须写 `min-w-0`**（grid 轨道 `1fr` 的最小尺寸默认是 `auto`，720px 的演示区会顶开轨道、
-  撑破页面，实测 vw=1120 时横向溢出 46px。**站点自己会踩它在教的那条规则**）。
-  → [详见](./.docs/pitfalls.md#1-陷阱板块左栏必须写-min-w-0)
-- **归因表的重复行折叠放展示层（`TrapDiff`），不要动 `diffStates` 纯函数**——逐条输出是对的契约。
-  → [详见](./.docs/pitfalls.md#3-归因表要折叠重复行但折叠放展示层)
-- **陷阱文案里的推导数字必须有测试钉在 `deriveLayout` 上**——只做 `Σsize + Σgap` 的算术近似守卫
-  碰不到 `finalMainSize`，改个 base 数值测试照样绿、文案当场变谎话。
-  → [详见](./.docs/pitfalls.md#4-陷阱文案里的推导数字必须有测试钉在-derivelayout-上)
 
 ### i18n
 

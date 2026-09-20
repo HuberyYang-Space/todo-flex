@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createDefaultState } from '~/core/defaults'
 import { MAX_ITEMS, useFlexState } from './useFlexState'
 
 describe('useFlexState', () => {
@@ -122,51 +121,5 @@ describe('useFlexState 的首屏初始化', () => {
 
     const ids = state.items.map(item => item.id)
     expect(new Set(ids).size).toBe(ids.length)
-  })
-})
-
-describe('loadState', () => {
-  beforeEach(() => {
-    // 状态是模块级单例，每个用例前必须复位
-    useFlexState().resetState()
-  })
-
-  it('整体替换状态，容器与盒子都换成传入的那一份', () => {
-    const { state, loadState } = useFlexState()
-    const next = createDefaultState()
-    next.container.width = 480
-    next.container.justifyContent = 'space-between'
-    next.items[0].grow = 1
-
-    loadState(next)
-
-    expect(state.container.width).toBe(480)
-    expect(state.container.justifyContent).toBe('space-between')
-    expect(state.items[0].grow).toBe(1)
-  })
-
-  it('载入 id 不连续的状态后，新增盒子不与现有的撞号', () => {
-    const { state, loadState, addItem } = useFlexState()
-    const next = createDefaultState()
-    // 模拟「删掉中间那个盒子」之后的状态：id 跳号
-    next.items = [next.items[0], next.items[2]]
-
-    loadState(next)
-    addItem()
-
-    expect(state.items.map(item => item.id)).toEqual(['item-1', 'item-3', 'item-4'])
-    expect(new Set(state.items.map(item => item.id)).size).toBe(state.items.length)
-  })
-
-  it('载入后修改原对象不会再影响单例', () => {
-    const { state, loadState } = useFlexState()
-    const next = createDefaultState()
-
-    loadState(next)
-    next.container.width = 999
-    next.items[0].grow = 99
-
-    expect(state.container.width).not.toBe(999)
-    expect(state.items[0].grow).not.toBe(99)
   })
 })

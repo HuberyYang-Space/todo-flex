@@ -52,42 +52,12 @@ function removeItem(id: string): void {
     state.selectedId = null
 }
 
-/**
- * 下一个可用的自增序号：取现有 id 的数字后缀最大值。
- *
- * 不能图省事用 `state.items.length`——载入进来的状态未必是 item-1..item-N 连续编号，
- * 一旦中间有跳号（[item-1, item-3]），长度算出来是 2，下一个 addItem 就生成 item-3 直接撞上。
- * resetState 那边入参恒定是 createDefaultState()，不存在这个问题，所以保持原样不动。
- */
-function maxSequence(items: FlexItemState[]): number {
-  return items.reduce((max, item) => {
-    const suffix = Number(item.id.replace(/^item-/, ''))
-    return Number.isFinite(suffix) ? Math.max(max, suffix) : max
-  }, 0)
-}
-
 function resetState(): void {
   Object.assign(state, createDefaultState())
   sequence = state.items.length
 }
 
-/**
- * 整体替换布局状态。陷阱区的「载入 Playground 复现」用它。
- *
- * 不走地址栏：本模块只在加载那一刻读一次 `location.search`，之后没有任何人监听它，
- * 光写 URL 是不会生效的。改 state 反而够了——`useShareUrl` 一直 watch 着，
- * 300ms 后地址栏自己就跟上了。
- *
- * 深拷贝一次再赋值：入参多半是 `resolveVariant()` 每次新造的对象，但调用方
- * 万一传了个会复用的引用进来，单例就会跟外面那份悄悄共享 items。
- */
-function loadState(next: FlexState): void {
-  Object.assign(state, structuredClone(next))
-  // 从载入的 id 里推下一个序号，不能用 length —— 见 maxSequence 的注释
-  sequence = maxSequence(state.items)
-}
-
 /** 全站唯一的状态源 */
 export function useFlexState() {
-  return { state, selectedItem, derived, css, selectItem, addItem, removeItem, resetState, loadState }
+  return { state, selectedItem, derived, css, selectItem, addItem, removeItem, resetState }
 }

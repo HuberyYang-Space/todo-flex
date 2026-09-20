@@ -21,7 +21,7 @@ useMeasure().observeStage(stageEl)
 useFlip().observeFlip(stageEl)
 
 /*
- * 状态 → CSS 的映射统一在 core/styleMap，与陷阱区的 TrapStage 共用同一份。
+ * 状态 → CSS 的映射住在 core/styleMap。
  * 容器样式全部来自状态，交给浏览器真实排版——不做任何位置计算（红线 1）。
  * 这里只做一层取值 + 类型收口：core 不 import vue，返回的是自己的 StyleDecls（红线 2）。
  */
