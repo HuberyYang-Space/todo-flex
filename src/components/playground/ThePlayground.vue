@@ -22,7 +22,7 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
 
     中间列必须写成 minmax(0, 1fr)，不能图省事写 1fr——
     `1fr` 等价于 `minmax(auto, 1fr)`，那个 auto 下限是这一列的 min-content，
-    而演示区滚动层的 min-content 是 808px（.stage 固定 720px 加两侧内边距，
+    而演示区滚动层的 min-content 是 784px（.stage 固定 720px 加两侧各 32px 的 overhang，
     它自己的 overflow-auto 只挡得住自己溢出，挡不住 min-content 往上冒）。
     于是窗口一窄，三列合计宽度压不下来，右侧 CSS 栏被顶出视口，
     lg:overflow-hidden 再一裁——整栏消失，而且横向滚不到。
@@ -63,15 +63,14 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
         </div>
 
         <!--
-          内边距加在滚动容器上而不是 .stage 上：.stage 加 padding 会占布局空间，
+          这层不写内边距。演示区四周的留白全部由 .stage-wrapper 的 --overhang
+          （motion.stageOverhang = 32px）承担——那份余量本来就是按「悬停时块体伸出多少」
+          算出来的，足够兜住顶面、抬升和放大，这里再叠一份 p-space 只是把演示区
+          往右下推、白白缩掉可视范围，防裁切的能力一点不增加。
+          留白也不能改挂到 .stage 上：.stage 加 padding 会占布局空间，
           诊断层会把那份恒定偏差误报成「有规则介入」（红线 6）。
-          这里用的是全局间距 --space（12px），它同时还得容下两样伸出容器的东西：
-          右下角的 resize 手柄，以及等距实体块往上伸的顶面（motion.blockDepth = 10px）。
-          曾经是 8px，顶面上沿被这一层的 overflow 裁掉 2px——
-          stretch 下盒子顶边必然贴着容器上沿，所以那个裁切每次都发生。
-          调小 --space 之前先看 ThePlayground.spec.ts 里钉着的那条守卫。
         -->
-        <div class="overflow-auto p-space lg:min-h-0 lg:flex-1">
+        <div class="overflow-auto lg:min-h-0 lg:flex-1">
           <DemoStage />
         </div>
       </div>

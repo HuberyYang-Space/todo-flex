@@ -5,7 +5,6 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { useFlexState } from '~/composables/useFlexState'
 import { useFlip } from '~/composables/useFlip'
 import { useOverlay } from '~/composables/useOverlay'
-import { motion } from '~/visual/motion'
 import ThePlayground from './ThePlayground.vue'
 
 describe('thePlayground', () => {
@@ -76,27 +75,27 @@ describe('thePlayground', () => {
   })
 
   /*
-   * 这条守卫钉的是「滚动容器的内边距必须容得下伸出去的顶面」。
+   * 这条守卫钉的是「演示区四周的留白只有一份」。
    *
-   * 起因是浏览器实测：顶面往上伸 10px，而滚动容器只有 p-2（8px），
-   * 顶面上沿 2px 被裁掉。align-items 默认 stretch，盒子顶边必然贴着容器上沿，
-   * 所以这个裁切每次都发生，不是边界情况。
+   * 块体伸出演示区边界的那些面靠的是 .stage-wrapper 的 --overhang 外边距（32px，
+   * 阈值由 DemoStage.spec.ts 那条守卫钉着）。滚动容器这层再写一份内边距，
+   * 就是把同一件事付两遍钱：留白叠到 40px 以上，演示区被推离面板左上角，
+   * 可视范围白白缩水，而防裁切的能力一点没增加。
    *
    * 只能读源码断言：padding 是 UnoCSS 的原子类，happy-dom 里不会生成真实样式值，
    * 挂载后量 computed style 恒为 0，测不出来。
    */
-  it('演示区滚动容器的内边距容得下伸出去的顶面', () => {
+  it('演示区滚动容器不再叠加内边距，留白只由 stage-wrapper 的 overhang 承担', () => {
     const src = readFileSync(resolve(process.cwd(), 'src/components/playground/ThePlayground.vue'), 'utf-8')
     const scroller = /<div class="([^"]*overflow-auto[^"]*)">\s*<DemoStage\s*\/>/.exec(src)
     expect(scroller, '没找到包着 DemoStage 的滚动容器').toBeTruthy()
 
-    expect(scroller![1], `滚动容器要走全局间距 p-space：${scroller![1]}`).toMatch(/(?:^|\s)p-space(?:\s|$)/)
+    // p-2 / p-space / lg:p-4 都算，四向与单向的内边距类一个都不许有
+    const padding = scroller![1]
+      .split(/\s+/)
+      .filter(token => /^(?:lg:)?p[trblxy]?-/.test(token))
 
-    // p-space 解析成 var(--space)，所以真正要守的阈值在 main.css 那个变量上
-    const css = readFileSync(resolve(process.cwd(), 'src/styles/main.css'), 'utf-8')
-    const space = /--space:\s*(\d+)px/.exec(css)
-    expect(space, 'main.css 里没有 --space').toBeTruthy()
-    expect(Number(space![1])).toBeGreaterThanOrEqual(motion.blockDepth)
+    expect(padding, `滚动容器不该再带内边距：${padding.join(' ')}`).toHaveLength(0)
   })
 
   /*

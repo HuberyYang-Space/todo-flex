@@ -35,10 +35,12 @@ export default defineConfig({
      * 只有图标、没有边框的按钮。留出 p-1 而不是贴着图标裁——
      * 点击热区要够得着，无边框按钮本来就少了一圈可瞄准的轮廓。
      * 用 op 而不是换色做静默态：图标是单色 mask，降透明度才不会和主题色打架。
-     * text-sm 是为了让图标落在 16.8px（presetIcons 的 scale 是 1.2em），
-     * 和 panel-title 里的图标一样大——不写就跟着各自父级的字号漂。
+     * text-base 让图标落在 19.2px（presetIcons 的 scale 是 1.2em），
+     * 比 panel-title 里的 16.8px 大一圈——按钮图标要自己撑起可点击感，
+     * 跟着标题图标一样大时，顶栏里紧挨着 18px 的站名就显得没分量。
+     * 尺寸必须写死，不写就跟着各自父级的字号漂。
      */
-    ['icon-btn', 'flex items-center justify-center rounded-2 p-1 text-sm op-70 cursor-pointer transition-colors hover:op-100 hover:text-accent'],
+    ['icon-btn', 'flex items-center justify-center rounded-2 p-1 text-base op-70 cursor-pointer transition-colors hover:op-100 hover:text-accent'],
   ],
   presets: [
     presetWind3(),

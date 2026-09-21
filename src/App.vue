@@ -15,10 +15,10 @@ useShareUrl()
     <!--
       只给上内边距不给下内边距：下方留白由 Playground 的 p-space 承担，
       两边都写的话标题下面会叠成两份间距，看起来就是「标题上下不一样宽」。
-      上内边距走紧凑档：副标题并到主标题后面之后这一条只有一行高，
-      再留 12px 会让顶部空出一块和内容量不相称的白。
+      上内边距也走 --space，和下方那份同源——两边各写各的数，
+      总有一天会被单独调走一个，标题就又不对称了。
     -->
-    <header class="mx-auto max-w-480 w-full flex shrink-0 items-center justify-between px-space pt-tight">
+    <header class="mx-auto max-w-480 w-full flex shrink-0 items-center justify-between px-space pt-space">
       <!-- 主副标题同一行，基线对齐而不是居中对齐：两者字号差一截，居中会让副标题看着往上飘 -->
       <div class="flex items-baseline gap-space">
         <h1 class="text-lg font-bold font-mono">
