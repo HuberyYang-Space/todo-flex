@@ -495,7 +495,7 @@ vitesse-light 在 12 个亮色主题里排倒数第二，vitesse-dark 在暗色�
 
 gsap 那 93.76 kB（gzip 35.81 kB）还留在首屏，挪走的做法与代价也写在同一份文档里，暂不做。
 
-## 下一件事
+## 现状：零待办
 
 M6 的两块（URL 分享、暗亮主题打磨）都已落地，i18n 已移出，M7 布局改版、M8 间距统一、
 M9 UI 细节、M10 行级对照、M11 三栏与 icon 体系也都已完成并实测，两笔技术债都还清了：
@@ -504,21 +504,23 @@ M9 UI 细节、M10 行级对照、M11 三栏与 icon 体系也都已完成并实
 
 人眼核对清单九条也已全部核对通过。**代码与文档侧零待办。**
 
-只剩**部署**，而且代码侧的四样已经全部就位：
+**部署也已完成，站点于 2026-09-21 上线**：<https://huberyyang-space.github.io/todo-flex/>
 
-- ✅ CI workflow：[`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)，
-  推 `main` 触发，跑 lint / test / build 三道门禁后发布到 GitHub Pages
-- ✅ `vite.config.ts` 配了 `base: '/todo-flex/'`（开发态也走同一前缀，理由写在配置的注释里）
-- ✅ README 顶部有在线演示链接
-- ✅ `package.json` 的 `homepage` 改指站点
+- [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)：推 `main` 触发，
+  跑 lint / test / build 三道门禁后发布到 GitHub Pages。首次运行 `35574627105` success，1m14s
+- `vite.config.ts` 的 `base` 是 `/todo-flex/`（开发态走同一前缀，理由写在配置的注释里）
+- README 顶部有在线演示链接，`package.json` 的 `homepage` 指向站点
 
-剩下的两步**只能在 GitHub 上做，不在代码里**：
+线上实测过四条（整页 reload 后读 DOM 与 console，不看截图）：
 
-1. 把 `main` 推上去（推送会触发首次部署工作流）
-2. 仓库 Settings → Pages → Source 选 **GitHub Actions**
-   （查过 `gh api repos/HuberyYang-Space/todo-flex`，当前 `has_pages: false`，还没开）
+1. 四个资源全部 200 且都带 `/todo-flex/` 前缀——JS、CSS、懒加载的 shikiHighlighter、favicon。
+   传输体积 73255 / 6225 / 68245 字节，与构建报告的 gzip 数字对得上
+2. 高亮照常落地（57 个带配色变量的 token）
+3. 分享短码照常还原：带 `justify-content: space-between` 的链接直接打开，
+   720px 容器里三个 80px 盒子的 `offsetLeft` 量到 0 / 320 / 640
+4. console 零消息——并且先注入过 `console.error` 金丝雀确认读取通道是通的
 
-站点地址将是 <https://huberyyang-space.github.io/todo-flex/>。
+**至此代码、文档、部署三侧零待办。**
 
 ## 设计与计划文档
 
