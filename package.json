@@ -35,9 +35,11 @@
     "commitlint": "commitlint --edit"
   },
   "dependencies": {
+    "@shikijs/langs": "^4.4.3",
+    "@shikijs/themes": "^4.4.3",
     "@vueuse/core": "^14.4.0",
     "gsap": "^3.15.0",
-    "prismjs": "^1.30.0",
+    "shiki": "^4.4.3",
     "vue": "^3.5.42"
   },
   "devDependencies": {
@@ -47,7 +49,6 @@
     "@huberyyang/todo-scripts": "^1.4.0",
     "@iconify-json/carbon": "^1.2.26",
     "@types/node": "^26.4.1",
-    "@types/prismjs": "^1.26.6",
     "@unocss/eslint-plugin": "^66.10.0",
     "@unocss/reset": "^66.10.0",
     "@vitejs/plugin-vue": "^6.0.8",
@@ -60,7 +61,6 @@
     "typescript": "^6.0.3",
     "unocss": "^66.10.0",
     "unplugin-auto-import": "^21.1.0",
-    "unplugin-icons": "^23.0.1",
     "unplugin-vue-components": "^32.1.0",
     "vite": "^8.2.2",
     "vite-plugin-vue-devtools": "^8.2.1",

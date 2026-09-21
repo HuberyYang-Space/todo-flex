@@ -8,7 +8,8 @@ const { state, addItem, removeItem, selectItem } = useFlexState()
 <template>
   <section class="flex flex-col gap-space">
     <header class="flex items-center justify-between">
-      <h2 class="text-sm font-bold">
+      <h2 class="panel-title">
+        <div class="i-carbon-list-boxes" />
         盒子（{{ state.items.length }}/{{ MAX_ITEMS }}）
       </h2>
       <button

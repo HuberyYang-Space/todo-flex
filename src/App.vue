@@ -25,8 +25,18 @@ useShareUrl()
           看得见的 CSS Flexbox
         </p>
       </div>
-      <button class="btn text-xs" @click="toggleDark()">
-        {{ isDark ? '暗色' : '亮色' }}
+      <!--
+        icon 画的是「点下去会变成什么」而不是「现在是什么」：按钮的语义是动作。
+        纯 icon 按钮对读屏器是哑的，title 与 aria-label 不能省。
+      -->
+      <button
+        data-testid="theme-toggle"
+        class="flex btn items-center text-xs"
+        :title="isDark ? '切换到亮色' : '切换到暗色'"
+        :aria-label="isDark ? '切换到亮色' : '切换到暗色'"
+        @click="toggleDark()"
+      >
+        <div :class="isDark ? 'i-carbon-sun' : 'i-carbon-moon'" />
       </button>
     </header>
 

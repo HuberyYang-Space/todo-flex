@@ -2,10 +2,11 @@
 import { useFlexState } from '~/composables/useFlexState'
 import { useOverlay } from '~/composables/useOverlay'
 import ContainerControls from './ContainerControls.vue'
+import CssOutput from './CssOutput.vue'
 import DemoStage from './DemoStage.vue'
-import InspectorTabs from './InspectorTabs.vue'
 import ItemControls from './ItemControls.vue'
 import ItemList from './ItemList.vue'
+import MetricsTable from './MetricsTable.vue'
 
 const { state, resetState } = useFlexState()
 const { visible: overlayVisible, toggleVisible } = useOverlay()
@@ -13,12 +14,13 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
 
 <template>
   <!--
-    高度链：App 根锁死整页高度 → 这里 flex-1 吃满 header 之外的剩余 → 两列各自内部滚。
+    高度链：App 根锁死整页高度 → 这里 flex-1 吃满 header 之外的剩余 → 三列各自内部滚。
     每一级都要写 min-h-0：flex 子项的 min-height 默认是 auto，不肯被压到内容高度以下，
     漏掉任何一级，多出来的高度都会一路顶到 body 上，整页重新开始滚。
-    宽度封顶 max-w-480（1920px），比原来的 1440 多出的部分全部落给右侧演示区。
+    宽度封顶 max-w-480（1920px）。两侧 320px 固定、中间演示区吃掉全部剩余：
+    演示区是唯一的真实布局来源，加宽它才有意义；左右两栏的内容宽度是确定的，不随窗口变。
   -->
-  <div class="grid mx-auto max-w-480 w-full gap-space p-space lg:grid-cols-[320px_1fr] lg:min-h-0 lg:flex-1">
+  <div class="grid mx-auto max-w-480 w-full gap-space p-space lg:grid-cols-[320px_1fr_320px] lg:min-h-0 lg:flex-1">
     <!-- 操作区 -->
     <aside class="flex flex-col gap-space panel p-space lg:min-h-0 lg:overflow-y-auto">
       <ContainerControls />
@@ -29,10 +31,14 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
       </button>
     </aside>
 
-    <!-- 演示区 + 检视面板 -->
+    <!-- 演示区 + 明细 -->
     <main class="flex flex-col gap-space lg:min-h-0">
       <div class="flex flex-col gap-space panel p-space lg:min-h-0 lg:flex-1">
         <div class="flex shrink-0 flex-wrap items-center gap-space text-xs">
+          <h2 class="panel-title">
+            <div class="i-carbon-screen" />
+            演示区
+          </h2>
           <label class="flex cursor-pointer items-center gap-tight">
             <input
               data-testid="overlay-toggle"
@@ -63,11 +69,22 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
       </div>
 
       <!--
-        明细表与 CSS 输出合成一块固定高度（208px）的标签面板。
-        固定而不是自适应：行数随盒子增删变化，高度跟着跳的话演示区会被挤得忽大忽小，
-        而演示区正是这个站唯一的真实布局来源，它的可视高度不该被下面的表格牵着走。
+        明细表固定 208px 高而不是自适应：行数随盒子增删变化，高度跟着跳的话
+        演示区会被挤得忽大忽小，而演示区正是这个站唯一的真实布局来源，
+        它的可视高度不该被下面的表格牵着走。
       -->
-      <InspectorTabs class="h-52 shrink-0" />
+      <section class="h-52 flex shrink-0 flex-col gap-space overflow-hidden panel p-space">
+        <h2 class="panel-title shrink-0">
+          <div class="i-carbon-compare" />
+          理论 vs 实际
+        </h2>
+        <div class="min-h-0 flex-1 overflow-auto">
+          <MetricsTable />
+        </div>
+      </section>
     </main>
+
+    <!-- CSS 输出自带面板外壳（标题 + 复制按钮 + 内部滚动） -->
+    <CssOutput class="lg:min-h-0" />
   </div>
 </template>

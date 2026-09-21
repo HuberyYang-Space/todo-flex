@@ -18,7 +18,8 @@ function update(key: string, value: string | number | boolean): void {
 
 <template>
   <section class="flex flex-col gap-space">
-    <h2 class="text-sm font-bold">
+    <h2 class="panel-title">
+      <div class="i-carbon-container-software" />
       容器属性
     </h2>
 

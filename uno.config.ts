@@ -28,6 +28,8 @@ export default defineConfig({
   },
   shortcuts: [
     ['panel', 'bg-panel border border-bd rounded-2'],
+    // 全站标题只有这一种写法：icon 在左、文字在右、gap 走紧凑档
+    ['panel-title', 'flex items-center gap-tight text-sm font-bold'],
     ['btn', 'px-3 py-1 rounded-2 border border-bd bg-panel cursor-pointer transition-colors hover:border-accent'],
   ],
   presets: [

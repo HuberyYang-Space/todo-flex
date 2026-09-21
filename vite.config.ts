@@ -3,8 +3,6 @@ import path from 'node:path'
 import Vue from '@vitejs/plugin-vue'
 import UnoCSS from 'unocss/vite'
 import AutoImport from 'unplugin-auto-import/vite'
-import IconsResolver from 'unplugin-icons/resolver'
-import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import VueDevTools from 'vite-plugin-vue-devtools'
@@ -19,9 +17,6 @@ export default defineConfig({
     UnoCSS(),
     Vue(),
     VueDevTools(),
-    Icons({
-      autoInstall: true,
-    }),
     AutoImport({
       imports: [
         'vue',
@@ -33,11 +28,6 @@ export default defineConfig({
     }),
     Components({
       dts: true,
-      resolvers: [
-        IconsResolver({
-          enabledCollections: ['carbon'],
-        }),
-      ],
     }),
   ],
   build: {

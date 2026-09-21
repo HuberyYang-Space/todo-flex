@@ -13,15 +13,15 @@ describe('thePlayground', () => {
     useFlexState().resetState()
   })
 
-  it('同时渲染操作区、演示区与 CSS 输出', async () => {
+  it('操作区、演示区、明细、CSS 四块同屏常驻，不用先点一下才出来', () => {
     const wrapper = mount(ThePlayground)
     expect(wrapper.find('[data-testid="stage"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('容器属性')
     expect(wrapper.text()).toContain('盒子属性')
 
-    // CSS 输出挪进了检视面板的第二个标签，默认不渲染
-    await wrapper.get('[data-testid="inspector-tab-css"]').trigger('click')
+    // CSS 从原来的标签页挪到了独立的右栏，和明细表同时可见
     expect(wrapper.find('[data-testid="css-code"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="metrics"]').exists()).toBe(true)
   })
 
   it('明细区随演示区一起呈现，每个盒子一行', () => {
@@ -144,6 +144,31 @@ describe('thePlayground', () => {
     const scroller = /<div class="([^"]*overflow-auto[^"]*)">\s*<DemoStage\s*\/>/.exec(playground)!
     expect(scroller[1], '演示区滚动容器要吃满面板的剩余高度').toMatch(/(?:^|\s)lg:flex-1(?:\s|$)/)
     expect(scroller[1], '演示区滚动容器缺 min-h-0，超高的演示区会把面板顶破').toMatch(/(?:^|\s)lg:min-h-0(?:\s|$)/)
+
+    /*
+     * 第三列（CSS）的链条独立于中列，断在哪一级都是整页重新开始滚：
+     * 栏本身要能被压到行高以下，栏里的滚动区还得自己吃满剩余高度。
+     */
+    const cssColumn = /<CssOutput class="([^"]*)"/.exec(playground)
+    expect(cssColumn, '没找到右侧 CSS 栏').toBeTruthy()
+    expect(cssColumn![1], 'CSS 栏缺 min-h-0，长 CSS 会把整行顶高').toMatch(/(?:^|\s)lg:min-h-0(?:\s|$)/)
+
+    const cssOutput = readFileSync(resolve(process.cwd(), 'src/components/playground/CssOutput.vue'), 'utf-8')
+    const cssScroller = /<div class="([^"]*overflow-auto[^"]*)">/.exec(cssOutput)
+    expect(cssScroller, '没找到 CSS 面板里的滚动容器').toBeTruthy()
+    expect(cssScroller![1], 'CSS 滚动容器要吃满面板的剩余高度').toMatch(/(?:^|\s)lg:flex-1(?:\s|$)/)
+    expect(cssScroller![1], 'CSS 滚动容器缺 min-h-0，滚动条会跑到外层去').toMatch(/(?:^|\s)lg:min-h-0(?:\s|$)/)
+
+    /*
+     * 这两个类必须带 lg: 前缀，不带就是一个实际踩到的缺陷：窄屏下面板高度由内容决定，
+     * 此时 `flex: 1 1 0%` 配上显式 min-height: 0，这层的假设主尺寸算出来是 0，
+     * 外层 overflow-hidden 再一裁——整个代码块在窄屏上凭空消失，而宽屏下一切正常。
+     * 上面两条 toMatch 只认得「有没有」，认不出「带不带前缀」，所以这里单独钉死。
+     */
+    expect(
+      cssScroller![1],
+      `CSS 滚动容器的 flex-1 / min-h-0 不带 lg: 前缀，窄屏下代码块会塌成 0 高度：${cssScroller![1]}`,
+    ).not.toMatch(/(?:^|\s)(?:flex-1|min-h-0)(?:\s|$)/)
   })
 
   /*

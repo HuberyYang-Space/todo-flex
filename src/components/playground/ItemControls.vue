@@ -30,7 +30,8 @@ function isPresetActive(item: FlexItemState, preset: FlexShorthandPreset): boole
 
 <template>
   <section class="flex flex-col gap-space">
-    <h2 data-testid="item-title" class="text-sm font-bold">
+    <h2 data-testid="item-title" class="panel-title">
+      <div class="i-carbon-settings-adjust" />
       盒子属性<template v-if="selectedItem">
         · {{ selectedItem.id }}
       </template>

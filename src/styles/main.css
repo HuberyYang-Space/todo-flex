@@ -134,3 +134,20 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/*
+ * shiki 的双主题输出：每个 token 同时带 --shiki-light 与 --shiki-dark 两个自定义属性，
+ * 自己不写 color，由这里挑一套。单主题模式得在切主题时整段重新高亮，代码块会闪一下。
+ *
+ * 背景色一并留空：shiki 把它放在 --shiki-*-bg 里而不是直接写死，
+ * 不引用就等于让面板底色透上来——代码块不该在面板里再画一块自己的底。
+ */
+.shiki,
+.shiki span {
+  color: var(--shiki-light);
+}
+
+html.dark .shiki,
+html.dark .shiki span {
+  color: var(--shiki-dark);
+}
