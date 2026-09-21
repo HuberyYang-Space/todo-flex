@@ -1,6 +1,8 @@
 # 演示区方块改用等距实体块 实现计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **状态：实现已完成，但 Step 3 那 9 条浏览器核对从未做过。**
+> 这份是四份计划里唯一真被逐步跟踪过的（16 步勾掉 15 步），剩下的一步不是代码，是人眼核对。
+> 那 9 条已并进 progress.md 的「仍待人眼核对的清单」，别只看这里。
 
 **Goal:** 把演示区盒子的视觉从「贴了材质的平面」改成「一块看得见厚度的实体」，采用样本册第 26 号方案（等距实体块）。
 
@@ -64,7 +66,7 @@
 - Produces: `motion.blockDepth`（最大厚度 px）与 `motion.blockDepthMin`（下限 px）
 - Produces: `.stage-box` 上的内联变量 `--d`，值为 `clamp(min, 可用间距 - 2, blockDepth)`
 
-- [x] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 在 `DemoStage.spec.ts` 追加：
 
@@ -113,12 +115,12 @@
 
 文件顶部补 `import { motion } from '~/visual/motion'`。
 
-- [x] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/components/playground/DemoStage.spec.ts`
 Expected: FAIL，`--d` 为空。
 
-- [x] **Step 3: 加常量**
+- **Step 3: 加常量**
 
 `src/visual/motion.ts` 末尾追加（保持在同一个 `motion` 对象内）：
 
@@ -129,7 +131,7 @@ Expected: FAIL，`--d` 为空。
   blockDepthMin: 3,
 ```
 
-- [x] **Step 4: 组件里按 gap 算厚度**
+- **Step 4: 组件里按 gap 算厚度**
 
 `DemoStage.vue` 的 `<script setup>` 里补：
 
@@ -157,12 +159,12 @@ const blockDepth = computed(() => {
 > 测试断言的是 `.stage-box` 上的 `--d`。若继承拿不到内联值，改成在 `itemStyle` 里逐个写；
 > 两种都可以，测试用 `getPropertyValue` 读到即可。
 
-- [x] **Step 5: 跑测试确认通过**
+- **Step 5: 跑测试确认通过**
 
 Run: `pnpm vitest run src/components/playground/DemoStage.spec.ts`
 Expected: PASS。
 
-- [x] **Step 6: 提交**
+- **Step 6: 提交**
 
 调用 `/commit` skill，建议信息：`feat(playground): 方块厚度随间距自适应`。
 
@@ -175,7 +177,7 @@ Expected: PASS。
 
 **注意：圆角要从 12px 降到 3px。** 平行四边形的面与大圆角接不上，会露出缺口——这是样本册里 26 号取小圆角的原因，视觉上方块会从「圆润卡片」变成「方正块体」。
 
-- [x] **Step 1: 替换 `.stage-box` 的质感**
+- **Step 1: 替换 `.stage-box` 的质感**
 
 把现有 `.stage-box` 的 `border-radius` / `background` / `box-shadow` 三项换成：
 
@@ -201,7 +203,7 @@ Expected: PASS。
 }
 ```
 
-- [x] **Step 2: 画两个面**
+- **Step 2: 画两个面**
 
 ```css
 /*
@@ -243,7 +245,7 @@ Expected: PASS。
 
 `.stage-box` 需要 `position: relative`（若尚未设置则补上）。
 
-- [x] **Step 3: 悬停与选中态跟上**
+- **Step 3: 悬停与选中态跟上**
 
 悬停时厚度加大、接触阴影拉开；选中时三个面一起换成 `--accent-2` 体系：
 
@@ -274,12 +276,12 @@ Expected: PASS。
 > `--d: calc(var(--d) + 3px)` 会自引用导致无效。实现时改成在 `.stage-box` 上定义
 > `--d-hover` 或直接用两个独立变量，不要让 `--d` 引用自己。
 
-- [x] **Step 4: 跑测试与 lint**
+- **Step 4: 跑测试与 lint**
 
 Run: `pnpm test && pnpm lint`
 Expected: 全绿。样式改动不影响任何断言。
 
-- [x] **Step 5: 提交**
+- **Step 5: 提交**
 
 调用 `/commit` skill，建议信息：`style(playground): 方块改用等距实体块`。
 
@@ -287,12 +289,12 @@ Expected: 全绿。样式改动不影响任何断言。
 
 ### Task 3: 验证
 
-- [x] **Step 1: 三项验证**
+- **Step 1: 三项验证**
 
 Run: `pnpm test`、`pnpm lint`、`pnpm build`
 Expected: 全绿，把输出贴进回复。
 
-- [x] **Step 2: 请示浏览器验证**
+- **Step 2: 请示浏览器验证**
 
 按项目约定**先问用户**，不要自行调用 claude-in-chrome。
 
@@ -301,7 +303,7 @@ Expected: 全绿，把输出贴进回复。
 > 上一轮因此两次把冻结状态误判成缺陷。**静态样式可以靠截图验，动效必须让用户自己看。**
 > 量任何与动画有关的东西之前，先跑一次 rAF 计数确认页面在动。
 
-- [ ] **Step 3: 浏览器核对清单**
+- **Step 3: 浏览器核对清单**
 
 1. 默认态（gap 12）：顶面与右侧面都可见，三面明暗关系是左上打光。
 2. 把 gap 拖到 0：厚度收到下限，相邻方块的面**不重叠**。
@@ -325,11 +327,11 @@ Expected: 全绿，把输出贴进回复。
 - 一处待定：`align-items: stretch` 时盒子顶边与容器上沿齐平，10px 顶面会画到容器外面
   （容器不能加 padding），观感是否可接受未定。
 
-- [x] **Step 4: 更新进度**
+- **Step 4: 更新进度**
 
 `CLAUDE.md` 的「当前进度」补上 M4 的收尾状态。
 
-- [x] **Step 5: 提交**
+- **Step 5: 提交**
 
 调用 `/commit` skill，建议信息：`docs: 记录等距实体块的浏览器核对结论`。
 

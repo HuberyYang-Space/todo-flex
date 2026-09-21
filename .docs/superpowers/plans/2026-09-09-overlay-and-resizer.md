@@ -1,6 +1,7 @@
 # M3 收尾：叠加层与容器拖拽 实现计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **状态：已全部实现（M3 收尾），本文是过程记录，不是待办清单。**
+> 复选框从未被勾过，原因与去向同 M1+M2 那份计划——详见 progress.md 的说明。
 
 **Goal:** 给演示区加上 SVG 叠加层（剩余空间色块、主/交叉轴箭头、尺寸 HUD）与右下角 resize 拖拽手柄，补齐 M3「透明化核心」的最后两块。
 
@@ -61,7 +62,7 @@
 - Consumes: `FlexContainerState`、`isRowDirection`（`src/core/axis.ts` 已有）
 - Produces: `export interface AxisVector { dx: number, dy: number }`、`export function axisVectors(container: FlexContainerState): { main: AxisVector, cross: AxisVector }`。向量是**屏幕坐标系**下的单位向量：x 向右为正，y 向下为正。
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 新建 `src/core/axis.spec.ts`：
 
@@ -118,12 +119,12 @@ describe('axisVectors', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/core/axis.spec.ts`
 Expected: FAIL，报 `axisVectors` 不是导出的函数（`No "axisVectors" export is defined`）。
 
-- [ ] **Step 3: 写最小实现**
+- **Step 3: 写最小实现**
 
 在 `src/core/axis.ts` 末尾追加：
 
@@ -148,12 +149,12 @@ export function axisVectors(container: FlexContainerState): { main: AxisVector, 
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/core/axis.spec.ts`
 Expected: PASS，5 个用例全绿。
 
-- [ ] **Step 5: 提交**
+- **Step 5: 提交**
 
 调用 `/commit` skill 提交这两个文件，建议信息：`feat(core): 补齐轴向单位向量换算`。
 
@@ -182,7 +183,7 @@ Expected: PASS，5 个用例全绿。
   - `export interface OverlayGeometry { bands: OverlayBand[], lines: OverlayLine[] }`
   - `export function computeOverlay(state: FlexState, derived: DerivedLayout, measured: MeasuredStage): OverlayGeometry`
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 新建 `src/core/overlay.spec.ts`：
 
@@ -365,12 +366,12 @@ describe('computeOverlay', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/core/overlay.spec.ts`
 Expected: FAIL，报找不到模块 `./overlay`。
 
-- [ ] **Step 3: 写最小实现**
+- **Step 3: 写最小实现**
 
 新建 `src/core/overlay.ts`：
 
@@ -504,17 +505,17 @@ function makeBand(
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/core/overlay.spec.ts`
 Expected: PASS，10 个用例全绿。
 
-- [ ] **Step 5: 跑一遍全量测试确认没碰坏别的**
+- **Step 5: 跑一遍全量测试确认没碰坏别的**
 
 Run: `pnpm test`
 Expected: 全绿。
 
-- [ ] **Step 6: 提交**
+- **Step 6: 提交**
 
 调用 `/commit` skill 提交，建议信息：`feat(core): 计算叠加层几何，画出真实剩余空间`。
 
@@ -529,7 +530,7 @@ Expected: 全绿。
 **Interfaces:**
 - Produces: `export function useOverlay(): { visible: Ref<boolean>, hoveredId: Ref<string | null>, setHovered: (id: string | null) => void, toggleVisible: () => void }`。模块级单例，语义与 `useFlexState` / `useMeasure` 一致：任何组件调用拿到的都是同一份。
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 新建 `src/composables/useOverlay.spec.ts`：
 
@@ -565,12 +566,12 @@ describe('useOverlay', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/composables/useOverlay.spec.ts`
 Expected: FAIL，找不到模块 `./useOverlay`。
 
-- [ ] **Step 3: 写最小实现**
+- **Step 3: 写最小实现**
 
 新建 `src/composables/useOverlay.ts`：
 
@@ -600,12 +601,12 @@ export function useOverlay() {
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/composables/useOverlay.spec.ts`
 Expected: PASS，3 个用例全绿。
 
-- [ ] **Step 5: 提交**
+- **Step 5: 提交**
 
 调用 `/commit` skill 提交，建议信息：`feat(playground): 添加叠加层 UI 开关状态`。
 
@@ -628,7 +629,7 @@ Expected: PASS，3 个用例全绿。
 - Consumes: `computeOverlay` / `OverlayGeometry`（Task 2）、`axisVectors`（Task 1）、`useOverlay`（Task 3）、`useMeasure().measured`、`useFlexState().state / derived`、`itemLabel`（`src/core/labels.ts`）
 - Produces: 组件 `OverlayLayer`，无 props（全部走单例状态）。测试用 `data-testid`：`overlay`、`overlay-band`（带 `data-kind`）、`overlay-axis-main`、`overlay-axis-cross`、`overlay-hud`。
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 新建 `src/components/playground/OverlayLayer.spec.ts`：
 
@@ -738,12 +739,12 @@ describe('overlayLayer', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/components/playground/OverlayLayer.spec.ts`
 Expected: FAIL，找不到 `./OverlayLayer.vue`。
 
-- [ ] **Step 3: 写组件**
+- **Step 3: 写组件**
 
 新建 `src/components/playground/OverlayLayer.vue`：
 
@@ -916,12 +917,12 @@ function round(value: number): number {
 </style>
 ```
 
-- [ ] **Step 4: 跑组件测试确认通过**
+- **Step 4: 跑组件测试确认通过**
 
 Run: `pnpm vitest run src/components/playground/OverlayLayer.spec.ts`
 Expected: PASS，7 个用例全绿。
 
-- [ ] **Step 5: 把叠加层挂进演示区**
+- **Step 5: 把叠加层挂进演示区**
 
 改 `src/components/playground/DemoStage.vue`：
 
@@ -977,12 +978,12 @@ const { setHovered } = useOverlay()
 </template>
 ```
 
-- [ ] **Step 6: 跑演示区与叠加层的测试**
+- **Step 6: 跑演示区与叠加层的测试**
 
 Run: `pnpm vitest run src/components/playground/DemoStage.spec.ts src/components/playground/OverlayLayer.spec.ts`
 Expected: PASS。`DemoStage.spec.ts` 现有 8 个用例都靠 `data-testid` 定位，包 wrapper 不影响它们。
 
-- [ ] **Step 7: 提交**
+- **Step 7: 提交**
 
 调用 `/commit` skill 提交，建议信息：`feat(playground): 画出剩余空间与轴向叠加层`。
 
@@ -1006,7 +1007,7 @@ Expected: PASS。`DemoStage.spec.ts` 现有 8 个用例都靠 `data-testid` 定�
 - Produces: `export const STAGE_LIMITS = { minWidth: 200, maxWidth: 1200, minHeight: 120, maxHeight: 600 }`（`src/core/defaults.ts`）；组件 `StageResizer`，无 props，`data-testid="stage-resizer"`。
 - 数值范围沿用被替换掉的两个 range 滑块（宽 200–1200、高 120–600），不改变可达的尺寸区间。
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 新建 `src/components/playground/StageResizer.spec.ts`：
 
@@ -1101,12 +1102,12 @@ describe('stageResizer', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/components/playground/StageResizer.spec.ts`
 Expected: FAIL，找不到 `STAGE_LIMITS` 与 `./StageResizer.vue`。
 
-- [ ] **Step 3: 加尺寸上下限常量**
+- **Step 3: 加尺寸上下限常量**
 
 在 `src/core/defaults.ts` 顶部（`createDefaultItem` 之前）插入：
 
@@ -1123,7 +1124,7 @@ export const STAGE_LIMITS = {
 } as const
 ```
 
-- [ ] **Step 4: 写手柄组件**
+- **Step 4: 写手柄组件**
 
 新建 `src/components/playground/StageResizer.vue`：
 
@@ -1243,16 +1244,16 @@ function onKeydown(event: KeyboardEvent): void {
 </style>
 ```
 
-- [ ] **Step 5: 跑手柄测试确认通过**
+- **Step 5: 跑手柄测试确认通过**
 
 Run: `pnpm vitest run src/components/playground/StageResizer.spec.ts`
 Expected: PASS，6 个用例全绿。
 
-- [ ] **Step 6: 把手柄挂进演示区**
+- **Step 6: 把手柄挂进演示区**
 
 改 `src/components/playground/DemoStage.vue`：script 里加 `import StageResizer from './StageResizer.vue'`，模板里在 `<OverlayLayer />` 之后加一行 `<StageResizer />`（同为 wrapper 的直接子节点）。
 
-- [ ] **Step 7: 删掉滑块，换成叠加层开关**
+- **Step 7: 删掉滑块，换成叠加层开关**
 
 改 `src/components/playground/ThePlayground.vue`：
 
@@ -1294,7 +1295,7 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
 
 演示区外层的 `<div class="overflow-auto">` 保持不变，但要给手柄留出伸出去的 6px，改成 `<div class="overflow-auto p-2">`——padding 加在**演示区外面的滚动容器**上，不是 `.stage` 上，不影响布局推导。
 
-- [ ] **Step 8: 改掉引用滑块的测试**
+- **Step 8: 改掉引用滑块的测试**
 
 `src/components/playground/ThePlayground.spec.ts` 里「容器宽度滑块改变演示区尺寸」这个用例整体替换为：
 
@@ -1321,12 +1322,12 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
 
 文件顶部补一行 `import { useOverlay } from '~/composables/useOverlay'`。
 
-- [ ] **Step 9: 跑全量测试**
+- **Step 9: 跑全量测试**
 
 Run: `pnpm test`
 Expected: 全绿。若 `ThePlayground.spec.ts` 里叠加层开关用例受单例状态串扰，检查是否漏了收尾的 `toggleVisible()`。
 
-- [ ] **Step 10: 提交**
+- **Step 10: 提交**
 
 调用 `/commit` skill 提交，建议信息：`feat(playground): 演示区改用右下角拖拽手柄调整尺寸`。
 
@@ -1338,26 +1339,26 @@ Expected: 全绿。若 `ThePlayground.spec.ts` 里叠加层开关用例受单例
 
 **Files:** 无改动（除非核对发现问题）
 
-- [ ] **Step 1: 跑测试**
+- **Step 1: 跑测试**
 
 Run: `pnpm test`
 Expected: 全绿，把输出贴进回复。
 
-- [ ] **Step 2: 跑 lint**
+- **Step 2: 跑 lint**
 
 Run: `pnpm lint`
 Expected: 无错误。有 antfu 风格问题先跑 `pnpm lint:fix` 再复跑。
 
-- [ ] **Step 3: 跑构建（含类型检查）**
+- **Step 3: 跑构建（含类型检查）**
 
 Run: `pnpm build`
 Expected: `vue-tsc --noEmit` 无类型错误，vite 构建成功。
 
-- [ ] **Step 4: 请示浏览器验证**
+- **Step 4: 请示浏览器验证**
 
 按项目约定，**先问用户是否需要浏览器验证**，不要自行调用 claude-in-chrome。得到确认后再执行下一步。
 
-- [ ] **Step 5: 浏览器核对清单**
+- **Step 5: 浏览器核对清单**
 
 `pnpm dev` 起服务后逐条核对：
 
@@ -1371,10 +1372,10 @@ Expected: `vue-tsc --noEmit` 无类型错误，vite 构建成功。
 8. 叠加层开关关掉后，演示区回到纯净状态，盒子仍可点选（验证 `pointer-events: none` 没吃掉点击）。
 9. 切换暗/亮主题——斜纹、箭头、HUD 在两个主题下都看得清。
 
-- [ ] **Step 6: 更新 CLAUDE.md 的进度段落**
+- **Step 6: 更新 CLAUDE.md 的进度段落**
 
 `CLAUDE.md` 的「当前进度」段落把 M3 标记为完成，删掉「M3 剩余部分」那两句，改为指向 M4（GSAP Flip 布局过渡）。若浏览器核对发现了新的布局陷阱，追加进「设计红线」。
 
-- [ ] **Step 7: 提交**
+- **Step 7: 提交**
 
 调用 `/commit` skill 提交，建议信息：`docs: 记录 M3 完成与浏览器核对结论`。

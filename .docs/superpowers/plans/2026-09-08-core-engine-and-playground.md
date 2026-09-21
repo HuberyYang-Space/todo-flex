@@ -1,6 +1,9 @@
 # todo-flex 核心引擎与 Playground 实现计划（M1 + M2）
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **状态：已全部实现（M1 + M2），本文是过程记录，不是待办清单。**
+> 原先每一步都是 `- [ ]` 复选框且从未被勾过——工作早就做完了，只是没人回来打勾。
+> 那份「看着全都没做」的假象需要 progress.md 专门写一条警告来防住，所以复选框已改成普通列表项。
+> 判断进度一律以 git 历史与实际代码为准。改这里的既有实现之前读本文，是为了不推翻当初有理由的取舍。
 
 **Goal:** 交付 flex 推导引擎（纯函数、测试全覆盖）与一个可用的 Playground——用户能自由排列组合 flex 全部属性、在真实渲染的演示区看到效果、复制生成的 CSS。
 
@@ -74,7 +77,7 @@ M2（UI）：
   - `createDefaultItem(id: string): FlexItemState`
   - `createDefaultState(): FlexState`
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 创建 `src/core/defaults.spec.ts`：
 
@@ -135,12 +138,12 @@ describe('轴向工具', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/core/defaults.spec.ts`
 Expected: FAIL，报错找不到模块 `./axis` 与 `./defaults`
 
-- [ ] **Step 3: 写实现**
+- **Step 3: 写实现**
 
 创建 `src/core/types.ts`：
 
@@ -295,7 +298,7 @@ export function createDefaultState(): FlexState {
 }
 ```
 
-- [ ] **Step 4: 删除工具链自检测试并跑全量测试**
+- **Step 4: 删除工具链自检测试并跑全量测试**
 
 ```bash
 rm -rf src/__tests__
@@ -304,7 +307,7 @@ pnpm test
 
 Expected: PASS，6 个用例全绿
 
-- [ ] **Step 5: lint 并提交**
+- **Step 5: lint 并提交**
 
 ```bash
 pnpm lint:fix && pnpm lint
@@ -325,7 +328,7 @@ git commit -m "feat(core): 定义 flex 状态类型、轴向工具与默认状�
 - Consumes: `FlexItemState` / `FlexContainerState`（Task 1）、`mainAxisSize`（Task 1）
 - Produces: `resolveBasis(item: FlexItemState, container: FlexContainerState): number`
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 创建 `src/core/resolveBasis.spec.ts`：
 
@@ -382,12 +385,12 @@ describe('resolveBasis', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/core/resolveBasis.spec.ts`
 Expected: FAIL，报错找不到模块 `./resolveBasis`
 
-- [ ] **Step 3: 写实现**
+- **Step 3: 写实现**
 
 创建 `src/core/resolveBasis.ts`：
 
@@ -417,12 +420,12 @@ export function resolveBasis(item: FlexItemState, container: FlexContainerState)
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/core/resolveBasis.spec.ts`
 Expected: PASS，7 个用例全绿
 
-- [ ] **Step 5: lint 并提交**
+- **Step 5: lint 并提交**
 
 ```bash
 pnpm lint:fix && pnpm lint
@@ -442,7 +445,7 @@ git commit -m "feat(core): 实现 flex-basis 解析"
 - Consumes: `resolveBasis`（Task 2）、`mainAxisSize` / `mainAxisGap`（Task 1）
 - Produces: `splitLines(items: FlexItemState[], container: FlexContainerState): string[][]`（返回每行的 item id 数组，按视觉行序）
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 创建 `src/core/splitLines.spec.ts`：
 
@@ -522,12 +525,12 @@ describe('splitLines', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/core/splitLines.spec.ts`
 Expected: FAIL，报错找不到模块 `./splitLines`
 
-- [ ] **Step 3: 写实现**
+- **Step 3: 写实现**
 
 创建 `src/core/splitLines.ts`：
 
@@ -576,12 +579,12 @@ export function splitLines(items: FlexItemState[], container: FlexContainerState
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/core/splitLines.spec.ts`
 Expected: PASS，7 个用例全绿
 
-- [ ] **Step 5: lint 并提交**
+- **Step 5: lint 并提交**
 
 ```bash
 pnpm lint:fix && pnpm lint
@@ -605,7 +608,7 @@ git commit -m "feat(core): 实现按 order 排序与换行分行"
   - `distributeShrink(lineItems: FlexItemState[], freeSpace: number, container: FlexContainerState): Map<string, number>`
   - `shrinkWeight(item: FlexItemState, container: FlexContainerState): number`
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 创建 `src/core/distribute.spec.ts`：
 
@@ -723,12 +726,12 @@ describe('distributeShrink', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/core/distribute.spec.ts`
 Expected: FAIL，报错找不到模块 `./distribute`
 
-- [ ] **Step 3: 写实现**
+- **Step 3: 写实现**
 
 创建 `src/core/distribute.ts`：
 
@@ -784,12 +787,12 @@ export function distributeShrink(
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/core/distribute.spec.ts`
 Expected: PASS，11 个用例全绿
 
-- [ ] **Step 5: lint 并提交**
+- **Step 5: lint 并提交**
 
 ```bash
 pnpm lint:fix && pnpm lint
@@ -809,7 +812,7 @@ git commit -m "feat(core): 实现剩余空间计算与 grow/shrink 分配"
 - Consumes: `splitLines`（Task 3）、`computeFreeSpace` / `distributeGrow` / `distributeShrink` / `shrinkWeight`（Task 4）、`resolveBasis`（Task 2）
 - Produces: `deriveLayout(state: FlexState): DerivedLayout`
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 创建 `src/core/deriveLayout.spec.ts`：
 
@@ -925,12 +928,12 @@ describe('deriveLayout', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/core/deriveLayout.spec.ts`
 Expected: FAIL，报错找不到模块 `./deriveLayout`
 
-- [ ] **Step 3: 写实现**
+- **Step 3: 写实现**
 
 创建 `src/core/deriveLayout.ts`：
 
@@ -1046,12 +1049,12 @@ export function deriveLayout(state: FlexState): DerivedLayout {
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/core/deriveLayout.spec.ts`
 Expected: PASS，9 个用例全绿
 
-- [ ] **Step 5: lint 并提交**
+- **Step 5: lint 并提交**
 
 ```bash
 pnpm lint:fix && pnpm lint
@@ -1071,7 +1074,7 @@ git commit -m "feat(core): 组装推导引擎并输出推导步骤"
 - Consumes: `FlexState`（Task 1）
 - Produces: `emitCss(state: FlexState): string`
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 创建 `src/core/cssEmit.spec.ts`：
 
@@ -1163,12 +1166,12 @@ describe('emitCss', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/core/cssEmit.spec.ts`
 Expected: FAIL，报错找不到模块 `./cssEmit`
 
-- [ ] **Step 3: 写实现**
+- **Step 3: 写实现**
 
 创建 `src/core/cssEmit.ts`：
 
@@ -1221,12 +1224,12 @@ export function emitCss(state: FlexState): string {
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/core/cssEmit.spec.ts`
 Expected: PASS，6 个用例全绿。若内联快照与实现有细微空白差异，用 `pnpm vitest run src/core/cssEmit.spec.ts -u` 更新后人工确认输出确实可粘贴使用
 
-- [ ] **Step 5: lint 并提交**
+- **Step 5: lint 并提交**
 
 ```bash
 pnpm lint:fix && pnpm lint
@@ -1251,7 +1254,7 @@ git commit -m "feat(core): 实现 CSS 文本生成"
   - `flexShorthandPresets: FlexShorthandPreset[]`
   - `visibleOptions(prop: PropertyDef, showAdvanced: boolean): PropertyOption[]`
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 创建 `src/data/flexProperties.spec.ts`：
 
@@ -1348,12 +1351,12 @@ describe('visibleOptions', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/data/flexProperties.spec.ts`
 Expected: FAIL，报错找不到模块 `./flexProperties`
 
-- [ ] **Step 3: 写实现**
+- **Step 3: 写实现**
 
 创建 `src/data/flexProperties.ts`：
 
@@ -1605,12 +1608,12 @@ export function visibleOptions(prop: PropertyDef, showAdvanced: boolean): Proper
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/data/flexProperties.spec.ts`
 Expected: PASS，11 个用例全绿
 
-- [ ] **Step 5: lint 并提交**
+- **Step 5: lint 并提交**
 
 ```bash
 pnpm lint:fix && pnpm lint
@@ -1636,7 +1639,7 @@ git commit -m "feat(data): 添加驱动控制面板的属性元信息表"
   - `addItem(): void` / `removeItem(id: string): void` / `selectItem(id: string | null): void` / `resetState(): void`
   - 常量 `MAX_ITEMS = 8`
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 创建 `src/composables/useFlexState.spec.ts`：
 
@@ -1711,12 +1714,12 @@ describe('useFlexState', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/composables/useFlexState.spec.ts`
 Expected: FAIL，报错找不到模块 `./useFlexState`
 
-- [ ] **Step 3: 写实现**
+- **Step 3: 写实现**
 
 创建 `src/composables/useFlexState.ts`：
 
@@ -1776,12 +1779,12 @@ export function useFlexState() {
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/composables/useFlexState.spec.ts`
 Expected: PASS，8 个用例全绿
 
-- [ ] **Step 5: lint 并提交**
+- **Step 5: lint 并提交**
 
 ```bash
 pnpm lint:fix && pnpm lint
@@ -1801,7 +1804,7 @@ git commit -m "feat(composables): 添加唯一状态源 useFlexState"
 - Consumes: `useFlexState`（Task 8）、`isRowDirection`（Task 1）
 - Produces: `DemoStage` 组件。DOM 约定：容器带 `data-testid="stage"`，每个盒子带 `data-testid="stage-item"` 与 `data-item-id="<id>"`，选中的盒子带 class `is-selected`
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 创建 `src/components/playground/DemoStage.spec.ts`：
 
@@ -1869,12 +1872,12 @@ describe('demoStage', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/components/playground/DemoStage.spec.ts`
 Expected: FAIL，报错找不到模块 `./DemoStage.vue`
 
-- [ ] **Step 3: 写实现**
+- **Step 3: 写实现**
 
 创建 `src/components/playground/DemoStage.vue`：
 
@@ -1981,12 +1984,12 @@ function label(index: number): string {
 </style>
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/components/playground/DemoStage.spec.ts`
 Expected: PASS，7 个用例全绿
 
-- [ ] **Step 5: lint 并提交**
+- **Step 5: lint 并提交**
 
 ```bash
 pnpm lint:fix && pnpm lint
@@ -2009,7 +2012,7 @@ git commit -m "feat(playground): 添加真实 CSS 渲染的演示区"
   - `PropertyField` 组件，props: `{ prop: PropertyDef, modelValue: string | number | boolean, showAdvanced: boolean }`，emit: `update:modelValue`
   - `ContainerControls` 组件。DOM 约定：枚举选项按钮带 `data-testid="option"` 与 `data-value="<值>"`，「更多值」按钮带 `data-testid="toggle-advanced"`
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 创建 `src/components/playground/ContainerControls.spec.ts`：
 
@@ -2061,12 +2064,12 @@ describe('containerControls', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/components/playground/ContainerControls.spec.ts`
 Expected: FAIL，报错找不到模块 `./ContainerControls.vue`
 
-- [ ] **Step 3: 写实现**
+- **Step 3: 写实现**
 
 创建 `src/components/playground/PropertyField.vue`：
 
@@ -2233,12 +2236,12 @@ function update(key: string, value: string | number | boolean): void {
 </template>
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/components/playground/ContainerControls.spec.ts`
 Expected: PASS，5 个用例全绿
 
-- [ ] **Step 5: lint 并提交**
+- **Step 5: lint 并提交**
 
 ```bash
 pnpm lint:fix && pnpm lint
@@ -2261,7 +2264,7 @@ git commit -m "feat(playground): 添加表驱动的容器属性控件"
   - `ItemControls` 组件。标题带 `data-testid="item-title"`，未选中时显示提示文案 `data-testid="item-empty"`，flex 简写预设按钮带 `data-testid="flex-preset"` 与 `data-preset="<label>"`
   - `ItemList` 组件。每行带 `data-testid="item-row"`，新增按钮 `data-testid="add-item"`，删除按钮 `data-testid="remove-item"`
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 创建 `src/components/playground/ItemControls.spec.ts`：
 
@@ -2366,12 +2369,12 @@ describe('itemList', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/components/playground/ItemControls.spec.ts`
 Expected: FAIL，报错找不到模块 `./ItemControls.vue`
 
-- [ ] **Step 3: 写实现**
+- **Step 3: 写实现**
 
 创建 `src/components/playground/ItemControls.vue`：
 
@@ -2529,12 +2532,12 @@ function label(index: number): string {
 </template>
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/components/playground/ItemControls.spec.ts`
 Expected: PASS，10 个用例全绿
 
-- [ ] **Step 5: lint 并提交**
+- **Step 5: lint 并提交**
 
 ```bash
 pnpm lint:fix && pnpm lint
@@ -2554,7 +2557,7 @@ git commit -m "feat(playground): 添加盒子属性控件与盒子列表"
 - Consumes: `useFlexState`（Task 8）、`prismjs`
 - Produces: `CssOutput` 组件。代码区 `data-testid="css-code"`，复制按钮 `data-testid="copy-css"`
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 创建 `src/components/playground/CssOutput.spec.ts`：
 
@@ -2598,12 +2601,12 @@ describe('cssOutput', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/components/playground/CssOutput.spec.ts`
 Expected: FAIL，报错找不到模块 `./CssOutput.vue`
 
-- [ ] **Step 3: 写实现**
+- **Step 3: 写实现**
 
 创建 `src/components/playground/CssOutput.vue`：
 
@@ -2647,12 +2650,12 @@ async function copy(): Promise<void> {
 
 > 注：`v-html` 的输入是 Prism 对本地生成的 CSS 字符串做的高亮结果，不含用户输入的任意 HTML，这里不存在注入面。
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/components/playground/CssOutput.spec.ts`
 Expected: PASS，3 个用例全绿
 
-- [ ] **Step 5: lint 并提交**
+- **Step 5: lint 并提交**
 
 ```bash
 pnpm lint:fix && pnpm lint
@@ -2673,7 +2676,7 @@ git commit -m "feat(playground): 添加 CSS 输出与复制"
 - Consumes: `DemoStage`（Task 9）、`ContainerControls`（Task 10）、`ItemControls` / `ItemList`（Task 11）、`CssOutput`（Task 12）、`useFlexState`（Task 8）
 - Produces: `ThePlayground` 组件，含容器尺寸滑块（`data-testid="stage-width"` / `data-testid="stage-height"`）与重置按钮（`data-testid="reset"`）
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 创建 `src/components/playground/ThePlayground.spec.ts`：
 
@@ -2720,12 +2723,12 @@ describe('thePlayground', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/components/playground/ThePlayground.spec.ts`
 Expected: FAIL，报错找不到模块 `./ThePlayground.vue`
 
-- [ ] **Step 3: 写实现**
+- **Step 3: 写实现**
 
 创建 `src/components/playground/ThePlayground.vue`：
 
@@ -2832,7 +2835,7 @@ import ThePlayground from '~/components/playground/ThePlayground.vue'
 </template>
 ```
 
-- [ ] **Step 4: 跑全量验证**
+- **Step 4: 跑全量验证**
 
 ```bash
 pnpm vitest run src/components/playground/ThePlayground.spec.ts
@@ -2847,7 +2850,7 @@ Expected:
 - lint 零 error
 - `vue-tsc --noEmit` 通过且 `vite build` 成功
 
-- [ ] **Step 5: 提交**
+- **Step 5: 提交**
 
 ```bash
 # 构建会刷新 auto-imports.d.ts / components.d.ts 等生成文件，一并纳入

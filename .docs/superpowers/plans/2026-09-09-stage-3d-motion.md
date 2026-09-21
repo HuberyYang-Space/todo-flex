@@ -1,6 +1,7 @@
 # 演示区 3D 化与运动编排 实现计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **状态：方案已作废，下面的清单永远不会被完成。**
+> 复选框已改成普通列表项，免得它看着像一份还能执行的计划。
 
 > **已作废（2026-09-09）**：3D 路线经浏览器验证后放弃，相关代码已删除。
 > 本文保留作过程记录，不要照它实现。其中 Task 2（观测层挂起）与 Task 4（Flip 编排）
@@ -59,7 +60,7 @@
 - Consumes: `DerivedLayout`（`src/core/types.ts`，其 `items` 每项含 `id` / `deltaFromGrow` / `deltaFromShrink`）
 - Produces: `export function computeDepths(derived: DerivedLayout, containerMainSize: number): Map<string, number>`。值域 −1..1，正数表示 grow 分得空间（凸起），负数表示 shrink 让出空间（凹陷）。
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 新建 `src/core/depth.spec.ts`：
 
@@ -146,12 +147,12 @@ describe('computeDepths', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/core/depth.spec.ts`
 Expected: FAIL，找不到模块 `./depth`。
 
-- [ ] **Step 3: 写最小实现**
+- **Step 3: 写最小实现**
 
 新建 `src/core/depth.ts`：
 
@@ -196,12 +197,12 @@ function clamp(value: number, min: number, max: number): number {
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/core/depth.spec.ts`
 Expected: PASS，8 个用例全绿。
 
-- [ ] **Step 5: 提交**
+- **Step 5: 提交**
 
 调用 `/commit` skill，建议信息：`feat(core): 把伸缩量归一化成方块厚度`。
 
@@ -218,7 +219,7 @@ Expected: PASS，8 个用例全绿。
 **Interfaces:**
 - Produces: `useMeasure()` 的返回值新增 `pause: () => void` 与 `resume: () => void`。`resume()` 会立即强制重采一次；在没有挂载演示区时调用是安全的空操作。
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 在 `src/composables/useMeasure.spec.ts` 末尾的 `describe` 内追加：
 
@@ -264,12 +265,12 @@ Expected: PASS，8 个用例全绿。
 
 若该文件还没有引入 `DemoStage` / `mount` / `nextTick` / `useFlexState`，在顶部补齐对应 import。
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/composables/useMeasure.spec.ts`
 Expected: FAIL，`pause is not a function`。
 
-- [ ] **Step 3: 写实现**
+- **Step 3: 写实现**
 
 改 `src/composables/useMeasure.ts`。在模块级 `measured` 声明之后补两个模块级变量：
 
@@ -338,12 +339,12 @@ export function useMeasure() {
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/composables/useMeasure.spec.ts`
 Expected: PASS，含原有的「禁止调用 getBoundingClientRect」那条。
 
-- [ ] **Step 5: 提交**
+- **Step 5: 提交**
 
 调用 `/commit` skill，建议信息：`feat(playground): 观测层支持挂起与恢复`。
 
@@ -360,7 +361,7 @@ Expected: PASS，含原有的「禁止调用 getBoundingClientRect」那条。
 - Produces: `export const motion` —— 只读常量对象，字段见下方实现。
 - Produces: `useStageView(): { is3D: Ref<boolean>, toggle3D: () => void }`，模块级单例，默认开启 3D。
 
-- [ ] **Step 1: 建 token 文件**
+- **Step 1: 建 token 文件**
 
 新建 `src/visual/motion.ts`：
 
@@ -391,7 +392,7 @@ export const motion = {
 } as const
 ```
 
-- [ ] **Step 2: 写视图开关的失败测试**
+- **Step 2: 写视图开关的失败测试**
 
 新建 `src/composables/useStageView.spec.ts`：
 
@@ -417,12 +418,12 @@ describe('useStageView', () => {
 })
 ```
 
-- [ ] **Step 3: 跑测试确认失败**
+- **Step 3: 跑测试确认失败**
 
 Run: `pnpm vitest run src/composables/useStageView.spec.ts`
 Expected: FAIL，找不到模块 `./useStageView`。
 
-- [ ] **Step 4: 写实现**
+- **Step 4: 写实现**
 
 新建 `src/composables/useStageView.ts`：
 
@@ -446,12 +447,12 @@ export function useStageView() {
 }
 ```
 
-- [ ] **Step 5: 跑测试确认通过**
+- **Step 5: 跑测试确认通过**
 
 Run: `pnpm vitest run src/composables/useStageView.spec.ts`
 Expected: PASS，2 个用例全绿。
 
-- [ ] **Step 6: 提交**
+- **Step 6: 提交**
 
 调用 `/commit` skill，建议信息：`feat(playground): 添加动效 token 与 3D 视图开关`。
 
@@ -471,7 +472,7 @@ Expected: PASS，2 个用例全绿。
 - Consumes: `motion`（Task 3）、`useMeasure().pause / resume`（Task 2）、`useFlexState().state`
 - Produces: `useFlip(): { scrubbing: Ref<boolean>, setScrubbing: (value: boolean) => void, observeFlip: (target: MaybeRefOrGetter<HTMLElement | undefined | null>) => void }`
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 新建 `src/composables/useFlip.spec.ts`：
 
@@ -531,12 +532,12 @@ describe('useFlip', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/composables/useFlip.spec.ts`
 Expected: FAIL，找不到模块 `./useFlip`。
 
-- [ ] **Step 3: 写实现**
+- **Step 3: 写实现**
 
 新建 `src/composables/useFlip.ts`：
 
@@ -610,7 +611,7 @@ export function useFlip() {
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/composables/useFlip.spec.ts`
 Expected: PASS，3 个用例全绿。
@@ -619,7 +620,7 @@ Expected: PASS，3 个用例全绿。
 > 此时先在 `DemoStage.vue` 的 setup 里加上 `useFlip().observeFlip(stageEl)` 一行，
 > 其余 3D 样式留到 Task 5 再做。
 
-- [ ] **Step 5: 提交**
+- **Step 5: 提交**
 
 调用 `/commit` skill，建议信息：`feat(playground): 用 GSAP Flip 编排布局重排`。
 
@@ -637,7 +638,7 @@ Expected: PASS，3 个用例全绿。
 
 **为什么写两个变量而不是一个：** 凹陷时 `--elev` 为负，但面的高度不能为负。CSS 的 `abs()` 支持度还不稳，与其赌它，不如在组件里算好正负两份。
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 在 `src/components/playground/DemoStage.spec.ts` 的 `describe` 内追加：
 
@@ -688,12 +689,12 @@ Expected: PASS，3 个用例全绿。
 > `wrapper.findAll('[data-testid="stage-item"]')[0].element.style.getPropertyValue('--elev')`
 > 断言，语义等价。
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/components/playground/DemoStage.spec.ts`
 Expected: FAIL，找不到 `[data-testid="scene"]`，且 style 里没有 `--elev`。
 
-- [ ] **Step 3: script 部分接上厚度与视角**
+- **Step 3: script 部分接上厚度与视角**
 
 在 `DemoStage.vue` 的 `<script setup>` 里补 import 与计算：
 
@@ -741,7 +742,7 @@ function round(value: number): number {
 
 把 `depthStyle(item)` 合并进已有的 `itemStyle(item)` 返回值：在 `itemStyle` 的返回对象末尾展开 `...depthStyle(item)`。
 
-- [ ] **Step 4: 模板插入 `.scene` 层**
+- **Step 4: 模板插入 `.scene` 层**
 
 `.scene` 必须**同时包住 `.stage` 与 `OverlayLayer`**，否则叠加层不跟着倾斜、剩余空间色块会与方块错位。`StageResizer` 也放进去，让手柄跟着容器的视觉角落走。
 
@@ -765,7 +766,7 @@ function round(value: number): number {
 
 注意 `.stage` 的 class 里**去掉了 `overflow-hidden`**——见下一步。
 
-- [ ] **Step 5: 样式：移除 overflow、加立体面**
+- **Step 5: 样式：移除 overflow、加立体面**
 
 在 `<style scoped>` 里，先给 `.scene` 建 3D 上下文：
 
@@ -857,12 +858,12 @@ function round(value: number): number {
 > 悬停过渡在减弱动效偏好下会被 `src/styles/main.css` 里既有的全局规则压成 0.01ms，
 > 不需要在这里额外处理——那条规则本来就是为这种场景写的。
 
-- [ ] **Step 6: 跑测试确认通过**
+- **Step 6: 跑测试确认通过**
 
 Run: `pnpm vitest run src/components/playground/DemoStage.spec.ts src/components/playground/OverlayLayer.spec.ts`
 Expected: PASS。叠加层的用例不受影响——它读的是观测值，与倾斜无关。
 
-- [ ] **Step 7: 提交**
+- **Step 7: 提交**
 
 调用 `/commit` skill，建议信息：`feat(playground): 演示区盒子改用 3D 方块呈现`。
 
@@ -879,7 +880,7 @@ Expected: PASS。叠加层的用例不受影响——它读的是观测值，与
 **Interfaces:**
 - Consumes: `useFlip().setScrubbing`（Task 4）、`useStageView()`（Task 3）
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 在 `src/components/playground/ThePlayground.spec.ts` 的 `describe` 内追加：
 
@@ -910,12 +911,12 @@ Expected: PASS。叠加层的用例不受影响——它读的是观测值，与
 
 文件顶部补 `import { useFlip } from '~/composables/useFlip'` 与 `import { useStageView } from '~/composables/useStageView'`。
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/components/playground/ThePlayground.spec.ts`
 Expected: FAIL，找不到 `[data-testid="view-toggle"]`。
 
-- [ ] **Step 3: 手柄接上 scrubbing**
+- **Step 3: 手柄接上 scrubbing**
 
 在 `StageResizer.vue` 的 script 里补 `import { useFlip } from '~/composables/useFlip'` 与 `const { setScrubbing } = useFlip()`，然后：
 
@@ -930,7 +931,7 @@ useEventListener(window, 'pointerup', () => {
 
 方向键微调是离散动作，**不要**置 scrubbing——按一下动一步，正该有过渡。
 
-- [ ] **Step 4: range 控件接上 scrubbing**
+- **Step 4: range 控件接上 scrubbing**
 
 在 `PropertyField.vue` 的 script 里补：
 
@@ -947,7 +948,7 @@ const { setScrubbing } = useFlip()
       @pointerup="setScrubbing(false)"
 ```
 
-- [ ] **Step 5: 面板加 3D 开关**
+- **Step 5: 面板加 3D 开关**
 
 `ThePlayground.vue` script 补 `import { useStageView } from '~/composables/useStageView'` 与 `const { is3D, toggle3D } = useStageView()`；在叠加层开关那个 `<label>` 之后插入：
 
@@ -963,12 +964,12 @@ const { setScrubbing } = useFlip()
           </label>
 ```
 
-- [ ] **Step 6: 跑全量测试**
+- **Step 6: 跑全量测试**
 
 Run: `pnpm test`
 Expected: 全绿。
 
-- [ ] **Step 7: 提交**
+- **Step 7: 提交**
 
 调用 `/commit` skill，建议信息：`feat(playground): 拖拽期间抑制动画并接入 3D 开关`。
 
@@ -980,26 +981,26 @@ Expected: 全绿。
 
 **Files:** 无改动（除非核对发现问题）
 
-- [ ] **Step 1: 跑测试**
+- **Step 1: 跑测试**
 
 Run: `pnpm test`
 Expected: 全绿，把输出贴进回复。
 
-- [ ] **Step 2: 跑 lint**
+- **Step 2: 跑 lint**
 
 Run: `pnpm lint`
 Expected: 无错误。有风格问题先 `pnpm lint:fix` 再复跑。
 
-- [ ] **Step 3: 跑构建**
+- **Step 3: 跑构建**
 
 Run: `pnpm build`
 Expected: `vue-tsc --noEmit` 无类型错误，vite 构建成功。**同时记录 JS 体积**——引入 Flip 后与上一版（115.86 kB / gzip 43.58 kB）对比，涨幅要能说得出来。
 
-- [ ] **Step 4: 请示浏览器验证**
+- **Step 4: 请示浏览器验证**
 
 按项目约定**先问用户是否需要浏览器验证**，不要自行调用 claude-in-chrome。得到确认后再执行下一步。
 
-- [ ] **Step 5: 浏览器核对清单**
+- **Step 5: 浏览器核对清单**
 
 `pnpm dev` 起服务后逐条核对：
 
@@ -1016,10 +1017,10 @@ Expected: `vue-tsc --noEmit` 无类型错误，vite 构建成功。**同时记�
 11. **暗亮主题**：顶面高光与侧面暗面在两个主题下都分得清。
 12. **抬起手感**：悬停时方块抬起的高度与时长符合 `motion.liftHeight` / `motion.liftDuration`，调这两个值能立刻看到变化（验证 CSS 变量确实是从 `motion.ts` 下发的）。
 
-- [ ] **Step 6: 更新 CLAUDE.md 的进度段落**
+- **Step 6: 更新 CLAUDE.md 的进度段落**
 
 把 M4 标记为完成，下一步指向 M5（陷阱内容 + ScrollTrigger 叙事）。若核对中发现新的布局陷阱，追加进「设计红线」。**特别是**：`.stage` 不得加回 `overflow: hidden` 这条，值得单独写成一条红线——它现在同时被 `min-width: auto` 陷阱和 3D 链条两个理由约束着。
 
-- [ ] **Step 7: 提交**
+- **Step 7: 提交**
 
 调用 `/commit` skill，建议信息：`docs: 记录 M4 完成与浏览器核对结论`。

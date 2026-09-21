@@ -19,7 +19,7 @@ todo-flex 把这段被隐藏的计算过程显式画出来：
 
 ## 技术栈
 
-Vue 3 (script setup) · Vite · TypeScript · UnoCSS · VueUse · GSAP (Flip) · Vitest · @antfu/eslint-config
+Vue 3 (script setup) · Vite · TypeScript · UnoCSS · VueUse · GSAP (Flip) · Shiki · Vitest · @antfu/eslint-config
 
 ## 开发
 
