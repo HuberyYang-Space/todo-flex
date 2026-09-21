@@ -30,7 +30,18 @@ export default defineConfig({
       dts: true,
     }),
   ],
+  /*
+   * Vue 的编译期开关全关，让压缩器把对应分支整段删掉。
+   * 本站只用 script setup，Options API 那套运行时是纯死码（实测省 4.7 kB）。
+   */
+  define: {
+    __VUE_OPTIONS_API__: 'false',
+    __VUE_PROD_DEVTOOLS__: 'false',
+    __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
+  },
   build: {
+    // modulepreload 只是加载提示，不支持的老浏览器忽略它即可，不必为此背一段 polyfill
+    modulePreload: { polyfill: false },
     rolldownOptions: {
       output: {
         minify: {

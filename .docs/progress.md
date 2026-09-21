@@ -483,6 +483,18 @@ vitesse-light 在 12 个亮色主题里排倒数第二，vitesse-dark 在暗色�
    > 重排残留 = 第 6 条、溢出不被裁 = 第 3 条与红线 7、
    > 暗亮明暗差由 `theme.spec.ts` 的明暗序守卫钉着。
 
+## 打包体积优化（已完成，经浏览器实测）
+
+首屏 JS 从 gzip 144.25 kB 压到 73.65 kB（−48.9%）。主要一笔是把 shiki 整块改成懒加载——
+高亮本来就是异步后补的，延后加载不改变任何可见行为。另外两笔是 Vue 编译期开关与
+`modulePreload.polyfill: false`。
+
+**实测数字、切 chunk 的三种切法对比、以及三条试过没收益的路（`@shikijs/langs-precompiled`、
+`lightningcss`、抬 `build.target`），全部记在
+[bundle-optimization.md](./bundle-optimization.md)。再想压体积之前先读它，别重走。**
+
+gsap 那 93.76 kB（gzip 35.81 kB）还留在首屏，挪走的做法与代价也写在同一份文档里，暂不做。
+
 ## 下一件事
 
 M6 的两块（URL 分享、暗亮主题打磨）都已落地，i18n 已移出，M7 布局改版、M8 间距统一、

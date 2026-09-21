@@ -72,7 +72,14 @@ describe('cssOutput', () => {
    */
   it('shiki 把 CSS 切成带配色变量的 token', async () => {
     const wrapper = mount(CssOutput)
-    await flushPromises()
+    /*
+     * 不能只 flushPromises 一次：shiki 是动态 import 进来的（见 visual/highlight.ts），
+     * 模块加载比微任务队列长，一次 flush 拍到的还是未高亮的首帧。
+     * 轮询等到 token 出现，高亮真没落地时这里会超时变红，守卫不会因此变哑。
+     */
+    await vi.waitFor(() => {
+      expect(wrapper.find('[data-testid="css-code"] span[style]').exists()).toBe(true)
+    })
 
     const code = wrapper.get('[data-testid="css-code"]')
     const spans = code.findAll('span[style]')
