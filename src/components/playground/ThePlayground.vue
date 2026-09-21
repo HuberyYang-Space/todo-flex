@@ -19,8 +19,16 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
     漏掉任何一级，多出来的高度都会一路顶到 body 上，整页重新开始滚。
     宽度封顶 max-w-480（1920px）。两侧 320px 固定、中间演示区吃掉全部剩余：
     演示区是唯一的真实布局来源，加宽它才有意义；左右两栏的内容宽度是确定的，不随窗口变。
+
+    中间列必须写成 minmax(0, 1fr)，不能图省事写 1fr——
+    `1fr` 等价于 `minmax(auto, 1fr)`，那个 auto 下限是这一列的 min-content，
+    而演示区滚动层的 min-content 是 808px（.stage 固定 720px 加两侧内边距，
+    它自己的 overflow-auto 只挡得住自己溢出，挡不住 min-content 往上冒）。
+    于是窗口一窄，三列合计宽度压不下来，右侧 CSS 栏被顶出视口，
+    lg:overflow-hidden 再一裁——整栏消失，而且横向滚不到。
+    main 的 lg:min-w-0 是同一件事的另一半：轨道让开了，grid 项自己也得允许被压。
   -->
-  <div class="grid mx-auto max-w-480 w-full gap-space p-space lg:grid-cols-[320px_1fr_320px] lg:min-h-0 lg:flex-1">
+  <div class="grid mx-auto max-w-480 w-full gap-space p-space lg:grid-cols-[320px_minmax(0,1fr)_320px] lg:min-h-0 lg:flex-1">
     <!-- 操作区 -->
     <aside class="flex flex-col gap-space panel p-space lg:min-h-0 lg:overflow-y-auto">
       <ContainerControls />
@@ -32,7 +40,7 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
     </aside>
 
     <!-- 演示区 + 明细 -->
-    <main class="flex flex-col gap-space lg:min-h-0">
+    <main class="flex flex-col gap-space lg:min-h-0 lg:min-w-0">
       <div class="flex flex-col gap-space panel p-space lg:min-h-0 lg:flex-1">
         <div class="flex shrink-0 flex-wrap items-center gap-space text-xs">
           <h2 class="panel-title">

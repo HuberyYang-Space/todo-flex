@@ -156,19 +156,49 @@ describe('thePlayground', () => {
     const cssOutput = readFileSync(resolve(process.cwd(), 'src/components/playground/CssOutput.vue'), 'utf-8')
     const cssScroller = /<div class="([^"]*overflow-auto[^"]*)">/.exec(cssOutput)
     expect(cssScroller, '没找到 CSS 面板里的滚动容器').toBeTruthy()
-    expect(cssScroller![1], 'CSS 滚动容器要吃满面板的剩余高度').toMatch(/(?:^|\s)lg:flex-1(?:\s|$)/)
-    expect(cssScroller![1], 'CSS 滚动容器缺 min-h-0，滚动条会跑到外层去').toMatch(/(?:^|\s)lg:min-h-0(?:\s|$)/)
+    expect(cssScroller![1], 'CSS 滚动容器要吃满面板的剩余高度').toMatch(/(?:^|\s)flex-1(?:\s|$)/)
+    expect(cssScroller![1], 'CSS 滚动容器缺 min-h-0，滚动条会跑到外层去').toMatch(/(?:^|\s)min-h-0(?:\s|$)/)
+  })
 
-    /*
-     * 这两个类必须带 lg: 前缀，不带就是一个实际踩到的缺陷：窄屏下面板高度由内容决定，
-     * 此时 `flex: 1 1 0%` 配上显式 min-height: 0，这层的假设主尺寸算出来是 0，
-     * 外层 overflow-hidden 再一裁——整个代码块在窄屏上凭空消失，而宽屏下一切正常。
-     * 上面两条 toMatch 只认得「有没有」，认不出「带不带前缀」，所以这里单独钉死。
-     */
+  /*
+   * 这条守卫钉的是「窗口收窄时右侧 CSS 栏不会被顶出视口」。
+   *
+   * 起因是浏览器实测：视口 1100px 时三列算出来是 `320px 834px 320px`，
+   * 合计 1498px 塞进 1100px 的 grid，CSS 栏落在 left: 1190——整块在视口之外，
+   * 而 lg:overflow-hidden 把溢出裁掉了，文档横向也不可滚（scrollWidth === clientWidth），
+   * 于是那一栏既看不见也够不着。lg 到约 1500px 之间的每个宽度都是这个样子。
+   *
+   * 根因不在 CSS 栏自己身上：`1fr` 等价于 `minmax(auto, 1fr)`，
+   * 那个 auto 下限取的是这一列的 min-content，而演示区滚动层的 min-content 是 808px
+   * （.stage 固定 720px 加两侧内边距）——它自己的 overflow-auto 只挡得住自己溢出，
+   * 挡不住 min-content 往上冒到 grid 轨道。所以要让 fr 真能收缩，
+   * 轨道得写 minmax(0, 1fr)，同时 grid 项自己也得 min-w-0，两者缺一不可。
+   *
+   * happy-dom 不排版，量不出 min-content，只能读源码断言。
+   */
+  it('中间列能被压缩，窄窗口下右侧 CSS 栏不会被顶出视口', () => {
+    const playground = readFileSync(resolve(process.cwd(), 'src/components/playground/ThePlayground.vue'), 'utf-8')
+
+    const pgRoot = /<div class="([^"]*)"[^>]*>\s*<!-- 操作区 -->/.exec(playground)
+    expect(pgRoot, '没找到 ThePlayground 的根容器').toBeTruthy()
+
+    const cols = /lg:grid-cols-\[([^\]]+)\]/.exec(pgRoot![1])
+    expect(cols, `根容器上没找到三列栅格：${pgRoot![1]}`).toBeTruthy()
+
+    const tracks = cols![1].split('_')
+    expect(tracks, `期望三条轨道，实际是 ${cols![1]}`).toHaveLength(3)
     expect(
-      cssScroller![1],
-      `CSS 滚动容器的 flex-1 / min-h-0 不带 lg: 前缀，窄屏下代码块会塌成 0 高度：${cssScroller![1]}`,
-    ).not.toMatch(/(?:^|\s)(?:flex-1|min-h-0)(?:\s|$)/)
+      tracks[1],
+      `中间列写成了 ${tracks[1]}。裸 1fr 等价于 minmax(auto, 1fr)，`
+      + '它的下限是演示区那 808px 的 min-content，窗口一窄右侧 CSS 栏就被顶出视口并被裁掉',
+    ).toBe('minmax(0,1fr)')
+
+    const main = /<main class="([^"]*)"/.exec(playground)
+    expect(main, '没找到右侧 main').toBeTruthy()
+    expect(
+      main![1],
+      'main 缺 lg:min-w-0：轨道让开了，grid 项自己的自动最小尺寸仍会把它撑到 min-content',
+    ).toMatch(/(?:^|\s)lg:min-w-0(?:\s|$)/)
   })
 
   /*

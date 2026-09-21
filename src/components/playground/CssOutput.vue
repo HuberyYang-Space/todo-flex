@@ -45,14 +45,8 @@ async function copy(): Promise<void> {
       </button>
     </header>
 
-    <!--
-      这层是面板里唯一滚的地方，宽屏下 min-h-0 不能漏，否则长 CSS 会把整块面板顶破。
-      但两个类都必须带 lg: 前缀——窄屏下面板高度由内容决定，
-      `flex: 1 1 0%` 配上显式 min-height: 0 会让这层的假设主尺寸算成 0，
-      外层 overflow-hidden 再一裁，整个代码块当场消失。
-      演示区那层滚动容器同理，它一开始就带着 lg:，照着它写。
-    -->
-    <div class="overflow-auto lg:min-h-0 lg:flex-1">
+    <!-- 这层是面板里唯一滚的地方，min-h-0 不能漏，否则长 CSS 会把整块面板顶破 -->
+    <div class="min-h-0 flex-1 overflow-auto">
       <!-- v-html 的内容是 shiki 对本站自己生成的 CSS 的高亮结果，不经过任何外部输入 -->
       <div v-if="highlighted" data-testid="css-code" class="css-code" v-html="highlighted" />
       <pre v-else data-testid="css-code" class="css-code"><code>{{ css }}</code></pre>
