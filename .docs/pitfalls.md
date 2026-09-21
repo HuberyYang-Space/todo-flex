@@ -38,20 +38,33 @@
 
 **这个缺陷只在亮色主题下出现，只看暗色发现不了。** 改配色相关的东西时两个主题都要过一遍。
 
-### 滚动容器的内边距必须容得下伸出去的面
+### 伸出去的面靠 overhang 兜住，不是靠滚动容器的内边距
 
 顶面往上伸 `--d`（上限 10px），右侧面往右伸同样多。这两个面**不受 `.stage-box` 自己控制**——
-裁掉它们的是更外层那个 `.overflow-auto`（在 `ThePlayground.vue`，为 resize 手柄留位置用的）。
-它的 padding 曾是 `p-2`（8px），装不下 10px 的顶面，**顶面上沿被稳定裁掉 2px**。
+裁掉它们的是更外层那个 `.overflow-auto`（在 `ThePlayground.vue`）。
+`align-items` 默认 `stretch`，盒子顶边必然贴着容器上沿，所以裁切每次都发生，不是边界情况。
 
-`align-items` 默认 `stretch`，盒子顶边必然贴着容器上沿，所以这个裁切每次都发生，不是边界情况。
-现已改成 `p-3`（12px），`ThePlayground.spec.ts` 有守卫钉住 `padding ≥ motion.blockDepth`。
+**兜住它们的是 `.stage-wrapper` 的 `--overhang` 外边距**（`motion.stageOverhang`，现为 32px）。
+这个数是按悬停时的总伸出量算出来的：顶面厚度 × `blockDepthHover` + `liftHeight` + `liftScale`
+的放大量。`DemoStage.spec.ts` 有守卫钉住 `stageOverhang ≥ 这个总和`，
+**改 `motion.blockDepth` / `liftHeight` / `blockDepthHover` 任何一个都会让它变红。**
 
-**改 `motion.blockDepth` 时要连带想到这一层。** 两个值在不同文件里，改厚度的人不会自然想到
-另一个组件的 padding——守卫测试就是为这条准备的，它会在 `blockDepth` 超过 padding 时变红。
+#### 曾经走过的弯路：让滚动容器也出一份内边距
 
-水平方向暂时安全：滚动容器 1046px 宽、演示区 720px，右侧有余量。但容器宽度上限是 1200px，
-拖过约 1030px 后右侧面会开始被裁。
+最早是滚动容器的 padding 在扛这件事。`p-2`（8px）装不下 10px 的顶面，**顶面上沿被稳定裁掉 2px**，
+于是提到 `p-3`（12px），并配了一条 `padding ≥ motion.blockDepth` 的守卫。
+
+后来 `--overhang` 落地，防裁切的责任整体挪到了 `.stage-wrapper`，那层 padding 就变成**第二份留白**：
+演示区被往右下推（左侧留白实测 56px、上侧 44px），可视范围白缩，而防裁切能力一点没增加。
+现已删除，实测左侧降到 40px、上侧 32px。
+
+**不要为了"补余量"把它加回来。** 余量不够就调 `motion.stageOverhang`，那里只有一个数、
+一条守卫；加回滚动层的 padding 等于把同一件事拆到两个文件里各写一半，下次谁都不知道该改哪个。
+`ThePlayground.spec.ts` 有守卫拦着这层的任何内边距类（`p-*` / `pt-*` / `lg:p-*` 全算）。
+
+水平方向同样由这份 overhang 兜。它比竖直方向宽松：右侧面不参与抬升，只有厚度和放大两项。
+真正会被裁的场景是演示区宽度逼近滚动容器可用宽度——那时右侧面连同盒子一起落到横向滚动区里，
+`overflow-auto` 还滚得到，不是永久丢失。
 
 ### `align-items: stretch` 下顶面会画出容器
 
