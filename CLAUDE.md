@@ -22,6 +22,9 @@ todo-flex 演示的是「尺寸是怎么算出来的」：把剩余空间画出�
   或据着被代理拦成 502 的探活结果去重启 dev server 瞎折腾。
 - **改 `src/core/` 或往数据流里新增一层之前** → 读 [`.docs/architecture.md`](./.docs/architecture.md)
   → 不读的后果：把该留在纯函数里的逻辑写进组件，`src/core/` 零 DOM 依赖的前提一破，TDD 那条路就断了。
+- **想再压打包体积、或动 shiki / gsap 的引入方式之前** → 读 [`.docs/bundle-optimization.md`](./.docs/bundle-optimization.md)
+  → 不读的后果：重走三条已经量过零收益的路（预编译语法、lightningcss、抬 `build.target`），
+  或把 shiki 按「多个 `import()`」切成 5 个 chunk，比现在还大。
 - **想推翻下面任何一条禁令之前** → 读 [`.docs/pitfalls.md`](./.docs/pitfalls.md)
   → 不读的后果：重蹈一条已经走死的路，白做一遍。
 - **改某个里程碑的既有实现之前** → 读 [`.docs/superpowers/`](./.docs/superpowers/) 下对应的 spec 与 plan
