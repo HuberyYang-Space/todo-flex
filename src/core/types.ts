@@ -64,25 +64,9 @@ export interface DerivedLine {
   totalShrinkWeighted: number
 }
 
-export type DerivationStepKind
-  = | 'resolveBasis'
-    | 'lineBreak'
-    | 'freeSpace'
-    | 'growDistribute'
-    | 'shrinkDistribute'
-
-/** 一条可展示给用户的推导步骤，params 是公式里的各项数值 */
-export interface DerivationStep {
-  kind: DerivationStepKind
-  lineIndex: number
-  itemId?: string
-  params: Record<string, number>
-}
-
 export interface DerivedLayout {
   lines: DerivedLine[]
   items: DerivedItem[]
-  steps: DerivationStep[]
 }
 
 /**

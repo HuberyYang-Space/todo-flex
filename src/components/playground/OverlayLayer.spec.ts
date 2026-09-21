@@ -186,4 +186,90 @@ describe('overlayLayer', () => {
     expect(色块层, '色块层没沉到盒子下面').toBeLessThan(盒子)
     expect(HUD层, 'HUD 没浮在盒子上面').toBeGreaterThan(盒子)
   })
+
+  /*
+   * 每行色块上标出「实际剩余 vs 理论剩余」。
+   *
+   * 这一对数字原本算出来就扔了：core/overlay.ts 的 OverlayGeometry.lines 一直没有消费方，
+   * 只有它自己的单测在引用。而它恰恰是本站主线在行这一级的落点——
+   * 明细表比的是单个盒子的尺寸，这里比的是整行还剩多少空间，
+   * 两者不一致时说明有规则介入（min-width:auto 撑住了某个盒子，剩余空间就比理论值少）。
+   */
+  function measuredWithWideGap(): MeasuredStage {
+    // 三个盒子各 40 宽，行尾空出 400 - 120 - 24 = 256px，够放得下标签
+    return {
+      width: 400,
+      height: 200,
+      items: [
+        { id: 'item-1', left: 0, top: 0, width: 40, height: 200 },
+        { id: 'item-2', left: 52, top: 0, width: 40, height: 200 },
+        { id: 'item-3', left: 104, top: 0, width: 40, height: 200 },
+      ],
+    }
+  }
+
+  it('每行画一个剩余空间标签，实际与理论并排', () => {
+    useMeasure().measured.value = measuredWithWideGap()
+    const wrapper = mount(OverlayLayer)
+
+    const labels = wrapper.findAll('[data-testid="overlay-line-label"]')
+    expect(labels).toHaveLength(1)
+    // 实际 400 - 3×40 - 24 = 256；理论 400 - 3×80 - 24 = 136（盒子内容尺寸默认 80）
+    expect(labels[0].text()).toContain('256')
+    expect(labels[0].text()).toContain('136')
+  })
+
+  it('实际与理论对不上时标出来，一致时不标', async () => {
+    useMeasure().measured.value = measuredWithWideGap()
+    const wrapper = mount(OverlayLayer)
+    expect(wrapper.get('[data-testid="overlay-line-label"]').classes()).toContain('mismatch')
+
+    // 把盒子内容尺寸调成 40，理论与实际就对上了
+    for (const item of useFlexState().state.items)
+      item.size = 40
+    await wrapper.vm.$nextTick()
+    expect(wrapper.get('[data-testid="overlay-line-label"]').classes()).not.toContain('mismatch')
+  })
+
+  it('色块放不下这行字就不画，宁可不标也不让字溢出到盒子上', () => {
+    // 默认的观测值里行尾只空出 400 - 300 - 24 = 76px，塞不下标签
+    const wrapper = mount(OverlayLayer)
+    expect(wrapper.find('[data-testid="overlay-line-label"]').exists()).toBe(false)
+  })
+
+  /*
+   * 阈值按文本内容估算，不是写死的常数——数字位数一变，这行字就变宽。
+   * 「剩余 456 · 理论 456」浏览器实测 117px，最早写死的 110px 已经不够，
+   * 色块宽度落在 110~117 之间时文字会溢出到旁边的盒子上。
+   * 这条测试卡在阈值两侧各取一点，钉住「刚好放不下就不画」。
+   */
+  it('色块宽度卡在阈值两侧：差一点不画，够了才画', () => {
+    const tailOf = (containerWidth: number): MeasuredStage => ({
+      width: containerWidth,
+      height: 200,
+      items: [
+        { id: 'item-1', left: 0, top: 0, width: 40, height: 200 },
+        { id: 'item-2', left: 52, top: 0, width: 40, height: 200 },
+        { id: 'item-3', left: 104, top: 0, width: 40, height: 200 },
+      ],
+    })
+
+    /*
+     * 三位数那行字估算 117.8px（与浏览器实测的 117px 吻合），加 8px 内缩后要 125.8px。
+     * 注意分隔点「·」是 U+00B7，落在 Latin-1 区间里，按半角宽度计——
+     * 当成全角会把估算值抬高 4px 多，卡边界的那档就会误判。
+     */
+    useMeasure().measured.value = tailOf(268) // 行尾空出 124px，差一点
+    expect(mount(OverlayLayer).find('[data-testid="overlay-line-label"]').exists()).toBe(false)
+
+    useMeasure().measured.value = tailOf(272) // 行尾空出 128px，够了
+    expect(mount(OverlayLayer).find('[data-testid="overlay-line-label"]').exists()).toBe(true)
+  })
+
+  it('标签跟色块同属沉底那一层，不抢盒子的层级', () => {
+    useMeasure().measured.value = measuredWithWideGap()
+    const wrapper = mount(OverlayLayer)
+
+    expect(wrapper.get('[data-testid="overlay"]').find('[data-testid="overlay-line-label"]').exists()).toBe(true)
+  })
 })

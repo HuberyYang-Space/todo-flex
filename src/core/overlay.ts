@@ -13,20 +13,20 @@ import { isRowDirection, mainAxisGap } from './axis'
  */
 const EPSILON = 0.5
 
-export type BandKind = 'free' | 'overflow'
+type BandKind = 'free' | 'overflow'
 
 /**
  * 斜纹的流动方向，一律用屏幕坐标表述：
  * forward = 朝坐标增大的一侧（右 / 下），reverse = 朝减小的一侧（左 / 上）。
  */
-export type FlowDirection = 'forward' | 'reverse'
+type FlowDirection = 'forward' | 'reverse'
 
 /**
  * 斜纹的流动轴，也就是主轴落在屏幕的哪根轴上：x = 水平，y = 垂直。
  * 纹路朝向必须由它决定：色块的长宽比取决于「剩余空间量 vs 交叉轴尺寸」，与 direction 无关，
  * row 下盒子一多色块就成了高瘦竖条，column 下行数不多色块就是宽扁横条——拿形状当线索会把方向读反。
  */
-export type FlowAxis = 'x' | 'y'
+type FlowAxis = 'x' | 'y'
 
 /** 叠加层里的一块矩形，坐标以演示区左上角为原点 */
 export interface OverlayBand {
@@ -43,7 +43,7 @@ export interface OverlayBand {
 }
 
 /** 每行的剩余空间对照：理论值来自推导引擎，实际值由观测值反算 */
-export interface OverlayLine {
+interface OverlayLine {
   index: number
   theoretical: number
   actual: number

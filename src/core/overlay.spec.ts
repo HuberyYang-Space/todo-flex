@@ -14,7 +14,6 @@ function makeLines(lines: { index: number, itemIds: string[], freeSpace: number 
       totalShrinkWeighted: 0,
     })),
     items: [],
-    steps: [],
   }
 }
 

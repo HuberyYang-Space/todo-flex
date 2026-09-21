@@ -1,4 +1,4 @@
-import type { DerivationStep, DerivedItem, DerivedLayout, DerivedLine, FlexState } from './types'
+import type { DerivedItem, DerivedLayout, DerivedLine, FlexState } from './types'
 import { mainAxisSize } from './axis'
 import { computeFreeSpace, distributeGrow, distributeShrink, shrinkWeight } from './distribute'
 import { resolveBasis } from './resolveBasis'
@@ -17,27 +17,12 @@ export function deriveLayout(state: FlexState): DerivedLayout {
 
   const lines: DerivedLine[] = []
   const derivedItems: DerivedItem[] = []
-  const steps: DerivationStep[] = []
-
-  if (lineIds.length > 1) {
-    steps.push({
-      kind: 'lineBreak',
-      lineIndex: 0,
-      params: { lineCount: lineIds.length },
-    })
-  }
 
   lineIds.forEach((ids, lineIndex) => {
     const lineItems = ids.map(id => byId.get(id)!)
     const freeSpace = computeFreeSpace(lineItems, container)
     const totalGrow = lineItems.reduce((sum, item) => sum + Math.max(0, item.grow), 0)
     const totalShrinkWeighted = lineItems.reduce((sum, item) => sum + shrinkWeight(item, container), 0)
-
-    steps.push({
-      kind: 'freeSpace',
-      lineIndex,
-      params: { containerMain, used: containerMain - freeSpace, freeSpace },
-    })
 
     const growDeltas = freeSpace > 0 ? distributeGrow(lineItems, freeSpace) : null
     const shrinkDeltas = freeSpace < 0 ? distributeShrink(lineItems, freeSpace, container) : null
@@ -57,37 +42,6 @@ export function deriveLayout(state: FlexState): DerivedLayout {
         deltaFromShrink,
         lineIndex,
       })
-
-      steps.push({
-        kind: 'resolveBasis',
-        lineIndex,
-        itemId: item.id,
-        params: { basisResolved, size: item.size },
-      })
-
-      if (deltaFromGrow > 0) {
-        steps.push({
-          kind: 'growDistribute',
-          lineIndex,
-          itemId: item.id,
-          params: { grow: item.grow, totalGrow, freeSpace, delta: deltaFromGrow },
-        })
-      }
-
-      if (deltaFromShrink < 0) {
-        steps.push({
-          kind: 'shrinkDistribute',
-          lineIndex,
-          itemId: item.id,
-          params: {
-            shrink: item.shrink,
-            weight: shrinkWeight(item, container),
-            totalShrinkWeighted,
-            overflow: freeSpace,
-            delta: deltaFromShrink,
-          },
-        })
-      }
     }
 
     lines.push({
@@ -100,5 +54,5 @@ export function deriveLayout(state: FlexState): DerivedLayout {
     })
   })
 
-  return { lines, items: derivedItems, steps }
+  return { lines, items: derivedItems }
 }

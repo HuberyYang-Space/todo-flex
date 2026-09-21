@@ -85,19 +85,6 @@ describe('deriveLayout', () => {
     expect(itemById(layout, 'i3').lineIndex).toBe(1)
   })
 
-  it('输出可展示的推导步骤', () => {
-    const layout = deriveLayout(stateWith([
-      { grow: 1, basis: '0' },
-      { grow: 3, basis: '0' },
-    ]))
-    const growSteps = layout.steps.filter(step => step.kind === 'growDistribute')
-    expect(growSteps).toHaveLength(2)
-    expect(growSteps[1].itemId).toBe('i2')
-    expect(growSteps[1].params.delta).toBe(450)
-    expect(growSteps[1].params.totalGrow).toBe(4)
-    expect(layout.steps.some(step => step.kind === 'freeSpace')).toBe(true)
-  })
-
   it('每行都记录 totalGrow 与 totalShrinkWeighted', () => {
     const layout = deriveLayout(stateWith([
       { grow: 2, shrink: 1, basis: '100px' },

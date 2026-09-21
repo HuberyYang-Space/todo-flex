@@ -40,6 +40,67 @@ function arrow(vector: AxisVector) {
   return { x1, y1, x2: x1 + vector.dx * ARROW_LENGTH, y2: y1 + vector.dy * ARROW_LENGTH }
 }
 
+/*
+ * 标签是横排的，所以能不能画取决于色块的横向尺寸放不放得下这行字。
+ * 放不下就不画——宁可这一行没有标签，也不能让文字溢出色块、压到旁边的盒子上，
+ * 那会让人误以为标的是那个盒子。
+ *
+ * 阈值必须按文本内容算，不能写死一个常数：数字位数一变宽度就变
+ * （「剩余 456 · 理论 456」实测 117px，换成四位数还要再宽十几个像素）。
+ * 最早写死 110px，浏览器实测当场发现文字已经比它宽了。
+ */
+const LABEL_FONT_SIZE = 11
+const MIN_LABEL_HEIGHT = 18
+/** 文字两侧各留一点，别贴着色块边缘 */
+const LABEL_PADDING = 8
+
+/**
+ * 估算一行字的像素宽度：等宽字体下 Latin-1 以内的字符约占 0.61 个字号，之外的占满一个字号。
+ *
+ * 分界画在 U+00FF 而不是 ASCII 的 U+007F，是因为分隔点「·」是 U+00B7——
+ * 它看着像全角，实际按半角渲染，当成全角会把估算值抬高 4px 多。
+ * 「剩余 456 · 理论 456」这样估出来是 117.8px，与浏览器实测的 117px 吻合。
+ */
+function estimateLabelWidth(text: string): number {
+  let width = 0
+  for (const char of text)
+    width += (char.codePointAt(0) ?? 0) <= 0xFF ? LABEL_FONT_SIZE * 0.61 : LABEL_FONT_SIZE
+  return width
+}
+
+/**
+ * 每行一个「实际剩余 vs 理论剩余」的标签。
+ *
+ * 明细表比的是单个盒子的尺寸，这里比的是整行还剩多少空间——两者对不上，
+ * 说明有规则介入（比如 min-width:auto 撑住了某个盒子，剩余空间就比理论值少）。
+ * 挂在这一行面积最大的那块色块上，字才有地方放。
+ */
+const lineLabels = computed(() => {
+  const geo = geometry.value
+  if (!geo)
+    return []
+
+  return geo.lines.flatMap((line) => {
+    const bands = geo.bands.filter(band => band.lineIndex === line.index)
+    if (bands.length === 0)
+      return []
+
+    const band = bands.reduce((a, b) => (a.width * a.height >= b.width * b.height ? a : b))
+    const text = `剩余 ${round(line.actual)} · 理论 ${round(line.theoretical)}`
+    if (band.width < estimateLabelWidth(text) + LABEL_PADDING || band.height < MIN_LABEL_HEIGHT)
+      return []
+
+    return [{
+      key: line.index,
+      x: band.x + band.width / 2,
+      y: band.y + band.height / 2,
+      text,
+      // 与明细表、HUD 同一个判据：差得过半个像素才算有规则介入
+      mismatch: Math.abs(line.theoretical - line.actual) > 0.5,
+    }]
+  })
+})
+
 const mainArrow = computed(() => arrow(vectors.value.main))
 const crossArrow = computed(() => arrow(vectors.value.cross))
 
@@ -152,6 +213,18 @@ function round(value: number): number {
         :height="band.height"
         :class="band.kind === 'free' ? ['band-free', `band-free--${band.flowAxis ?? 'x'}-${band.flow ?? 'forward'}`] : 'band-overflow'"
       />
+
+      <!-- 每行的剩余空间对照：实际 vs 理论 -->
+      <text
+        v-for="label in lineLabels"
+        :key="label.key"
+        data-testid="overlay-line-label"
+        class="line-label"
+        :class="{ mismatch: label.mismatch }"
+        :x="label.x"
+        :y="label.y"
+        :font-size="LABEL_FONT_SIZE"
+      >{{ label.text }}</text>
 
       <!-- 轴向箭头 -->
       <g class="axis">
@@ -292,6 +365,25 @@ function round(value: number): number {
   stroke: var(--accent-2);
   stroke-dasharray: 4 3;
   stroke-width: 1;
+}
+
+/*
+ * 描边打底（paint-order: stroke）让字压在流动的斜纹上仍然读得出来，
+ * 与 HUD 同一套处理。
+ */
+.line-label {
+  fill: color-mix(in srgb, var(--fg) 75%, transparent);
+  font-family: var(--font-mono, monospace);
+  paint-order: stroke;
+  stroke: var(--panel);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.line-label.mismatch {
+  fill: var(--accent-2);
 }
 
 .hud text {
