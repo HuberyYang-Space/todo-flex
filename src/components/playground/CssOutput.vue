@@ -36,7 +36,7 @@ async function copy(): Promise<void> {
       </h2>
       <button
         data-testid="copy-css"
-        class="ml-auto flex btn items-center text-xs"
+        class="ml-auto icon-btn"
         :title="copied ? '已复制' : '复制 CSS'"
         :aria-label="copied ? '已复制' : '复制 CSS'"
         @click="copy()"

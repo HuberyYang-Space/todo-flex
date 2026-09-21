@@ -57,16 +57,16 @@ function px(value: number): string {
       <table class="w-full text-xs font-mono">
         <thead class="op-60">
           <tr>
-            <th class="py-1 pr-3 text-left font-normal">
+            <th class="py-1 pr-3 text-center font-normal">
               #
             </th>
-            <th class="py-1 pr-3 text-right font-normal">
+            <th class="py-1 pr-3 text-center font-normal">
               理论
             </th>
-            <th class="py-1 pr-3 text-right font-normal">
+            <th class="py-1 pr-3 text-center font-normal">
               实际
             </th>
-            <th class="py-1 text-left font-normal">
+            <th class="py-1 text-center font-normal">
               诊断
             </th>
           </tr>
@@ -79,16 +79,16 @@ function px(value: number): string {
             :data-metrics-id="row.id"
             class="border-t border-bd"
           >
-            <td class="py-1 pr-3">
+            <td class="py-1 pr-3 text-center">
               {{ row.label }}
             </td>
-            <td data-testid="theoretical" class="py-1 pr-3 text-right">
+            <td data-testid="theoretical" class="py-1 pr-3 text-center">
               {{ px(row.theoretical) }}
             </td>
-            <td data-testid="actual" class="py-1 pr-3 text-right">
+            <td data-testid="actual" class="py-1 pr-3 text-center">
               {{ row.actual === null ? '—' : px(row.actual) }}
             </td>
-            <td data-testid="diagnosis" class="py-1 font-sans">
+            <td data-testid="diagnosis" class="py-1 text-center font-sans">
               <span v-if="row.actual === null" class="op-60">—</span>
               <span v-else-if="!row.diagnostic" class="op-60">✓</span>
               <span v-else-if="row.diagnostic.severity === 'info'" class="text-accent">
