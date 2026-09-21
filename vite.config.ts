@@ -8,6 +8,14 @@ import { defineConfig } from 'vite'
 import VueDevTools from 'vite-plugin-vue-devtools'
 
 export default defineConfig({
+  /*
+   * 站点部署在 GitHub Pages 的子路径 https://huberyyang-space.github.io/todo-flex/ 下。
+   *
+   * 不按 command 分成开发 '/' 与构建 '/todo-flex/' 两套：那样「资源路径写死成绝对路径」
+   * 这类缺陷只在构建产物里现形，开发时一路绿灯。开发态也走同一个子路径，
+   * 代价只是本地地址多一段前缀。
+   */
+  base: '/todo-flex/',
   resolve: {
     alias: {
       '~': path.resolve(import.meta.dirname, 'src'),

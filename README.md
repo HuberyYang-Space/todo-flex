@@ -2,6 +2,10 @@
 🧭 An interactive CSS Flexbox playground that visualizes free space and size distribution | 把「剩余空间」与「尺寸分配」画出来的 CSS Flexbox 交互演示站
 </h4>
 
+<p align='center'>
+  <a href='https://huberyyang-space.github.io/todo-flex/'><b>👉 在线演示</b></a>
+</p>
+
 ## 这个站点解决什么问题
 
 市面上的 Flexbox 演示工具都在演示「对齐」，却没有一个讲清楚「尺寸是怎么算出来的」。
@@ -29,7 +33,12 @@ pnpm dev        # 开发
 pnpm test       # 单元测试
 pnpm lint       # 代码检查
 pnpm build      # 类型检查 + 生产构建
+pnpm preview    # 预览生产产物
 ```
+
+> 站点部署在 GitHub Pages 的子路径下，所以 `vite.config.ts` 里 `base` 是 `/todo-flex/`，
+> 开发态同样走这个前缀——本地地址是 `http://localhost:5173/todo-flex/`。
+> 推到 `main` 由 [部署工作流](./.github/workflows/deploy.yml) 自动跑 lint / test / build 并发布。
 
 ## License
 

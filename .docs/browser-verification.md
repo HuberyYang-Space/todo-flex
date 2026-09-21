@@ -65,6 +65,10 @@ GSAP Flip 会在 `.stage-item` 上写 `width / height / max-* / min-* / transfor
 本机另一个项目占着 `[::1]:5175`（IPv6），浏览器解析 localhost 会走到它那儿去。
 用 `http://127.0.0.1:<port>` 访问，并且认一下页面标题是不是 `todo-flex`。
 
+**另外别漏了路径前缀**：站点部署在 GitHub Pages 子路径下，`base` 是 `/todo-flex/`，
+开发态与 `pnpm preview` 同样走这个前缀——访问 `http://127.0.0.1:<port>/todo-flex/`，
+根路径只会拿到 404。
+
 ### 5. 本机有 HTTP 代理，`curl http://127.0.0.1:<port>` 会被拦成 502
 
 看着就像 dev server 没起来。探活一律加 `--noproxy '*'`，别据此重启服务瞎折腾。

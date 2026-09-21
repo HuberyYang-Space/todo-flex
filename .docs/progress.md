@@ -504,11 +504,21 @@ M9 UI 细节、M10 行级对照、M11 三栏与 icon 体系也都已完成并实
 
 人眼核对清单九条也已全部核对通过。**代码与文档侧零待办。**
 
-只剩一件事：
+只剩**部署**，而且代码侧的四样已经全部就位：
 
-- **部署**。四样都还没做：没有 CI workflow（`.github/workflows` 不存在）、
-  `vite.config.ts` 未配 `base`（走 GitHub Pages 子路径必须配）、
-  README 没有在线演示链接、`package.json` 的 `homepage` 指向仓库而不是站点。
+- ✅ CI workflow：[`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml)，
+  推 `main` 触发，跑 lint / test / build 三道门禁后发布到 GitHub Pages
+- ✅ `vite.config.ts` 配了 `base: '/todo-flex/'`（开发态也走同一前缀，理由写在配置的注释里）
+- ✅ README 顶部有在线演示链接
+- ✅ `package.json` 的 `homepage` 改指站点
+
+剩下的两步**只能在 GitHub 上做，不在代码里**：
+
+1. 把 `main` 推上去（推送会触发首次部署工作流）
+2. 仓库 Settings → Pages → Source 选 **GitHub Actions**
+   （查过 `gh api repos/HuberyYang-Space/todo-flex`，当前 `has_pages: false`，还没开）
+
+站点地址将是 <https://huberyyang-space.github.io/todo-flex/>。
 
 ## 设计与计划文档
 
