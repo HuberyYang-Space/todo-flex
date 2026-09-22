@@ -8,7 +8,7 @@ CSS Flexbox 交互演示站，讲 flex 的尺寸是怎么算出来的。
 
 在线演示：**[huberyyang-space.github.io/todo-flex](https://huberyyang-space.github.io/todo-flex/)**
 
-## 为什么再做一个
+## 🤔 为什么再做一个
 
 现有的 Flexbox 演示工具几乎都在演示对齐，而开发里真正卡住人的问题大多出在尺寸侧：
 
@@ -27,7 +27,7 @@ todo-flex 把浏览器藏起来的这段计算摊开：
 
 如果你只是想看 `justify-content` 的几个取值长什么样，MDN 或 Flexbox Froggy 更快，不必打开它。
 
-## 能调什么
+## 🎛 能调什么
 
 容器：`display` `flex-direction` `flex-wrap` `justify-content` `align-items` `align-content` `row-gap` `column-gap`，尺寸由右下角手柄拖拽。
 
@@ -35,29 +35,12 @@ todo-flex 把浏览器藏起来的这段计算摊开：
 
 调完右栏实时输出带高亮的 CSS，一键复制。
 
-## 本地开发
-
-```bash
-pnpm install
-pnpm dev        # 开发服务器
-pnpm test       # 单元测试
-pnpm lint       # 代码检查
-pnpm build      # 类型检查 + 生产构建
-pnpm preview    # 预览生产产物
-```
-
-> [!NOTE]
-> 站点部署在 GitHub Pages 子路径下，`vite.config.ts` 的 `base` 是 `/todo-flex/`，开发态同样走这个前缀。
-> 本地地址是 `http://localhost:5173/todo-flex/`，访问根路径只会拿到 404。
-
-推到 `main` 后由[部署工作流](./.github/workflows/deploy.yml)跑 lint / test / build 并发布。
-
-## 技术栈
+## 🧱 技术栈
 
 Vue 3（`script setup`）· Vite · TypeScript · UnoCSS · VueUse · GSAP Flip · Shiki · Vitest · [@antfu/eslint-config](https://github.com/antfu/eslint-config)
 
 推导引擎住在 [`src/core/`](./src/core)，零 DOM 依赖，连 Vue 都不 import，全部由单元测试驱动。理论值那一侧的可信度就建立在这上面。
 
-## 许可证
+## 📜 许可证
 
 MIT License © 2026 [Hubery Yang](https://github.com/Hub-yang)
