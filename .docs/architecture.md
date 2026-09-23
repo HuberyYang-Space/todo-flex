@@ -19,7 +19,7 @@ state ──→ 渲染 ──→ 观测 ──→ 诊断 ──→ 展示
 
 | 层 | 位置 | 说明 |
 | --- | --- | --- |
-| 纯逻辑 | `src/core/` | 零 DOM、零 vue 依赖。推导引擎按步骤拆分：`resolveBasis` → `splitLines` → `distribute`，由 `deriveLayout` 组装并同时输出 `DerivationStep[]`（给 UI 展示公式用）。`cssEmit` 生成可复制 CSS，`axis` 负责 direction → 主轴/交叉轴换算，`styleMap` 负责状态 → CSS 属性的映射 |
+| 纯逻辑 | `src/core/` | 零 DOM、零 vue 依赖。推导引擎按步骤拆分：`resolveBasis` → `splitLines` → `distribute`，由 `deriveLayout` 组装。`cssEmit` 生成可复制 CSS，`axis` 负责 direction → 主轴/交叉轴换算，`styleMap` 负责状态 → CSS 属性的映射 |
 | 元信息 | `src/data/flexProperties.ts` | 属性元信息表（`PropertyDef` 四种 kind：enum/number/boolean/text），控制面板遍历它生成控件 |
 | 状态源 | `src/composables/useFlexState.ts` | **模块级单例** `reactive(createDefaultState())`——全站唯一状态源，组件各自 `useFlexState()` 拿到的是同一份。`derived` / `css` 是从它派生的 computed |
 | 视图 | `src/components/playground/` | 只负责渲染与事件。`DemoStage` 是真实 flex 容器，`PropertyField` 是表驱动的通用控件 |
@@ -30,8 +30,8 @@ state ──→ 渲染 ──→ 观测 ──→ 诊断 ──→ 展示
 
 - `FlexState`——可序列化，无 DOM 引用。URL 短码编解码（`src/core/urlCodec.ts`）直接吃它
 - `DerivedLayout` / `DerivedLine` / `DerivedItem`——推导引擎的输出
-- `DerivationStep`——推导过程的分步记录，`kind` 是它的标识
 - `Diagnostic`——诊断层输出，`rule` 是它的标识
 
-`DerivationStep.kind` 与 `Diagnostic.rule` 是真正的标识字段，务必保留；曾经并存的 `messageKey` 系列字段已随
+`Diagnostic.rule` 是真正的标识字段，务必保留；曾经并存的 `messageKey` 系列字段已随
 i18n 一起删除，原因见 [pitfalls.md](./pitfalls.md#i18n-预埋字段为什么被删净)。
+原先给「公式展开」预留的 `DerivationStep` 因零消费方已在 `38f55df` 删除。
