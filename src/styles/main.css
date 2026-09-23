@@ -1,59 +1,22 @@
-/*
- * 主题变量：暗色为默认基调，亮色作为可切换的备选。
- *
- * 下面两组带 -k / -op 后缀的是「同一个视觉效果在两套主题下必须取不同值」的参数，
- * 不是语义色板。它们存在的唯一理由是：这些值混的底色一亮一暗，
- * 统一取值必然有一套不达标。判据全部钉在 theme.spec.ts 里，改动前先看那份测试。
- */
 :root {
   --bg: #f7f8fa;
-
-  /*
-   * 比看上去该有的更深一档。八处说明文字用 op-60 淡化，
-   * fg 取 #1f2430 时它们在亮色下只有 4.11:1，够不着 AA 的 4.5。
-   * 调 fg 一处就把八处一起解决，也管住将来新写的 op-60。
-   */
   --fg: #11151d;
   --panel: #ffffff;
   --border: #e3e6ec;
   --accent: #0891b2;
   --accent-2: #7c3aed;
 
-  /* 盒子描边强度。亮色底接近白，accent 掺水就糊，必须上满才有 3:1 */
   --stage-line-k: 100%;
   --stage-line-hover-k: 100%;
 
-  /* 剩余空间斜纹的纹路不透明度。亮色下 0.35 只有 1.46，提到 0.65 才追平暗色 */
   --stripe-op: 0.65;
 
-  /*
-   * 全站只有两档间距，不随主题变。
-   *
-   * --space 是模块间距：页面内边距、栅格列距、面板内边距、分节之间、字段之间，全走它。
-   * 站点标题的上边距也走它——标题的下边距是 Playground 根节点的内边距，
-   * 两边同源，「标题上下一样宽」才不用靠手动配数字维持。
-   * 统一之前这里有四档（16 / 16 / 12 / 20），而且 margin 与 gap 混用——
-   * 字段各自带 margin-bottom，外层再叠一层 gap，边界处就变成两份间距相加，
-   * 肉眼看到的「分节之间比字段之间宽得多」并不是设计意图，是这份叠加的副产物。
-   * 现在一律由父级的 gap 承担，子元素不带 margin，边界处才对得齐。
-   *
-   * --space-tight 只管控件内部：标签到控件、选项按钮彼此之间。
-   * 它和 --space 必须分开——同一档会让「一个字段内部」和「两个字段之间」读起来一样紧，
-   * 分组关系就没了。
-   */
   --space: 8px;
   --space-tight: 4px;
 
-  /*
-   * 滚动条外观对齐 Element Plus 的 el-scrollbar：6px 宽、4px 圆角、轨道透明，
-   * 滑块是 #909399 的半透明灰，悬停加深。取值就是 el 的
-   * --el-scrollbar-bg-color (#909399) 配 --el-scrollbar-opacity (.3) / hover (.5)。
-   * 这组中性灰在近白与近黑两种底色上都立得住，所以不分主题。
-   *
-   * 差别只有一处，且无法消除：el-scrollbar 是 JS 画的悬浮层，不占布局空间；
-   * 这里用的是原生滚动条伪元素，会占掉 6px 宽度。要抹平这点得自己实现一套
-   * 滚动容器组件，代价远大于收益——外观一致即可。
-   */
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', Consolas, monospace;
+  --font-sans: 'Inter', -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+
   --scrollbar-size: 6px;
   --scrollbar-thumb: rgb(144 147 153 / 30%);
   --scrollbar-thumb-hover: rgb(144 147 153 / 50%);
@@ -67,11 +30,9 @@ html.dark {
   --accent: #22d3ee;
   --accent-2: #a78bfa;
 
-  /* 暗色底本就衬得出 accent，55% 已有 3.68:1；上满会过冲成刺眼的实线 */
   --stage-line-k: 55%;
   --stage-line-hover-k: 85%;
 
-  /* 暗色的 0.35 是取舍过的基准（2.20），再高会让 2.4s 的流动抢戏 */
   --stripe-op: 0.35;
 }
 
@@ -81,17 +42,6 @@ body,
   height: 100%;
 }
 
-/*
- * 标准属性与伪元素必须互斥，不能两套都写。
- *
- * Chrome 一旦在某个元素上见到 scrollbar-width / scrollbar-color，就整个忽略
- * ::-webkit-scrollbar 的样式，滚动条退回它自己的 thin 造型——浏览器实测只占 2px，
- * 而 el-scrollbar 是 6px，圆角与配色也全都丢了。规则明明都在产物里，运行时却没生效，
- * 这种失效只有真实渲染量得出来。
- *
- * 所以把标准属性隔离给「不认识伪元素」的浏览器（Firefox），
- * Chrome / Safari 一律走下面的伪元素。
- */
 @supports not selector(::-webkit-scrollbar) {
   * {
     scrollbar-width: thin;
@@ -126,7 +76,6 @@ body {
     color 0.3s ease;
 }
 
-/* 尊重系统的减弱动效偏好：关掉装饰性动画，保留布局可读性 */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -137,13 +86,6 @@ body {
   }
 }
 
-/*
- * shiki 的双主题输出：每个 token 同时带 --shiki-light 与 --shiki-dark 两个自定义属性，
- * 自己不写 color，由这里挑一套。单主题模式得在切主题时整段重新高亮，代码块会闪一下。
- *
- * 背景色一并留空：shiki 把它放在 --shiki-*-bg 里而不是直接写死，
- * 不引用就等于让面板底色透上来——代码块不该在面板里再画一块自己的底。
- */
 .shiki,
 .shiki span {
   color: var(--shiki-light);

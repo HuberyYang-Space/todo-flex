@@ -10,12 +10,17 @@
   <body>
     <div id="app"></div>
     <noscript>
-      <div>Please enable JavaScript to use this application.</div>
+      <div>本站需要启用 JavaScript 才能运行。</div>
     </noscript>
     <script>
+      // 键名必须与 useDark() 写入的一致（@vueuse/core 的 useColorMode 默认键），
+      // 对不上就永远读到 null，用户显式选过的主题会在刷新时先闪一帧系统主题
       ;(function () {
         const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-        const setting = localStorage.getItem('color-schema') || 'auto'
+        let setting = 'auto'
+        try {
+          setting = localStorage.getItem('vueuse-color-scheme') || 'auto'
+        } catch {}
         if (setting === 'dark' || (prefersDark && setting !== 'light'))
           document.documentElement.classList.toggle('dark', true)
       })()

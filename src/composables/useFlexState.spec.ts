@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MAX_ITEMS, useFlexState } from './useFlexState'
+import { MAX_ITEMS } from '~/core/defaults'
+import { useFlexState } from './useFlexState'
 
 describe('useFlexState', () => {
   beforeEach(() => {
@@ -67,14 +68,12 @@ describe('useFlexState', () => {
   })
 })
 
-/*
- * 分享链接进来时要直接还原成对方的画面。
- * 状态是模块级单例、在模块加载那一刻就定了，所以这里靠 resetModules + 动态 import 重现首屏时机。
- */
+// 状态是模块级单例、在模块加载那一刻就定了，靠 resetModules + 动态 import 重现首屏时机
 describe('useFlexState 的首屏初始化', () => {
   const originalSearch = globalThis.location.search
 
   afterEach(() => {
+    document.documentElement.style.fontSize = ''
     globalThis.history.replaceState(null, '', originalSearch || '/')
     vi.restoreAllMocks()
     vi.resetModules()
@@ -105,6 +104,13 @@ describe('useFlexState 的首屏初始化', () => {
 
     expect(state.container.direction).toBe('row')
     expect(state.items).toHaveLength(3)
+  })
+
+  it('推导按页面加载时的根字号换算 em——用户调大了浏览器默认字号也算得对', async () => {
+    document.documentElement.style.fontSize = '20px'
+    const { derived } = await loadWith('?v=1&c=flex.row.nowrap.fs.stretch.normal.12.12.720.320&i=0-0-2em-0-auto-80-0-0')
+
+    expect(derived.value.items[0].finalMainSize).toBe(40)
   })
 
   it('地址栏没有短码时就是默认状态', async () => {

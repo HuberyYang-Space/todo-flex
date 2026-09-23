@@ -94,6 +94,34 @@ describe('metricsTable', () => {
     expect(diagnosis).not.toContain('⚠')
   })
 
+  it('basis 非法时说清浏览器怎么处理、导出的 CSS 会怎样', async () => {
+    useFlexState().state.items[0].basis = '50'
+    useMeasure().measured.value = measureAll([80, 80, 80])
+
+    const wrapper = mount(MetricsTable)
+    await wrapper.vm.$nextTick()
+
+    const diagnosis = rows(wrapper)[0].get('[data-testid="diagnosis"]').text()
+    expect(diagnosis).toContain('⚠')
+    expect(diagnosis).toContain('flex-basis')
+    expect(diagnosis).toContain('auto')
+  })
+
+  it('理论值无法静态推导时，理论列留空，只在起因那一行说明，其余不冒充通过', async () => {
+    useFlexState().state.items[0].basis = 'calc(10% + 1px)'
+    useMeasure().measured.value = measureAll([73, 80, 80])
+
+    const wrapper = mount(MetricsTable)
+    await wrapper.vm.$nextTick()
+    const [culprit, bystander] = rows(wrapper)
+
+    expect(culprit.get('[data-testid="theoretical"]').text()).toBe('—')
+    expect(culprit.get('[data-testid="diagnosis"]').text()).toContain('ℹ')
+    expect(culprit.get('[data-testid="diagnosis"]').text()).toContain('运行')
+    expect(bystander.get('[data-testid="theoretical"]').text()).toBe('—')
+    expect(bystander.get('[data-testid="diagnosis"]').text()).toBe('—')
+  })
+
   it('增删盒子后行数同步', async () => {
     const wrapper = mount(MetricsTable)
 

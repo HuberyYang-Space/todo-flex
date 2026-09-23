@@ -56,6 +56,15 @@ describe('distributeGrow', () => {
     expect(result.get('i2')).toBe(0)
   })
 
+  // 规范 §9.7 第 4b 步；期望值取自真实浏览器
+  it('grow 之和小于 1 时只分出对应比例的剩余空间', () => {
+    expect(distributeGrow(makeItems([{ grow: 0.5 }]), 500).get('i1')).toBe(250)
+
+    const two = distributeGrow(makeItems([{ grow: 0.2 }, { grow: 0.3 }]), 500)
+    expect(two.get('i1')).toBeCloseTo(100)
+    expect(two.get('i2')).toBeCloseTo(150)
+  })
+
   it('负数 grow 按 0 处理', () => {
     const items = makeItems([{ grow: -5 }, { grow: 1 }])
     const result = distributeGrow(items, 100)
@@ -76,6 +85,13 @@ describe('distributeShrink', () => {
     const result = distributeShrink(items, -200, container)
     expect(result.get('i1')).toBe(-150)
     expect(result.get('i2')).toBe(-50)
+  })
+
+  it('shrink 之和小于 1 时只让出对应比例的溢出量', () => {
+    const { container } = createDefaultState()
+    const items = makeItems([{ shrink: 0.5, basis: '900px' }])
+
+    expect(distributeShrink(items, -300, container).get('i1')).toBe(-150)
   })
 
   it('shrink 为 0 的项不参与收缩', () => {

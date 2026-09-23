@@ -23,7 +23,7 @@ function measuredFrom(
     height: state.container.height,
     items: layout.items.map(item => ({
       id: item.id,
-      width: item.finalMainSize,
+      width: item.finalMainSize ?? 0,
       height: state.container.height,
       left: 0,
       top: 0,
@@ -99,9 +99,7 @@ describe('diagnose', () => {
   })
 
   it('margin:auto 不改变尺寸，只在尺寸吻合时作为提示给出', () => {
-    // 浏览器实测：margin:auto 吃掉剩余空间后盒子尺寸一个都没变，变的是位置。
-    // 所以这条不是「理论 vs 实际」推出来的偏差，而是由状态直接得出的提示。
-    // 容器 600、单项 100px，剩余 500 全被 margin 吃掉，但盒子仍是 100px。
+    // 容器 600、单项 100px，剩余 500 全被 margin 吃掉，但盒子仍是 100px
     const state = stateWith([{ basis: '100px', size: 100, marginAuto: true }])
 
     const [diagnostic] = diagnoseWith(state)
@@ -124,6 +122,29 @@ describe('diagnose', () => {
     const state = stateWith([{ basis: '100px', size: 100 }])
 
     expect(diagnoseWith(state)).toEqual([])
+  })
+
+  it('同一行里有 grow 时不报 margin:auto —— 剩余空间已被 grow 吃光', () => {
+    // 容器 600、两项各 100px，剩余 400 全被 i1 的 grow 吃掉；
+    // 按规范 §9.7 先于 §9.5，轮到 auto margin 时已经一个像素都不剩
+    const state = stateWith([
+      { basis: '100px', size: 100, grow: 1 },
+      { basis: '100px', size: 100, marginAuto: true },
+    ], 600)
+
+    expect(diagnoseWith(state)).toEqual([])
+  })
+
+  it('grow 之和小于 1 时，分剩下的空间归 margin:auto，按剩下的量报', () => {
+    // 浏览器实测：容器 600，A grow 0.5 长到 300，B 前面的 auto margin 拿到剩下的 200
+    const state = stateWith([
+      { basis: '100px', size: 100, grow: 0.5 },
+      { basis: '100px', size: 100, marginAuto: true },
+    ], 600)
+
+    expect(diagnoseWith(state)).toEqual([
+      expect.objectContaining({ itemId: 'i2', rule: 'margin-auto', params: { freeSpace: 200 } }),
+    ])
   })
 
   it('该行没有剩余空间时，margin:auto 不成立，落到兜底解释', () => {
@@ -170,6 +191,23 @@ describe('diagnose', () => {
     const real = diagnoseWith(state, { i1: { width: 999, height: 130 } })
     expect(real).toHaveLength(1)
     expect(real[0].actual).toBe(130)
+  })
+
+  it('basis 非法时直接指出，不归因成 min-width:auto', () => {
+    // 浏览器丢弃 flex-basis: 50、按 auto 取内容尺寸 80，恰好与 min-width:auto 撑住的现象长得一样
+    const state = stateWith([{ basis: '50', size: 80 }])
+
+    const [diagnostic] = diagnoseWith(state, { i1: { width: 80 } })
+
+    expect(diagnostic).toMatchObject({ rule: 'invalid-basis', severity: 'warn' })
+  })
+
+  it('basis 要到运行期才能确定时指出是谁，同一容器里的其余盒子不做比对', () => {
+    const state = stateWith([{ basis: 'calc(50% - 10px)', size: 80 }, { basis: '100px' }])
+
+    expect(diagnoseWith(state, { i1: { width: 290 }, i2: { width: 100 } })).toEqual([
+      expect.objectContaining({ itemId: 'i1', rule: 'runtime-basis', severity: 'info' }),
+    ])
   })
 
   it('缺少观测值的项直接跳过，不猜测', () => {

@@ -35,14 +35,7 @@ describe('cssOutput', () => {
     vi.unstubAllGlobals()
   })
 
-  /*
-   * 这条守卫钉的是「复制按钮是 icon，而且换成 icon 之后无障碍信息没丢」。
-   *
-   * 纯 icon 按钮在无障碍树里是哑的——它没有文本节点，读屏器只会念出「按钮」。
-   * 原来那版按钮的文案「复制 / 已复制」同时承担了视觉与无障碍两份职责，
-   * 换成 icon 就把后一份弄丢了，而且这件事在界面上完全看不出来。
-   * 所以这里断言的不是「有个 icon」，是「两个态各自的 aria-label 都在」。
-   */
+  // 纯 icon 按钮在无障碍树里是哑的，断言的是每个态各自的 aria-label 都在，而不是「有个 icon」
   it('复制按钮用 icon 呈现，两个态都留着无障碍名称', async () => {
     vi.stubGlobal('navigator', { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } })
 
@@ -62,21 +55,74 @@ describe('cssOutput', () => {
     vi.unstubAllGlobals()
   })
 
-  /*
-   * 这条守卫钉的是「代码块真的被高亮了」。
-   *
-   * 上一版用 Prism，标记是生成了（<span class="token">），但 main.css 里一行 token 配色都没有，
-   * 于是界面上看到的是一整块单色文本——「高亮跑通了」和「用户看得到高亮」是两件事。
-   * 所以这里既要断言分词结果（一行 CSS 被拆成多个 token），
-   * 也要断言 token 身上带着配色变量，否则同样的哑火会再来一次。
-   */
+  it('剪贴板写入被拒时明说失败，不抛未捕获异常', async () => {
+    vi.stubGlobal('navigator', { clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } })
+
+    const wrapper = mount(CssOutput)
+    const button = wrapper.get('[data-testid="copy-css"]')
+    await button.trigger('click')
+    await flushPromises()
+
+    expect(button.attributes('aria-label')).toBe('复制失败，请手动选中复制')
+    expect(button.find('.i-carbon-warning').exists()).toBe(true)
+    vi.unstubAllGlobals()
+  })
+
+  it('非安全上下文没有 navigator.clipboard 时同样落到失败态', async () => {
+    vi.stubGlobal('navigator', {})
+
+    const wrapper = mount(CssOutput)
+    const button = wrapper.get('[data-testid="copy-css"]')
+    await button.trigger('click')
+    await flushPromises()
+
+    expect(button.attributes('aria-label')).toBe('复制失败，请手动选中复制')
+    vi.unstubAllGlobals()
+  })
+
+  it('连点两次时，第二次的提示不会被第一次的计时器提前抹掉', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('navigator', { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } })
+
+    const wrapper = mount(CssOutput)
+    const button = wrapper.get('[data-testid="copy-css"]')
+
+    await button.trigger('click')
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(1000)
+    await button.trigger('click')
+    await flushPromises()
+
+    // 距第一次点击 1600ms、距第二次 600ms：第一次的计时器若还活着，这里已经被抹回去了
+    await vi.advanceTimersByTimeAsync(600)
+    expect(button.attributes('aria-label')).toBe('已复制')
+
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(button.attributes('aria-label')).toBe('复制 CSS')
+
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  // basis 可由用户与分享链接任意填写，v-html 的安全性全系于 shiki 的转义——换高亮器或加回退路径都可能引入 XSS
+  it('basis 里塞进标签只会被当成文本，v-html 不会长出活的元素', async () => {
+    const payload = '</style><img src=x onerror=alert(1)>'
+    useFlexState().state.items[0].basis = payload
+
+    const wrapper = mount(CssOutput)
+    await vi.waitFor(() => {
+      expect(wrapper.find('[data-testid="css-code"] span[style]').exists()).toBe(true)
+    })
+
+    const code = wrapper.get('[data-testid="css-code"]')
+    expect(code.find('img').exists()).toBe(false)
+    expect(code.text()).toContain(payload)
+  })
+
+  // 「分出了 token」和「用户看得到配色」是两件事，两个都要断言
   it('shiki 把 CSS 切成带配色变量的 token', async () => {
     const wrapper = mount(CssOutput)
-    /*
-     * 不能只 flushPromises 一次：shiki 是动态 import 进来的（见 visual/highlight.ts），
-     * 模块加载比微任务队列长，一次 flush 拍到的还是未高亮的首帧。
-     * 轮询等到 token 出现，高亮真没落地时这里会超时变红，守卫不会因此变哑。
-     */
+    // shiki 是动态 import，一次 flushPromises 拍到的还是未高亮的首帧；轮询等不到会超时变红
     await vi.waitFor(() => {
       expect(wrapper.find('[data-testid="css-code"] span[style]').exists()).toBe(true)
     })

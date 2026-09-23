@@ -1,9 +1,11 @@
 import type { FlexItemState, FlexState } from './types'
 
-/**
- * 演示区尺寸的可拖拽区间。
- * 下限保证盒子还看得见，上限避免演示区把明细表挤出视口。
- */
+/** 浏览器的默认根字号；页面里读不到时的兜底 */
+export const DEFAULT_FONT_SIZE = 16
+
+/** 再多面板与演示区都会失去可读性，也超出 A–Z 标签的可读范围 */
+export const MAX_ITEMS = 8
+
 export const STAGE_LIMITS = {
   minWidth: 200,
   maxWidth: 1200,
@@ -11,7 +13,6 @@ export const STAGE_LIMITS = {
   maxHeight: 600,
 } as const
 
-/** 默认盒子等价于 flex: 0 1 auto，即浏览器的初始值 */
 export function createDefaultItem(id: string): FlexItemState {
   return {
     id,

@@ -12,14 +12,10 @@ const { state, derived } = useFlexState()
 const { measured } = useMeasure()
 const { visible, hoveredId } = useOverlay()
 
-/** 箭头画在容器左上角，长度固定，不随容器缩放 */
 const ARROW_ORIGIN = 16
 const ARROW_LENGTH = 32
 
-/**
- * 斜纹 pattern 按「流动轴 × 流向」四份，id 后缀与 OverlayBand.flowAxis / flow 对齐。
- * 纹路朝向必须随轴走，方向才读得出来——理由见文件底部 .stripe-flow 的注释。
- */
+/** id 后缀与 OverlayBand.flowAxis / flow 对齐 */
 const STRIPE_PATTERNS = [
   { axis: 'x', flow: 'forward' },
   { axis: 'x', flow: 'reverse' },
@@ -33,33 +29,22 @@ const geometry = computed(() =>
 
 const vectors = computed(() => axisVectors(state.container))
 
-/** 反向的轴要把起点挪到另一头，箭头才不会画到容器外面去 */
+/** 反向的轴把起点挪到另一头，箭头才不会画出容器 */
 function arrow(vector: AxisVector) {
   const x1 = ARROW_ORIGIN + (vector.dx < 0 ? ARROW_LENGTH : 0)
   const y1 = ARROW_ORIGIN + (vector.dy < 0 ? ARROW_LENGTH : 0)
   return { x1, y1, x2: x1 + vector.dx * ARROW_LENGTH, y2: y1 + vector.dy * ARROW_LENGTH }
 }
 
-/*
- * 标签是横排的，所以能不能画取决于色块的横向尺寸放不放得下这行字。
- * 放不下就不画——宁可这一行没有标签，也不能让文字溢出色块、压到旁边的盒子上，
- * 那会让人误以为标的是那个盒子。
- *
- * 阈值必须按文本内容算，不能写死一个常数：数字位数一变宽度就变
- * （「剩余 456 · 理论 456」实测 117px，换成四位数还要再宽十几个像素）。
- * 最早写死 110px，浏览器实测当场发现文字已经比它宽了。
- */
+// 色块放不下这行字就不画：文字溢出压到旁边盒子上，会让人误以为标的是那个盒子
 const LABEL_FONT_SIZE = 11
 const MIN_LABEL_HEIGHT = 18
-/** 文字两侧各留一点，别贴着色块边缘 */
 const LABEL_PADDING = 8
 
 /**
- * 估算一行字的像素宽度：等宽字体下 Latin-1 以内的字符约占 0.61 个字号，之外的占满一个字号。
- *
- * 分界画在 U+00FF 而不是 ASCII 的 U+007F，是因为分隔点「·」是 U+00B7——
- * 它看着像全角，实际按半角渲染，当成全角会把估算值抬高 4px 多。
- * 「剩余 456 · 理论 456」这样估出来是 117.8px，与浏览器实测的 117px 吻合。
+ * 等宽字体下 Latin-1 以内的字符约占 0.61 个字号，之外的占满一个字号。
+ * 分界画在 U+00FF 而不是 U+007F：分隔点「·」是 U+00B7，看着像全角、实际按半角渲染。
+ * happy-dom 不排版，这个估算没有自动化守卫，改动后要到浏览器里量。
  */
 function estimateLabelWidth(text: string): number {
   let width = 0
@@ -68,13 +53,7 @@ function estimateLabelWidth(text: string): number {
   return width
 }
 
-/**
- * 每行一个「实际剩余 vs 理论剩余」的标签。
- *
- * 明细表比的是单个盒子的尺寸，这里比的是整行还剩多少空间——两者对不上，
- * 说明有规则介入（比如 min-width:auto 撑住了某个盒子，剩余空间就比理论值少）。
- * 挂在这一行面积最大的那块色块上，字才有地方放。
- */
+/** 挂在这一行面积最大的那块色块上，字才有地方放 */
 const lineLabels = computed(() => {
   const geo = geometry.value
   if (!geo)
@@ -86,7 +65,7 @@ const lineLabels = computed(() => {
       return []
 
     const band = bands.reduce((a, b) => (a.width * a.height >= b.width * b.height ? a : b))
-    const text = `剩余 ${round(line.actual)} · 理论 ${round(line.theoretical)}`
+    const text = `剩余 ${round(line.actual)} · 理论 ${line.theoretical === null ? '—' : round(line.theoretical)}`
     if (band.width < estimateLabelWidth(text) + LABEL_PADDING || band.height < MIN_LABEL_HEIGHT)
       return []
 
@@ -95,8 +74,7 @@ const lineLabels = computed(() => {
       x: band.x + band.width / 2,
       y: band.y + band.height / 2,
       text,
-      // 与明细表、HUD 同一个判据：差得过半个像素才算有规则介入
-      mismatch: Math.abs(line.theoretical - line.actual) > 0.5,
+      mismatch: line.theoretical !== null && Math.abs(line.theoretical - line.actual) > 0.5,
     }]
   })
 })
@@ -104,7 +82,7 @@ const lineLabels = computed(() => {
 const mainArrow = computed(() => arrow(vectors.value.main))
 const crossArrow = computed(() => arrow(vectors.value.cross))
 
-/** 悬停优先于选中：鼠标正指着谁，就先说谁 */
+/** 悬停优先于选中 */
 const hud = computed(() => {
   const id = hoveredId.value ?? state.selectedId
   const record = measured.value?.items.find(item => item.id === id)
@@ -112,17 +90,16 @@ const hud = computed(() => {
     return null
 
   const index = state.items.findIndex(item => item.id === id)
-  const theoretical = derived.value.items.find(item => item.id === id)?.finalMainSize ?? 0
+  const theoretical = derived.value.items.find(item => item.id === id)?.finalMainSize ?? null
   const actualMain = isRowDirection(state.container.direction) ? record.width : record.height
 
   return {
     label: itemLabel(index),
     text: `${round(record.width)} × ${round(record.height)}`,
-    theoretical: round(theoretical),
-    // 与明细表同一个判据：差得过半个像素才算有规则介入
-    mismatch: Math.abs(theoretical - actualMain) > 0.5,
+    theoretical: theoretical === null ? '—' : round(theoretical),
+    mismatch: theoretical !== null && Math.abs(theoretical - actualMain) > 0.5,
     x: record.left,
-    // 盒子贴着容器顶时，HUD 翻到盒子内侧，免得被容器边裁掉
+    // 盒子贴着容器顶时翻到盒子内侧，免得被裁掉
     y: record.top < 20 ? record.top + 16 : record.top - 6,
   }
 })
@@ -133,13 +110,7 @@ function round(value: number): number {
 </script>
 
 <template>
-  <!--
-    分两层，不是一层。
-    色块与箭头沉到盒子下面，读起来才像「铺在台面上、被方块压住」的一层，而不是盖在方块脸上的膜。
-    但 HUD 是标签，跟着沉下去就会被它要标注的那个盒子挡住——盒子贴容器顶时 HUD 本来就要翻到盒子内侧，
-    那一翻正好翻到盒子底下去了。所以 HUD 单独一层浮在上面。
-    两层共用同一个 v-if，收起叠加层时一起消失。
-  -->
+  <!-- 色块沉到盒子下面，HUD 单独一层浮在上面：跟着沉下去会被它要标注的盒子挡住 -->
   <template v-if="visible && measured && geometry">
     <svg
       data-testid="overlay"
@@ -149,11 +120,7 @@ function round(value: number): number {
       :viewBox="`0 0 ${measured.width} ${measured.height}`"
     >
       <defs>
-        <!--
-        剩余空间用斜纹填充：与实心色块拉开区别，一眼看出「这里没有盒子」。
-        「流动轴 × 流向」四份，纹路朝「这块空间一旦被分配会流向谁」的方向动。
-        三条线是为了平移时无缝：走完一个周期（8px）时，邻位那条正好补上离场那条的位置。
-      -->
+        <!-- 三条线是为了平移无缝：走完一个 8px 周期时，邻位那条正好补上离场那条 -->
         <pattern
           v-for="stripe in STRIPE_PATTERNS"
           :id="`overlay-stripes-${stripe.axis}-${stripe.flow}`"
@@ -201,7 +168,6 @@ function round(value: number): number {
         </marker>
       </defs>
 
-      <!-- 剩余空间与溢出 -->
       <rect
         v-for="(band, index) in geometry.bands"
         :key="`${band.lineIndex}-${index}`"
@@ -214,7 +180,6 @@ function round(value: number): number {
         :class="band.kind === 'free' ? ['band-free', `band-free--${band.flowAxis ?? 'x'}-${band.flow ?? 'forward'}`] : 'band-overflow'"
       />
 
-      <!-- 每行的剩余空间对照：实际 vs 理论 -->
       <text
         v-for="label in lineLabels"
         :key="label.key"
@@ -226,7 +191,6 @@ function round(value: number): number {
         :font-size="LABEL_FONT_SIZE"
       >{{ label.text }}</text>
 
-      <!-- 轴向箭头 -->
       <g class="axis">
         <line
           data-testid="overlay-axis-main"
@@ -247,7 +211,6 @@ function round(value: number): number {
 
     </svg>
 
-    <!-- 尺寸 HUD：单独一层，浮在盒子之上 -->
     <svg
       v-if="hud"
       data-testid="overlay-hud-layer"
@@ -271,21 +234,10 @@ function round(value: number): number {
   top: 0;
   left: 0;
 
-  /*
-   * 两条都不能少：
-   * pointer-events 不关掉，叠加层会把盒子的点击全吃掉；
-   * SVG 根元素默认 overflow: hidden，溢出标记画在容器外会被裁掉。
-   */
   overflow: visible;
   pointer-events: none;
 }
 
-/*
- * 层序必须显式写出来，不能靠 DOM 顺序碰运气：.stage 与 .stage-wrapper 都是
- * position: relative + z-index: auto，两者都不构成层叠上下文，
- * 所以这两层是直接和 .stage-item（z-index: 1）比大小的。
- * 0 在 .stage 的背景之上、盒子之下；2 在盒子之上。
- */
 .overlay--under {
   z-index: 0;
 }
@@ -310,28 +262,10 @@ function round(value: number): number {
   fill: url(#overlay-stripes-y-reverse);
 }
 
-/*
- * 平移一个完整周期（8px）就回到同一个相位，循环起来看不出接缝。
- *
- * 纹路朝向由流动轴给出，不由色块形状给出：x 轴是垂直纹路做左右平移，
- * y 轴靠 patternTransform 转 90° 变成水平纹路——旋转把 pattern 自身的坐标系一起转了，
- * 所以下面这条 translateX 在 y 轴的 pattern 里就是屏幕上的向下，一套 keyframes 管四份。
- * 两种情况下运动都完全垂直于纹路，没有理发店转灯的歧义。
- *
- * 曾经只做两份 45° 斜纹、让色块长宽比去暗示方向，浏览器实测会读反：
- * column 默认三个盒子时色块是 720×56 的宽扁横条（读作横向流，实际沿垂直轴），
- * row 放到六个盒子时色块是 180×320 的高瘦竖条（读作纵向流，实际沿水平轴）。
- * 长宽比取决于「剩余空间量 vs 交叉轴尺寸」，跟 flex-direction 不相干，不能拿来当方向线索。
- */
 .stripe-flow {
   animation: stripe-flow 2.4s linear infinite;
 }
 
-/*
- * 纹路的不透明度必须分主题，所以写在 CSS 里而不是 <line> 的 stroke-opacity 属性上——
- * SVG 属性没法跟着 html.dark 走。亮色底接近白，0.35 的纹路只有 1.46:1、基本看不见；
- * 暗色的 0.35 则已有 2.20，是取舍过的基准，再高会让 2.4s 的流动抢戏。
- */
 .stripe-flow line {
   stroke-opacity: var(--stripe-op);
 }
@@ -350,10 +284,6 @@ function round(value: number): number {
   }
 }
 
-/*
- * main.css 的通配兜底已经能把它按住，这里再显式关一次：
- * 这是全站唯一一个无限循环的装饰动画，不该只靠一条 `*` 规则活着。
- */
 @media (prefers-reduced-motion: reduce) {
   .stripe-flow {
     animation: none;
@@ -367,10 +297,6 @@ function round(value: number): number {
   stroke-width: 1;
 }
 
-/*
- * 描边打底（paint-order: stroke）让字压在流动的斜纹上仍然读得出来，
- * 与 HUD 同一套处理。
- */
 .line-label {
   fill: color-mix(in srgb, var(--fg) 75%, transparent);
   font-family: var(--font-mono, monospace);

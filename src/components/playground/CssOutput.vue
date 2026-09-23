@@ -1,29 +1,53 @@
 <script setup lang="ts">
-import { ref, shallowRef, watchEffect } from 'vue'
+import { useTimeoutFn } from '@vueuse/core'
+import { computed, ref, shallowRef, watchEffect } from 'vue'
 import { useFlexState } from '~/composables/useFlexState'
 import { highlightCss } from '~/visual/highlight'
 
 const { css } = useFlexState()
-const copied = ref(false)
 
-/*
- * 高亮是异步的（shiki 的语法与主题要先加载），所以首帧先渲染未高亮的纯文本，
- * 拿到结果再替换。反过来先留空的话，代码块会在首屏闪一下再出现。
- */
+// 不用 VueUse 的 useClipboard：它退回 execCommand 后不看返回值，一律报「已复制」，假成功比明说失败更糟
+const copyStatus = ref<'idle' | 'copied' | 'failed'>('idle')
+const { start: resetCopyStatus } = useTimeoutFn(() => (copyStatus.value = 'idle'), 1500, { immediate: false })
+
+const copyLabel = computed(() => ({
+  idle: '复制 CSS',
+  copied: '已复制',
+  failed: '复制失败，请手动选中复制',
+})[copyStatus.value])
+
+const copyIcon = computed(() => ({
+  idle: 'i-carbon-copy',
+  copied: 'i-carbon-checkmark',
+  failed: 'i-carbon-warning',
+})[copyStatus.value])
+
 const highlighted = shallowRef('')
 
 watchEffect(async () => {
   const source = css.value
-  const html = await highlightCss(source)
-  // 高亮期间状态可能又变了，过期结果直接丢弃，免得把旧 CSS 盖回去
-  if (source === css.value)
-    highlighted.value = html
+  try {
+    const html = await highlightCss(source)
+    // 高亮期间状态可能又变了，过期结果丢弃，免得把旧 CSS 盖回去
+    if (source === css.value)
+      highlighted.value = html
+  }
+  catch {
+    // shiki 分包加载失败时退回纯文本
+    highlighted.value = ''
+  }
 })
 
 async function copy(): Promise<void> {
-  await navigator.clipboard.writeText(css.value)
-  copied.value = true
-  setTimeout(() => (copied.value = false), 1500)
+  try {
+    // 非安全上下文里 navigator.clipboard 是 undefined，同步抛出也落进 catch
+    await navigator.clipboard.writeText(css.value)
+    copyStatus.value = 'copied'
+  }
+  catch {
+    copyStatus.value = 'failed'
+  }
+  resetCopyStatus()
 }
 </script>
 
@@ -37,17 +61,18 @@ async function copy(): Promise<void> {
       <button
         data-testid="copy-css"
         class="ml-auto icon-btn"
-        :title="copied ? '已复制' : '复制 CSS'"
-        :aria-label="copied ? '已复制' : '复制 CSS'"
+        type="button"
+        :title="copyLabel"
+        :aria-label="copyLabel"
         @click="copy()"
       >
-        <div :class="copied ? 'i-carbon-checkmark' : 'i-carbon-copy'" />
+        <div :class="copyIcon" />
       </button>
     </header>
 
-    <!-- 这层是面板里唯一滚的地方，min-h-0 不能漏，否则长 CSS 会把整块面板顶破 -->
+    <!-- min-h-0 不能漏，否则长 CSS 会把整块面板顶破 -->
     <div class="min-h-0 flex-1 overflow-auto">
-      <!-- v-html 的内容是 shiki 对本站自己生成的 CSS 的高亮结果，不经过任何外部输入 -->
+      <!-- basis 可由用户与分享链接任意填写，这里的安全性系于 shiki 对文本的转义，由 CssOutput.spec 钉住 -->
       <div v-if="highlighted" data-testid="css-code" class="css-code" v-html="highlighted" />
       <pre v-else data-testid="css-code" class="css-code"><code>{{ css }}</code></pre>
     </div>

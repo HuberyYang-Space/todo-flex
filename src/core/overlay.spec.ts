@@ -1,14 +1,15 @@
 import type { DerivedLayout, MeasuredStage } from './types'
 import { describe, expect, it } from 'vitest'
-import { createDefaultState } from './defaults'
+import { createDefaultItem, createDefaultState } from './defaults'
 import { deriveLayout } from './deriveLayout'
 import { computeOverlay } from './overlay'
 
 /** 只有 computeOverlay 用得到的字段是真的，其余补默认值 */
-function makeLines(lines: { index: number, itemIds: string[], freeSpace: number }[]): DerivedLayout {
+function makeLines(lines: { index: number, itemIds: string[], remainingFreeSpace: number }[]): DerivedLayout {
   return {
     lines: lines.map(line => ({
       ...line,
+      freeSpace: line.remainingFreeSpace,
       usedMainSize: 0,
       totalGrow: 0,
       totalShrinkWeighted: 0,
@@ -26,7 +27,7 @@ describe('computeOverlay', () => {
     const state = createDefaultState()
     state.container.width = 400
     state.container.columnGap = 0
-    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: 300 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], remainingFreeSpace: 300 }])
     const measured = stage(400, 200, [
       { id: 'item-1', left: 0, top: 0, width: 100, height: 200 },
     ])
@@ -42,7 +43,7 @@ describe('computeOverlay', () => {
     const state = createDefaultState()
     state.container.width = 400
     state.container.columnGap = 20
-    const derived = makeLines([{ index: 0, itemIds: ['item-1', 'item-2'], freeSpace: 180 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1', 'item-2'], remainingFreeSpace: 180 }])
     // 两个盒子之间隔了 100px，其中 20px 是 gap，剩下 80px 才是剩余空间
     const measured = stage(400, 200, [
       { id: 'item-1', left: 0, top: 0, width: 100, height: 200 },
@@ -62,7 +63,7 @@ describe('computeOverlay', () => {
     const state = createDefaultState()
     state.container.width = 220
     state.container.columnGap = 20
-    const derived = makeLines([{ index: 0, itemIds: ['item-1', 'item-2'], freeSpace: 0 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1', 'item-2'], remainingFreeSpace: 0 }])
     const measured = stage(220, 200, [
       { id: 'item-1', left: 0, top: 0, width: 100, height: 200 },
       { id: 'item-2', left: 120, top: 0, width: 100, height: 200 },
@@ -75,7 +76,7 @@ describe('computeOverlay', () => {
     const state = createDefaultState()
     state.container.width = 200
     state.container.columnGap = 0
-    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: -80 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], remainingFreeSpace: -80 }])
     const measured = stage(200, 200, [
       { id: 'item-1', left: 0, top: 0, width: 280, height: 200 },
     ])
@@ -90,7 +91,7 @@ describe('computeOverlay', () => {
     state.container.direction = 'column'
     state.container.height = 300
     state.container.rowGap = 0
-    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: 200 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], remainingFreeSpace: 200 }])
     const measured = stage(400, 300, [
       { id: 'item-1', left: 0, top: 0, width: 400, height: 100 },
     ])
@@ -106,8 +107,8 @@ describe('computeOverlay', () => {
     state.container.wrap = 'wrap'
     state.container.columnGap = 0
     const derived = makeLines([
-      { index: 0, itemIds: ['item-1'], freeSpace: 100 },
-      { index: 1, itemIds: ['item-2'], freeSpace: 200 },
+      { index: 0, itemIds: ['item-1'], remainingFreeSpace: 100 },
+      { index: 1, itemIds: ['item-2'], remainingFreeSpace: 200 },
     ])
     const measured = stage(300, 200, [
       { id: 'item-1', left: 0, top: 0, width: 200, height: 90 },
@@ -124,7 +125,7 @@ describe('computeOverlay', () => {
     const state = createDefaultState()
     state.container.width = 200.3
     state.container.columnGap = 0
-    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: 0.3 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], remainingFreeSpace: 0.3 }])
     const measured = stage(200.3, 200, [
       { id: 'item-1', left: 0, top: 0, width: 200, height: 200 },
     ])
@@ -134,7 +135,7 @@ describe('computeOverlay', () => {
 
   it('观测里还没有这一行的盒子时跳过，不猜', () => {
     const state = createDefaultState()
-    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: 100 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], remainingFreeSpace: 100 }])
     const measured = stage(400, 200, [])
 
     expect(computeOverlay(state, derived, measured)).toEqual({ bands: [], lines: [] })
@@ -144,7 +145,7 @@ describe('computeOverlay', () => {
     const state = createDefaultState()
     state.container.width = 400
     state.container.columnGap = 20
-    const derived = makeLines([{ index: 0, itemIds: ['item-1', 'item-2'], freeSpace: 180 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1', 'item-2'], remainingFreeSpace: 180 }])
     // 实际渲染里两个盒子各 120（被 min-width:auto 撑住了），实际剩余 400-240-20=140
     const measured = stage(400, 200, [
       { id: 'item-1', left: 0, top: 0, width: 120, height: 200 },
@@ -153,6 +154,17 @@ describe('computeOverlay', () => {
 
     expect(computeOverlay(state, derived, measured).lines).toEqual([
       { index: 0, theoretical: 180, actual: 140 },
+    ])
+  })
+
+  it('理论剩余取分配之后剩下的量，与实测剩余同一个口径', () => {
+    const state = createDefaultState()
+    Object.assign(state.container, { width: 600, columnGap: 0 })
+    state.items = [{ ...createDefaultItem('item-1'), basis: '100px', grow: 0.5 }]
+    const measured = stage(600, 200, [{ id: 'item-1', left: 0, top: 0, width: 350, height: 200 }])
+
+    expect(computeOverlay(state, deriveLayout(state), measured).lines).toEqual([
+      { index: 0, theoretical: 250, actual: 250 },
     ])
   })
 
@@ -174,16 +186,13 @@ describe('computeOverlay', () => {
   })
 })
 
-/*
- * 剩余空间色块的斜纹要朝「这块空间一旦被分配，会流向谁」的方向动。
- * flow 一律用屏幕坐标表述：forward = 朝坐标增大的方向（右 / 下），reverse = 朝减小的方向（左 / 上）。
- */
+// 斜纹朝「这块空间一旦被分配会流向谁」动；flow 用屏幕坐标，forward 朝右 / 下
 describe('computeOverlay 的斜纹流向', () => {
   it('行尾的剩余空间流向前面那个盒子', () => {
     const state = createDefaultState()
     state.container.width = 400
     state.container.columnGap = 0
-    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: 300 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], remainingFreeSpace: 300 }])
     const measured = stage(400, 200, [
       { id: 'item-1', left: 0, top: 0, width: 100, height: 200 },
     ])
@@ -196,7 +205,7 @@ describe('computeOverlay 的斜纹流向', () => {
     state.container.width = 400
     state.container.columnGap = 0
     // justify-content: flex-end 的效果：盒子被推到末尾，空的是前面
-    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: 300 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], remainingFreeSpace: 300 }])
     const measured = stage(400, 200, [
       { id: 'item-1', left: 300, top: 0, width: 100, height: 200 },
     ])
@@ -208,7 +217,7 @@ describe('computeOverlay 的斜纹流向', () => {
     const state = createDefaultState()
     state.container.width = 400
     state.container.columnGap = 0
-    const derived = makeLines([{ index: 0, itemIds: ['item-1', 'item-2'], freeSpace: 100 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1', 'item-2'], remainingFreeSpace: 100 }])
     // item-2 一直占到容器末尾，所以只有中间这一块 band
     const measured = stage(400, 200, [
       { id: 'item-1', left: 0, top: 0, width: 100, height: 200 },
@@ -223,7 +232,7 @@ describe('computeOverlay 的斜纹流向', () => {
     state.container.direction = 'row-reverse'
     state.container.width = 400
     state.container.columnGap = 0
-    const derived = makeLines([{ index: 0, itemIds: ['item-1', 'item-2'], freeSpace: 100 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1', 'item-2'], remainingFreeSpace: 100 }])
     const measured = stage(400, 200, [
       { id: 'item-1', left: 0, top: 0, width: 100, height: 200 },
       { id: 'item-2', left: 200, top: 0, width: 200, height: 200 },
@@ -237,7 +246,7 @@ describe('computeOverlay 的斜纹流向', () => {
     state.container.direction = 'column'
     state.container.height = 300
     state.container.rowGap = 0
-    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: 200 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], remainingFreeSpace: 200 }])
     const measured = stage(400, 300, [
       { id: 'item-1', left: 0, top: 0, width: 400, height: 100 },
     ])
@@ -249,7 +258,7 @@ describe('computeOverlay 的斜纹流向', () => {
     const state = createDefaultState()
     state.container.width = 200
     state.container.columnGap = 0
-    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: -80 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], remainingFreeSpace: -80 }])
     const measured = stage(200, 200, [
       { id: 'item-1', left: 0, top: 0, width: 280, height: 200 },
     ])
@@ -260,17 +269,13 @@ describe('computeOverlay 的斜纹流向', () => {
   })
 })
 
-/*
- * 斜纹的纹路朝向由流动轴决定，不能靠色块自己的长宽比暗示。
- * 实测过：row 下盒子一多，剩余空间被压成高瘦竖条；column 下只要行数不多，色块就是宽扁横条——
- * 长宽比取决于「剩余空间量 vs 交叉轴尺寸」，跟 flex-direction 无关，拿它当方向线索会读反。
- */
+// 纹路朝向由流动轴决定，不看色块长宽比：长宽比与 flex-direction 无关，拿它当线索会读反
 describe('computeOverlay 的流动轴', () => {
   it('row 下剩余空间沿水平轴流动', () => {
     const state = createDefaultState()
     state.container.width = 400
     state.container.columnGap = 0
-    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: 300 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], remainingFreeSpace: 300 }])
     const measured = stage(400, 200, [
       { id: 'item-1', left: 0, top: 0, width: 100, height: 200 },
     ])
@@ -283,7 +288,7 @@ describe('computeOverlay 的流动轴', () => {
     state.container.direction = 'column'
     state.container.height = 320
     state.container.rowGap = 0
-    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: 56 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], remainingFreeSpace: 56 }])
     // 720 宽 × 56 高：极扁的横条，但它是沿垂直主轴流的
     const measured = stage(720, 320, [
       { id: 'item-1', left: 0, top: 0, width: 720, height: 264 },
@@ -299,7 +304,7 @@ describe('computeOverlay 的流动轴', () => {
     state.container.direction = 'column-reverse'
     state.container.height = 320
     state.container.rowGap = 0
-    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: 120 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], remainingFreeSpace: 120 }])
     const measured = stage(400, 320, [
       { id: 'item-1', left: 0, top: 0, width: 400, height: 200 },
     ])
@@ -311,7 +316,7 @@ describe('computeOverlay 的流动轴', () => {
     const state = createDefaultState()
     state.container.width = 200
     state.container.columnGap = 0
-    const derived = makeLines([{ index: 0, itemIds: ['item-1'], freeSpace: -80 }])
+    const derived = makeLines([{ index: 0, itemIds: ['item-1'], remainingFreeSpace: -80 }])
     const measured = stage(200, 200, [
       { id: 'item-1', left: 0, top: 0, width: 280, height: 200 },
     ])

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { containerProperties, itemProperties } from '~/data/flexProperties'
-import { createDefaultState } from './defaults'
+import { createDefaultItem, createDefaultState, MAX_ITEMS, STAGE_LIMITS } from './defaults'
 import { decode, decodeOrDefault, encode } from './urlCodec'
 
 describe('urlCodec', () => {
@@ -20,10 +20,7 @@ describe('urlCodec', () => {
   })
 })
 
-/*
- * 设计文档给的 item 段例子只用了 auto / center 这类「干净」值，掩盖了一个冲突：
- * item 段用 `-` 分字段，而 alignSelf 的合法值里就有 flex-start、self-end 这些自带 `-` 的。
- */
+// item 段用 `-` 分字段，而合法值里有自带 `-` 的枚举，还有负数
 describe('urlCodec 的分隔符与特殊字符', () => {
   it('alignSelf 取 flex-start 这类自带短横线的值也能解回来', () => {
     const state = createDefaultState()
@@ -34,6 +31,24 @@ describe('urlCodec 的分隔符与特殊字符', () => {
 
     expect(back?.items[0].alignSelf).toBe('flex-start')
     expect(back?.items[1].alignSelf).toBe('flex-end')
+  })
+
+  it('order 取负值时短码仍能解回来', () => {
+    const state = createDefaultState()
+    state.items[0].order = -1
+    state.items[1].order = -5
+
+    const back = decode(encode(state))
+
+    expect(back?.items[0].order).toBe(-1)
+    expect(back?.items[1].order).toBe(-5)
+  })
+
+  it('全正值的老短码格式不受影响，仍然照原样解得出来', () => {
+    const query = '?v=1&c=flex.row.nowrap.fs.stretch.normal.12.12.720.320'
+      + '&i=0-1-auto-0-auto-80-1-0,0-1-auto-0-auto-80-1-0,0-1-auto-0-auto-80-1-0'
+
+    expect(decode(query)).toEqual(createDefaultState())
   })
 
   it('容器段自带短横线的值同样能解回来', () => {
@@ -82,9 +97,6 @@ describe('urlCodec 的分隔符与特殊字符', () => {
   })
 })
 
-/*
- * 解析失败一律回退默认状态并 console.warn，绝不解出一个半对半错的状态——那比白屏更难查。
- */
 describe('urlCodec 对非法输入的回退', () => {
   afterEach(() => {
     vi.restoreAllMocks()
@@ -138,6 +150,19 @@ describe('urlCodec 对非法输入的回退', () => {
     expect(decode(query)).toBeNull()
   })
 
+  it('basis 超过属性表的长度上限就整个拒掉，恰好在上限上照常解出来', () => {
+    const basisProp = itemProperties.find(prop => prop.key === 'basis')
+    const limit = basisProp?.kind === 'text' ? basisProp.maxLength : Number.NaN
+    const at = createDefaultState()
+    at.items[0].basis = `calc(${'1'.repeat(limit - 8)}px)`
+    const over = createDefaultState()
+    over.items[0].basis = `calc(${'1'.repeat(limit - 7)}px)`
+
+    expect(at.items[0].basis).toHaveLength(limit)
+    expect(decode(encode(at))?.items[0].basis).toBe(at.items[0].basis)
+    expect(decode(encode(over))).toBeNull()
+  })
+
   it('sel 越界只丢掉选中项，其余照常解出来', () => {
     const warn = silenceWarn()
     const query = `${encode(createDefaultState())}&sel=9`
@@ -157,10 +182,51 @@ describe('urlCodec 对非法输入的回退', () => {
   })
 })
 
-/*
- * 设计文档要求「映射表与属性元信息表同源」。这条把两者钉在一起：
- * 将来往 flexProperties 里加了带短横线或空格的新值、却忘了配短码，会在这里当场失败。
- */
+// 往 flexProperties 里加了带短横线或空格的新值、却忘了配短码，会在这里当场失败
+// 链接可以手写：越界的数值夹回面板能调出的区间，而不是整条拒掉或原样放进状态
+describe('urlCodec 把越界数值夹回面板区间', () => {
+  it('容器的间距与宽高夹到属性表与拖拽区间里', () => {
+    const state = createDefaultState()
+    Object.assign(state.container, { rowGap: -5, columnGap: 999, width: 99999, height: -50 })
+
+    const back = decode(encode(state))!.container
+
+    expect(back.rowGap).toBe(0)
+    expect(back.columnGap).toBe(64)
+    expect(back.width).toBe(STAGE_LIMITS.maxWidth)
+    expect(back.height).toBe(STAGE_LIMITS.minHeight)
+  })
+
+  it('盒子的 grow / shrink / order / size 夹到属性表的区间里', () => {
+    const state = createDefaultState()
+    Object.assign(state.items[0], { grow: 99, shrink: -3, order: -99, size: 1 })
+    Object.assign(state.items[1], { size: 5000 })
+
+    const [first, second] = decode(encode(state))!.items
+
+    expect(first).toMatchObject({ grow: 10, shrink: 0, order: -5, size: 20 })
+    expect(second.size).toBe(400)
+  })
+
+  it('区间内的值原样保留，不做取整', () => {
+    const state = createDefaultState()
+    Object.assign(state.items[0], { grow: 1.5, shrink: 0.5 })
+
+    expect(decode(encode(state))!.items[0]).toMatchObject({ grow: 1.5, shrink: 0.5 })
+  })
+
+  it('盒子数超过上限时只留前面那几个，越界的选中项一并丢掉', () => {
+    const state = createDefaultState()
+    state.items = Array.from({ length: MAX_ITEMS + 4 }, (_, index) => createDefaultItem(`item-${index + 1}`))
+    state.selectedId = `item-${MAX_ITEMS + 2}`
+
+    const back = decode(encode(state))!
+
+    expect(back.items).toHaveLength(MAX_ITEMS)
+    expect(back.selectedId).toBeNull()
+  })
+})
+
 describe('urlCodec 与属性元信息表同源', () => {
   it('容器属性表里每个枚举值都能原样解回来', () => {
     for (const prop of containerProperties) {
@@ -200,11 +266,7 @@ describe('urlCodec 与属性元信息表同源', () => {
     }
   })
 
-  /*
-   * 光有 round-trip 还不够：不映射的值只要不撞上分隔符，字符串层面照样解得回来，
-   * 可空格这类字符放进真实 URL 会被浏览器改写或在复制粘贴时截断。
-   * 所以还要钉住「产物本身是合法 URL」——这才是短码表真正要防的东西。
-   */
+  // 光有往返还不够：空格这类字符字符串层面解得回来，放进真实 URL 却会被改写或在复制时截断
   it('任何枚举值下编码结果都只含 URL 安全字符', () => {
     const enumProps = [
       ...containerProperties.map(prop => ['container', prop] as const),

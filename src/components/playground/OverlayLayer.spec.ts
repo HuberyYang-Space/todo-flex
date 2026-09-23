@@ -1,11 +1,11 @@
 import type { MeasuredStage } from '~/core/types'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useFlexState } from '~/composables/useFlexState'
 import { useMeasure } from '~/composables/useMeasure'
 import { useOverlay } from '~/composables/useOverlay'
+import { readSfcStyle } from '~/test/sfcStyle'
+import DemoStage from './DemoStage.vue'
 import OverlayLayer from './OverlayLayer.vue'
 
 /** happy-dom 不排版，实测值全是 0——这里伪造一份观测结果来驱动几何 */
@@ -71,12 +71,26 @@ describe('overlayLayer', () => {
     expect(band.classes()).toContain('band-free--y-reverse')
   })
 
-  it('流动轴与流向的四份斜纹 pattern 都定义在 defs 里', () => {
+  // 类名接不到 fill 的话，<rect> 退回 SVG 默认的 fill: black，整块剩余空间画成黑矩形
+  it('四份斜纹各自闭合：类名 → fill → pattern，轴与流向不许错配', () => {
     const wrapper = mount(OverlayLayer)
+    const overlay = readSfcStyle('src/components/playground/OverlayLayer.vue')
+
     for (const axis of ['x', 'y']) {
-      for (const flow of ['forward', 'reverse'])
-        expect(wrapper.find(`#overlay-stripes-${axis}-${flow}`).exists()).toBe(true)
+      for (const flow of ['forward', 'reverse']) {
+        const id = `overlay-stripes-${axis}-${flow}`
+        expect(wrapper.find(`#${id}`).exists()).toBe(true)
+        expect(overlay.decl(`.band-free--${axis}-${flow}`, 'fill')).toBe(`url(#${id})`)
+      }
     }
+  })
+
+  it('斜纹的不透明度只由 CSS 给，<line> 上不写 stroke-opacity 属性——属性跟不上 html.dark', () => {
+    const lines = mount(OverlayLayer).findAll('pattern line')
+
+    expect(lines.length).toBeGreaterThan(0)
+    for (const line of lines)
+      expect(line.attributes('stroke-opacity')).toBeUndefined()
   })
 
   it('垂直轴的 pattern 把纹路转 90° 变成水平纹路', () => {
@@ -148,11 +162,7 @@ describe('overlayLayer', () => {
     expect(bands[0].attributes('data-kind')).toBe('overflow')
   })
 
-  /*
-   * 叠加层要读成「铺在台面上、被方块压住」的一层，而不是盖在方块脸上的一张膜。
-   * 但 HUD 是标签，跟着沉下去就会被它要标注的那个盒子挡住——标签看不见等于没有。
-   * 所以色块/箭头沉底、HUD 单独浮在上层，两层分开。
-   */
+  // 色块沉到盒子下面，HUD 跟着沉下去就会被它要标注的盒子挡住，所以两层分开
   it('hUD 与色块分属两层，HUD 不在沉底的那一层里', async () => {
     const wrapper = mount(OverlayLayer)
     useOverlay().setHovered('item-2')
@@ -169,32 +179,26 @@ describe('overlayLayer', () => {
   })
 
   it('层序写死在样式里：色块低于盒子，HUD 高于盒子', () => {
-    const overlayCss = readFileSync(resolve(process.cwd(), 'src/components/playground/OverlayLayer.vue'), 'utf-8')
-    const stageCss = readFileSync(resolve(process.cwd(), 'src/components/playground/DemoStage.vue'), 'utf-8')
+    const overlay = readSfcStyle('src/components/playground/OverlayLayer.vue')
+    const stage = readSfcStyle('src/components/playground/DemoStage.vue')
 
-    const zOf = (src: string, selector: string): number => {
-      const block = new RegExp(`${selector}\\s*\\{[^}]*\\}`).exec(src)?.[0] ?? ''
-      const z = /z-index:\s*(-?\d+)/.exec(block)
-      expect(z, `${selector} 没有显式 z-index，层序就只能靠 DOM 顺序碰运气`).toBeTruthy()
-      return Number(z![1])
-    }
+    const 色块层 = Number(overlay.decl('.overlay--under', 'z-index'))
+    const HUD层 = Number(overlay.decl('.overlay--over', 'z-index'))
+    const 盒子 = Number(stage.decl('.stage-item', 'z-index'))
 
-    const 色块层 = zOf(overlayCss, '\\.overlay--under')
-    const HUD层 = zOf(overlayCss, '\\.overlay--over')
-    const 盒子 = zOf(stageCss, '\\.stage-item')
+    // 样式表里有 .stage-item { z-index } 不等于盒子真挂着这个类——两层叠加层那边已经断言过元素侧，盒子这边也要
+    // 用完即卸：DemoStage 会挂上观测，活到下一个用例就会把共享的 measured 覆盖成 happy-dom 的全零
+    const stageWrapper = mount(DemoStage)
+    const items = stageWrapper.findAll('[data-testid="stage-item"]')
+    expect(items.length).toBeGreaterThan(0)
+    for (const item of items)
+      expect(item.classes()).toContain('stage-item')
+    stageWrapper.unmount()
 
     expect(色块层, '色块层没沉到盒子下面').toBeLessThan(盒子)
     expect(HUD层, 'HUD 没浮在盒子上面').toBeGreaterThan(盒子)
   })
 
-  /*
-   * 每行色块上标出「实际剩余 vs 理论剩余」。
-   *
-   * 这一对数字原本算出来就扔了：core/overlay.ts 的 OverlayGeometry.lines 一直没有消费方，
-   * 只有它自己的单测在引用。而它恰恰是本站主线在行这一级的落点——
-   * 明细表比的是单个盒子的尺寸，这里比的是整行还剩多少空间，
-   * 两者不一致时说明有规则介入（min-width:auto 撑住了某个盒子，剩余空间就比理论值少）。
-   */
   function measuredWithWideGap(): MeasuredStage {
     // 三个盒子各 40 宽，行尾空出 400 - 120 - 24 = 256px，够放得下标签
     return {
@@ -231,18 +235,28 @@ describe('overlayLayer', () => {
     expect(wrapper.get('[data-testid="overlay-line-label"]').classes()).not.toContain('mismatch')
   })
 
+  it('理论值无法静态推导时，标签与 HUD 都写「理论 —」且不标不一致', async () => {
+    useMeasure().measured.value = measuredWithWideGap()
+    useFlexState().state.items[0].basis = 'calc(10% + 1px)'
+    useOverlay().setHovered('item-1')
+    const wrapper = mount(OverlayLayer)
+    await wrapper.vm.$nextTick()
+
+    const label = wrapper.get('[data-testid="overlay-line-label"]')
+    const hud = wrapper.get('[data-testid="overlay-hud"] text')
+    expect(label.text()).toContain('理论 —')
+    expect(label.classes()).not.toContain('mismatch')
+    expect(hud.text()).toContain('理论 —')
+    expect(hud.classes()).not.toContain('mismatch')
+  })
+
   it('色块放不下这行字就不画，宁可不标也不让字溢出到盒子上', () => {
     // 默认的观测值里行尾只空出 400 - 300 - 24 = 76px，塞不下标签
     const wrapper = mount(OverlayLayer)
     expect(wrapper.find('[data-testid="overlay-line-label"]').exists()).toBe(false)
   })
 
-  /*
-   * 阈值按文本内容估算，不是写死的常数——数字位数一变，这行字就变宽。
-   * 「剩余 456 · 理论 456」浏览器实测 117px，最早写死的 110px 已经不够，
-   * 色块宽度落在 110~117 之间时文字会溢出到旁边的盒子上。
-   * 这条测试卡在阈值两侧各取一点，钉住「刚好放不下就不画」。
-   */
+  // 阈值两侧各取一点，钉住「刚好放不下就不画」。happy-dom 不排版，估算值本身准不准只能到浏览器里量
   it('色块宽度卡在阈值两侧：差一点不画，够了才画', () => {
     const tailOf = (containerWidth: number): MeasuredStage => ({
       width: containerWidth,
@@ -254,11 +268,7 @@ describe('overlayLayer', () => {
       ],
     })
 
-    /*
-     * 三位数那行字估算 117.8px（与浏览器实测的 117px 吻合），加 8px 内缩后要 125.8px。
-     * 注意分隔点「·」是 U+00B7，落在 Latin-1 区间里，按半角宽度计——
-     * 当成全角会把估算值抬高 4px 多，卡边界的那档就会误判。
-     */
+    // 三位数那行字估算 117.8px，加 8px 内缩要 125.8px
     useMeasure().measured.value = tailOf(268) // 行尾空出 124px，差一点
     expect(mount(OverlayLayer).find('[data-testid="overlay-line-label"]').exists()).toBe(false)
 

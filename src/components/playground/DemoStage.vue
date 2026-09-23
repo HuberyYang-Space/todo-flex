@@ -15,19 +15,13 @@ import StageResizer from './StageResizer.vue'
 const { state, selectItem } = useFlexState()
 const { setHovered } = useOverlay()
 
-// 演示区是全站唯一的真实布局来源，挂上观测层供明细表读取实际尺寸
 const stageEl = ref<HTMLElement>()
 useMeasure().observeStage(stageEl)
 useFlip().observeFlip(stageEl)
 
-/*
- * 状态 → CSS 的映射住在 core/styleMap。
- * 容器样式全部来自状态，交给浏览器真实排版——不做任何位置计算（红线 1）。
- * 这里只做一层取值 + 类型收口：core 不 import vue，返回的是自己的 StyleDecls（红线 2）。
- */
 const containerStyle = computed(() => mapContainer(state.container) as CSSProperties)
 
-// 悬停手感的参数下发给 CSS——CSS 读不到 TS 常量，只能这样保住 motion.ts 的唯一权威
+// CSS 读不到 TS 常量，下发成自定义属性才能保住 motion.ts 的唯一权威
 const stageVars = computed<CSSProperties>(() => ({
   '--lift': `${motion.liftHeight}px`,
   '--lift-scale': `${motion.liftScale}`,
@@ -38,10 +32,7 @@ const stageVars = computed<CSSProperties>(() => ({
 } as CSSProperties))
 
 /**
- * 顶面往上伸、右侧面往右伸，各占一个厚度。间距不够时必须收，
- * 否则相邻方块的面会压在一起——两个方向的间距都要看：
- * 顶面吃的是行间距，右侧面吃的是列间距，取更小的那一个才两边都安全。
- * 留 2px 余量，免得面和邻居严丝合缝地贴上去。
+ * 顶面吃行间距、右侧面吃列间距，厚度取两者较小值才不会压到邻居；留 2px 免得严丝合缝贴上去。
  */
 const blockDepth = computed(() => {
   const gap = Math.min(state.container.rowGap, state.container.columnGap)
@@ -49,7 +40,6 @@ const blockDepth = computed(() => {
   return Math.max(motion.blockDepthMin, Math.min(motion.blockDepth, gap - 2))
 })
 
-// 厚度写在 .stage-box 上而不是靠继承：伪元素要拿它算面的尺寸，就近给最不容易出错
 const boxStyle = computed<CSSProperties>(() => ({
   '--d': `${blockDepth.value}px`,
 } as CSSProperties))
@@ -79,19 +69,19 @@ function contentStyle(item: FlexItemState): CSSProperties {
         class="stage-item"
         :class="{ 'is-selected': state.selectedId === item.id }"
         tabindex="0"
+        role="button"
+        :aria-label="`盒子 ${itemLabel(index)}`"
+        :aria-pressed="state.selectedId === item.id"
         :style="itemStyle(item)"
         @click="selectItem(item.id)"
         @keydown.enter="selectItem(item.id)"
+        @keydown.space.prevent="selectItem(item.id)"
         @mouseenter="setHovered(item.id)"
         @mouseleave="setHovered(null)"
         @focus="setHovered(item.id)"
         @blur="setHovered(null)"
       >
-        <!--
-          内外两层各司其职：外层是真 flex item，位移交给 GSAP Flip；
-          内层只做形变（挤压拉伸、悬停放大）。两边不抢同一个 transform，
-          水滴那股弹性才不会被位移动画覆盖掉。
-        -->
+        <!-- 外层是真 flex item，位移交给 Flip；内层只做形变。两边不抢同一个 transform -->
         <div class="stage-box" :style="boxStyle">
           <div class="content" :style="contentStyle(item)">
             {{ itemLabel(index) }}
@@ -106,25 +96,12 @@ function contentStyle(item: FlexItemState): CSSProperties {
 </template>
 
 <style scoped>
-/*
- * 伸出容器的那些面（顶面、右侧面）和悬停时的抬升、放大都靠这圈外边距活着，
- * 不够就会被外层滚动容器裁掉。取值的推导见 motion.stageOverhang。
- */
 .stage-wrapper {
   margin: var(--overhang);
 }
 
-/*
- * 演示区的描边一律用 outline，绝不用 border。
- *
- * border 会占据布局空间：容器少 2px 可用宽度、每个盒子实际尺寸比推导值多 2px，
- * 诊断层会把这个恒定偏差误报成「有规则介入」。而 emitCss 输出的 CSS 里并没有 border，
- * 演示区一旦加了输出 CSS 之外的布局影响，「复制这段 CSS 即可复现」就不成立了。
- * 同理：这两个选择器都不得添加 padding。
- *
- * box-shadow 不占布局空间，所以质感全靠它和渐变来做。
- */
 .stage {
+  font-size: 1rem;
   background: radial-gradient(
     120% 120% at 50% 0%,
     color-mix(in srgb, var(--accent) 7%, var(--panel)) 0%,
@@ -141,34 +118,13 @@ function contentStyle(item: FlexItemState): CSSProperties {
 .stage-item {
   display: flex;
 
-  /*
-   * 层序：叠加层的色块沉在 0（铺在台面上），盒子在 1（压住色块），HUD 在 2。
-   * 三者都不在各自独立的层叠上下文里（.stage 与 .stage-wrapper 都是
-   * position: relative + z-index: auto，不成上下文），所以直接比较得出来。
-   * 盒子彼此同为 1，仍按 DOM 顺序决定谁压谁——换行时第二行压住第一行底部的
-   * 那个既定行为不受影响。
-   */
   z-index: 1;
 
-  /*
-   * 绝不能加 overflow: hidden。
-   * CSS 规范规定「自动最小尺寸」只在主轴 overflow 为 visible 时生效，
-   * 一旦裁剪，min-width:auto 立即失效——本站的头号陷阱就演示不出来了。
-   * 盒子被压到比内容还窄时，内容溢出正是要给用户看的现象。
-   */
   align-items: center;
   justify-content: center;
   cursor: pointer;
 }
 
-/*
- * 内层：看得见的那块实体。形变与质感都在这里，位移由外层的 Flip 负责。
- *
- * 这是「等距实体块」：顶面与右侧面是两个伪元素画的二维平行四边形（见下方注释），
- * 正面就是 .stage-box 本身。三个面共用左上光源——顶面最亮、正面居中、右侧面最暗。
- * 圆角必须小（3px）：平行四边形的面接不上大圆角，会在拐角处露出缺口。
- * 渐变、box-shadow 与绝对定位的伪元素都不占布局空间，红线 6 不受影响。
- */
 .stage-box {
   display: flex;
   position: relative;
@@ -177,48 +133,21 @@ function contentStyle(item: FlexItemState): CSSProperties {
   align-self: stretch;
   justify-content: center;
 
-  /*
-   * 实际厚度 = 组件下发的 --d 乘以状态倍率。
-   * 用乘不用加：gap 收窄时 --d 已经只剩 3px，悬停再加固定值会直接顶到邻居。
-   */
   --d-k: 1;
   --depth: calc(var(--d, 10px) * var(--d-k));
 
-  /*
-   * 块体的体色。顶面与右侧面都从它派生（加白 / 加黑），而不是各自去跟 accent 调色——
-   * 后者的明暗序会随主题翻车：亮色主题下 --panel 本身接近白，正面被它拉亮到 0.79，
-   * 反而比「accent 混 white」的顶面（0.67）还亮，左上光源就读不出来了。
-   * 从同一个体色加白/加黑，两个主题下顺序都必然成立。
-   */
   --face: color-mix(in srgb, var(--accent) 34%, var(--panel));
 
   border-radius: 3px;
   outline: 1px solid color-mix(in srgb, var(--accent) var(--stage-line-k), transparent);
   outline-offset: -1px;
 
-  /*
-   * 正面也从 --face 派生，理由与顶面/右侧面完全一样：
-   * 曾经写成「accent 40% → 28% 混 panel」，看着只是深浅两档，
-   * 但混合比例的明暗方向取决于 accent 与 panel 谁更亮——亮色主题下 panel 是纯白，
-   * accent 掺得越多越暗，渐变整个翻过来变成上暗下亮（0.591 → 0.697），
-   * 读作光从下面打上来，跟顶面加白的左上光源正好打架。
-   */
   background: linear-gradient(
     180deg,
     color-mix(in srgb, white 8%, var(--face)) 0%,
     color-mix(in srgb, black 6%, var(--face)) 100%
   );
 
-  /*
-   * 接触阴影 + 分层投影。第一层又紧又暗的那道才是接触阴影，
-   * 物体贴不贴地全看它；后面几层模糊值倍增（1→2→4→8→16），模拟环境光的衰减。
-   * 只用一层大模糊阴影的话，读起来是「物体的模糊剪影」而不是「落在台面上的影子」。
-   *
-   * 但落在台面上的黑影在暗色主题里几乎不成立：台面亮度只有 0.015、纯黑是 0，
-   * 没有可压的余量，对比度仅 1.12（亮色下有 2.35）。提亮台面换不来多少（上限 1.42）
-   * 却要改掉定案的暗色观感，所以接触的证据改由方块自己的底缘承担——
-   * inset 暗边落在有余量的正面上，暗色 1.65 / 亮色 3.03。台面的五层投影一层不动。
-   */
   box-shadow:
     inset 0 -1px 0 color-mix(in srgb, black 45%, transparent),
     0 1px 1px color-mix(in srgb, black 34%, transparent),
@@ -234,14 +163,6 @@ function contentStyle(item: FlexItemState): CSSProperties {
     scale var(--lift-duration, 0.28s) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/*
- * 顶面与右侧面是二维平行四边形，不是用 rotateX 旋进屏幕的立体面——
- * 后者垂直于视线，投影高度只剩「厚度 × sin(倾角)」，小倾角下根本读不出体积，
- * 这正是上一轮 3D 方案失败的直接原因，不要退回去。
- *
- * 两个面各自 skew 45°，在方块右上角咬合成一个封闭的块体轮廓。
- * 伪元素绝对定位、不参与布局，也不接收指针事件，所以既不碰红线 6，也不挡点击。
- */
 .stage-box::before,
 .stage-box::after {
   content: '';
@@ -254,7 +175,6 @@ function contentStyle(item: FlexItemState): CSSProperties {
   pointer-events: none;
 }
 
-/* 顶面：向上挪一个厚度，再 skew 成平行四边形。受光最足，往白里调 */
 .stage-box::before {
   top: 0;
   right: 0;
@@ -265,7 +185,6 @@ function contentStyle(item: FlexItemState): CSSProperties {
   background: color-mix(in srgb, white 45%, var(--face));
 }
 
-/* 右侧面：向右挪一个厚度，skew 方向与顶面在右上角咬合。背光，往黑里调 */
 .stage-box::after {
   top: 0;
   right: 0;
@@ -276,11 +195,6 @@ function contentStyle(item: FlexItemState): CSSProperties {
   background: color-mix(in srgb, black 40%, var(--face));
 }
 
-/*
- * 悬停与选中用独立的 translate / scale 属性，不用 transform——
- * 挤压拉伸的动画写在 transform 上，两者分开才不会互相覆盖。
- */
-/* 悬停：块体被抬起来，厚度随之加大、接触阴影拉开变虚 */
 .stage-item:hover .stage-box,
 .stage-item:focus-visible .stage-box {
   --d-k: var(--d-hover-k, 1.3);
@@ -296,7 +210,6 @@ function contentStyle(item: FlexItemState): CSSProperties {
     0 32px 32px color-mix(in srgb, black 10%, transparent);
 }
 
-/* 按下：块体被压回台面，厚度几乎收没，接触阴影收紧 */
 .stage-item:active .stage-box {
   --d-k: var(--d-active-k, 0.35);
 
@@ -308,10 +221,6 @@ function contentStyle(item: FlexItemState): CSSProperties {
     0 4px 4px color-mix(in srgb, black 14%, transparent);
 }
 
-/*
- * 选中：只换体色。三个面连同正面渐变全部从 --face 派生，
- * 明暗关系自动保持一致——这里不必也不该再写一遍 background。
- */
 .stage-item.is-selected .stage-box {
   --face: color-mix(in srgb, var(--accent-2) 34%, var(--panel));
 

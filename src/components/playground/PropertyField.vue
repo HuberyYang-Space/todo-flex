@@ -23,7 +23,6 @@ function onTextInput(event: Event): void {
 </script>
 
 <template>
-  <!-- 字段自己不带 margin：外层用 gap 统一控制，边界处才不会出现两份间距相加 -->
   <div class="flex flex-col gap-tight">
     <div class="flex items-center justify-between text-xs op-70">
       <a :href="props.prop.mdn" target="_blank" rel="noopener" class="font-mono hover:underline">
@@ -32,14 +31,21 @@ function onTextInput(event: Event): void {
       <span v-if="props.prop.kind === 'number'" class="font-mono">{{ props.modelValue }}</span>
     </div>
 
-    <div v-if="props.prop.kind === 'enum'" class="flex flex-wrap gap-tight">
+    <div
+      v-if="props.prop.kind === 'enum'"
+      class="flex flex-wrap gap-tight"
+      role="group"
+      :aria-label="props.prop.cssName"
+    >
       <button
         v-for="option in props.prop.options"
         :key="option.value"
         data-testid="option"
         :data-value="option.value"
+        type="button"
         class="option"
         :class="{ 'is-active': props.modelValue === option.value }"
+        :aria-pressed="props.modelValue === option.value"
         @click="emit('update:modelValue', option.value)"
       >
         {{ option.value }}
@@ -50,6 +56,7 @@ function onTextInput(event: Event): void {
       v-else-if="props.prop.kind === 'number'"
       type="range"
       class="slider"
+      :aria-label="props.prop.cssName"
       :min="props.prop.min"
       :max="props.prop.max"
       :step="props.prop.step"
@@ -58,20 +65,29 @@ function onTextInput(event: Event): void {
       @pointerdown="setScrubbing(true)"
     >
 
-    <div v-else-if="props.prop.kind === 'text'" class="flex flex-wrap gap-tight">
+    <div
+      v-else-if="props.prop.kind === 'text'"
+      class="flex flex-wrap gap-tight"
+      role="group"
+      :aria-label="props.prop.cssName"
+    >
       <button
         v-for="preset in props.prop.presets"
         :key="preset"
         data-testid="option"
         :data-value="preset"
+        type="button"
         class="option"
         :class="{ 'is-active': props.modelValue === preset }"
+        :aria-pressed="props.modelValue === preset"
         @click="emit('update:modelValue', preset)"
       >
         {{ preset }}
       </button>
       <input
         class="w-20 border border-bd rounded-1 bg-transparent px-2 py-1 text-xs font-mono"
+        :aria-label="`${props.prop.cssName} 自定义值`"
+        :maxlength="props.prop.maxLength"
         :value="props.modelValue"
         @input="onTextInput"
       >
@@ -80,6 +96,7 @@ function onTextInput(event: Event): void {
     <label v-else class="flex cursor-pointer items-center gap-tight text-xs">
       <input
         type="checkbox"
+        :aria-label="props.prop.cssName"
         :checked="Boolean(props.modelValue)"
         @change="emit('update:modelValue', ($event.target as HTMLInputElement).checked)"
       >
@@ -89,10 +106,6 @@ function onTextInput(event: Event): void {
 </template>
 
 <style scoped>
-/*
- * 圆润的自定义滑块。原生 range 在各浏览器里长得都不一样且棱角分明，
- * 轨道与滑块分开定义才能做出一致的质感。
- */
 .slider {
   width: 100%;
   height: 22px;
@@ -153,7 +166,6 @@ function onTextInput(event: Event): void {
   box-shadow: 0 2px 8px -1px color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
-/* 抓住时滑块微微鼓起来，像被指尖压住 */
 .slider:hover::-webkit-slider-thumb {
   scale: 1.12;
 }
@@ -172,7 +184,6 @@ function onTextInput(event: Event): void {
 }
 
 .option {
-  /* 上下内边距与列表行、文本框一致，操作区里所有可点控件的上下边距对得齐 */
   padding: var(--space-tight) 10px;
   border: 1px solid var(--border);
   border-radius: 999px;

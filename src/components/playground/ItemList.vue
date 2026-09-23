@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { MAX_ITEMS, useFlexState } from '~/composables/useFlexState'
+import { useFlexState } from '~/composables/useFlexState'
+import { MAX_ITEMS } from '~/core/defaults'
 import { itemLabel } from '~/core/labels'
 
 const { state, addItem, removeItem, selectItem } = useFlexState()
@@ -26,17 +27,25 @@ const { state, addItem, removeItem, selectItem } = useFlexState()
       <li
         v-for="(item, index) in state.items"
         :key="item.id"
-        data-testid="item-row"
-        class="flex cursor-pointer items-center justify-between border border-bd rounded-1 px-2 py-1 text-xs"
+        class="flex items-center justify-between border border-bd rounded-1 px-2 py-1 text-xs"
         :class="{ 'border-accent text-accent': state.selectedId === item.id }"
-        @click="selectItem(item.id)"
       >
-        <span class="font-mono">{{ itemLabel(index) }} · flex: {{ item.grow }} {{ item.shrink }} {{ item.basis }}</span>
+        <button
+          data-testid="item-row"
+          type="button"
+          class="flex-1 cursor-pointer bg-transparent text-left color-inherit font-mono"
+          :aria-pressed="state.selectedId === item.id"
+          @click="selectItem(item.id)"
+        >
+          {{ itemLabel(index) }} · flex: {{ item.grow }} {{ item.shrink }} {{ item.basis }}
+        </button>
         <button
           data-testid="remove-item"
-          class="op-60 hover:op-100"
+          type="button"
+          class="op-60 disabled:cursor-not-allowed disabled:op-30 hover:op-100"
           :disabled="state.items.length <= 1"
-          @click.stop="removeItem(item.id)"
+          :aria-label="`删除盒子 ${itemLabel(index)}`"
+          @click="removeItem(item.id)"
         >
           删除
         </button>

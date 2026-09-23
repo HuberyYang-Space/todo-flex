@@ -6,7 +6,6 @@ interface PropertyOption {
 
 interface PropertyBase {
   key: string
-  /** 对应的 CSS 属性名，直接展示在面板上 */
   cssName: string
   mdn: string
 }
@@ -15,7 +14,7 @@ export type PropertyDef
   = | (PropertyBase & { kind: 'enum', options: PropertyOption[], default: string })
     | (PropertyBase & { kind: 'number', min: number, max: number, step: number, default: number })
     | (PropertyBase & { kind: 'boolean', default: boolean })
-    | (PropertyBase & { kind: 'text', presets: string[], default: string })
+    | (PropertyBase & { kind: 'text', presets: string[], maxLength: number, default: string })
 
 export const containerProperties: PropertyDef[] = [
   {
@@ -150,6 +149,7 @@ export const itemProperties: PropertyDef[] = [
     cssName: 'flex-basis',
     mdn: `${MDN}/flex-basis`,
     presets: ['auto', 'content', '0', '100px', '30%'],
+    maxLength: 40,
     default: 'auto',
   },
   {
@@ -210,7 +210,6 @@ export interface FlexShorthandPreset {
   basis: string
 }
 
-/** flex 简写的四种常见取值，点击后回填三个分量——这本身就是一堂课 */
 export const flexShorthandPresets: FlexShorthandPreset[] = [
   { label: '1', grow: 1, shrink: 1, basis: '0' },
   { label: 'auto', grow: 1, shrink: 1, basis: 'auto' },

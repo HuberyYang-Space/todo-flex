@@ -1,6 +1,8 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { MAX_ITEMS, useFlexState } from '~/composables/useFlexState'
+import { useFlexState } from '~/composables/useFlexState'
+import { MAX_ITEMS } from '~/core/defaults'
+import { itemProperties } from '~/data/flexProperties'
 import ItemControls from './ItemControls.vue'
 import ItemList from './ItemList.vue'
 
@@ -12,6 +14,32 @@ describe('itemControls', () => {
   it('未选中盒子时给出提示而不是空白面板', () => {
     const wrapper = mount(ItemControls)
     expect(wrapper.find('[data-testid="item-empty"]').exists()).toBe(true)
+  })
+
+  it('选中后每个输入控件都有各不相同的可访问名称', async () => {
+    const wrapper = mount(ItemControls)
+    useFlexState().selectItem('item-1')
+    await wrapper.vm.$nextTick()
+    const inputs = wrapper.findAll('input')
+    const names = inputs.map(input => input.attributes('aria-label'))
+
+    // 滑块、basis 文本框、两个复选框都得在场，否则这条等于没测
+    expect(inputs.map(input => input.attributes('type') ?? 'text'))
+      .toEqual(expect.arrayContaining(['range', 'text', 'checkbox']))
+    for (const name of names)
+      expect(name).toBeTruthy()
+    expect(new Set(names).size).toBe(names.length)
+  })
+
+  it('basis 文本框的长度上限取自属性表，与链接解码同一个上限', async () => {
+    const wrapper = mount(ItemControls)
+    useFlexState().selectItem('item-1')
+    await wrapper.vm.$nextTick()
+    const basisProp = itemProperties.find(prop => prop.key === 'basis')
+
+    expect(basisProp?.kind).toBe('text')
+    expect(wrapper.get('input[aria-label="flex-basis 自定义值"]').attributes('maxlength'))
+      .toBe(String(basisProp?.kind === 'text' && basisProp.maxLength))
   })
 
   it('选中后渲染该盒子的属性控件', async () => {
@@ -94,5 +122,17 @@ describe('itemList', () => {
     const wrapper = mount(ItemList)
     await wrapper.findAll('[data-testid="item-row"]')[2].trigger('click')
     expect(useFlexState().state.selectedId).toBe('item-3')
+  })
+
+  it('行的可点区域是真按钮，键盘能 Tab 到并暴露选中态', async () => {
+    const wrapper = mount(ItemList)
+    const rows = wrapper.findAll('[data-testid="item-row"]')
+
+    for (const row of rows)
+      expect(row.element.tagName).toBe('BUTTON')
+
+    await rows[1].trigger('click')
+    expect(rows[1].attributes('aria-pressed')).toBe('true')
+    expect(rows[0].attributes('aria-pressed')).toBe('false')
   })
 })

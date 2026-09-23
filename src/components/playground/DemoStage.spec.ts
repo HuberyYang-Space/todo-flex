@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import { useFlexState } from '~/composables/useFlexState'
 import { useMeasure } from '~/composables/useMeasure'
+import { readSfcStyle } from '~/test/sfcStyle'
 import { motion } from '~/visual/motion'
 import DemoStage from './DemoStage.vue'
 
@@ -11,14 +12,7 @@ describe('demoStage', () => {
     useFlexState().resetState()
   })
 
-  /*
-   * 这两条钉的是「悬停时整块方块都看得见」。
-   *
-   * 块体伸出演示区边界的量不是一个常数：顶面本身伸出一个厚度，悬停时厚度乘以
-   * blockDepthHover 变厚，再整体抬升 liftHeight，外加 liftScale 的放大。
-   * 余量小于这个总和，外层滚动容器就会把顶面切掉——而 align-items 默认 stretch，
-   * 盒子顶边必然贴着容器上沿，所以那个切口每次悬停都出现。
-   */
+  // align-items 默认 stretch，盒子顶边贴着容器上沿，余量不够时每次悬停都会被外层滚动容器切掉顶面
   it('悬停时伸出去的量有足够余量兜住', () => {
     const 悬停时伸出 = motion.blockDepth * motion.blockDepthHover + motion.liftHeight
     expect(motion.stageOverhang).toBeGreaterThanOrEqual(悬停时伸出)
@@ -27,6 +21,29 @@ describe('demoStage', () => {
   it('余量以 --overhang 下发给演示区外层，CSS 才拿得到这个数', () => {
     const wrapper = mount(DemoStage)
     expect(wrapper.get('.stage-wrapper').attributes('style')).toContain(`--overhang: ${motion.stageOverhang}px`)
+  })
+
+  it('盒子对辅助技术暴露为可按下的按钮，空格键与回车一样能选中', async () => {
+    const wrapper = mount(DemoStage)
+    const items = wrapper.findAll('[data-testid="stage-item"]')
+
+    for (const item of items) {
+      expect(item.attributes('role')).toBe('button')
+      expect(item.attributes('aria-label')).toBeTruthy()
+    }
+
+    await items[1].trigger('keydown', { key: ' ' })
+    expect(useFlexState().state.selectedId).toBe('item-2')
+    expect(items[1].attributes('aria-pressed')).toBe('true')
+    expect(items[0].attributes('aria-pressed')).toBe('false')
+  })
+
+  // 推导引擎只拿到根字号：演示区把字号钉在 1rem、盒子自己不改，em 才与 rem 同值
+  it('演示区的 em 与 rem 同值', () => {
+    const stage = readSfcStyle('src/components/playground/DemoStage.vue')
+
+    expect(stage.decl('.stage', 'font-size')).toBe('1rem')
+    expect(() => stage.decl('.stage-item', 'font-size')).toThrow()
   })
 
   it('按状态渲染出对应数量的盒子', () => {

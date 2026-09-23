@@ -1,41 +1,33 @@
 /**
- * CSS 代码高亮。
- *
- * 放 visual/ 而不是 core/：core/ 是零 DOM 依赖的推导引擎，高亮属于呈现层。
- *
- * 主题选 github 这一对，是量出来的不是挑好看的：本站面板底色下
- * vitesse-light 有三个 token 够不着 AA 的 4.5（标点 2.85、选择器名 3.58、属性名 3.70），
- * 而选择器名与属性名恰是这个站最该让人读清的两样东西。判据钉在 highlight.spec.ts 里。
+ * 主题选 github 这一对是量出来的：本站面板底色下 vitesse-light 的选择器名与属性名
+ * 够不着 AA 的 4.5，而它们恰是这个站最该让人读清的。判据钉在 highlight.spec.ts 里。
  */
 import type { HighlighterCore } from 'shiki/core'
 
 let pending: Promise<HighlighterCore> | undefined
 
-/**
- * 高亮器初始化要读语法与主题，只做一次，后续调用复用同一个实例。
- *
- * shiki 整块走动态 import：调用方本来就把高亮当异步的后补结果
- * （`CssOutput.vue` 首帧先渲染纯文本），所以延后加载不改变任何可见行为，
- * 却能把首屏 JS 从 gzip 144 kB 砍到 76 kB。
- */
+/** 整块动态 import：调用方首帧本就先渲染纯文本，延后加载不改变可见行为，却能把 shiki 移出首屏 */
 function getHighlighter(): Promise<HighlighterCore> {
-  pending ??= import('./shikiHighlighter').then(m => m.createCssHighlighter())
+  // 加载失败（常见于发版后旧 chunk 已下线）时清掉缓存，下一次调用才会重试，而不是永远拿到同一个 rejection
+  pending ??= import('./shikiHighlighter')
+    .then(m => m.createCssHighlighter())
+    .catch((error: unknown) => {
+      pending = undefined
+      throw error
+    })
   return pending
 }
 
 /**
- * 把 CSS 源码渲染成带高亮的 HTML。
- *
- * 双主题模式：每个 token 同时带上 `--shiki-light` 与 `--shiki-dark` 两个自定义属性，
- * 由 main.css 决定当前跟哪一个走。单主题模式得在切主题时整段重新高亮，
- * 而本站的主题开关随时可点，重新高亮会让代码块闪一下。
+ * 双主题模式：每个 token 同时带 `--shiki-light` 与 `--shiki-dark`，由 main.css 挑一套。
+ * 单主题模式切主题时得整段重新高亮，代码块会闪一下。
  */
 export async function highlightCss(code: string): Promise<string> {
   const highlighter = await getHighlighter()
   return highlighter.codeToHtml(code, {
     lang: 'css',
     themes: { light: 'github-light', dark: 'github-dark' },
-    // false 表示不挑一个主题写进 color，两套都只落在自定义属性里，交给 CSS 选
+    // 不把任何一套写进 color，两套都只落在自定义属性里
     defaultColor: false,
   })
 }

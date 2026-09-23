@@ -10,14 +10,16 @@ import { itemLabel } from '~/core/labels'
 const { state, derived } = useFlexState()
 const { measured } = useMeasure()
 
-// 规则文案住在展示层：core/ 只产出 rule 标识与数值，一个字的文案都不出（红线 2 的同一条思路）
+// 文案住在展示层：core/ 只产出 rule 标识与数值
 const ruleText: Record<DiagnosticRule, (diagnostic: Diagnostic) => string> = {
+  'invalid-basis': () => 'flex-basis 非法（非 0 数值要带单位），浏览器按 auto 处理，导出的 flex 简写会整条失效',
+  'runtime-basis': () => 'flex-basis 要到运行期才能确定（calc()、vw、ch 等），理论值无法推导',
   'min-width-auto': () => 'min-width:auto 撑住了内容固有尺寸，收缩到此为止',
   'margin-auto': d => `margin:auto 吃掉了 ${px(d.params.freeSpace)} 剩余空间，justify-content 已失效`,
   'max-size-clamp': () => '尺寸被某个上下限截断了',
 }
 
-// 诊断在这里算而不是放进 useFlexState：状态层不该反向依赖观测层
+// 不放进 useFlexState：状态层不该反向依赖观测层
 const diagnostics = computed(() =>
   measured.value ? diagnose(state, derived.value, measured.value) : [],
 )
@@ -34,7 +36,7 @@ const rows = computed(() => {
     return {
       id: item.id,
       label: itemLabel(index),
-      theoretical: derivedById.get(item.id)?.finalMainSize ?? 0,
+      theoretical: derivedById.get(item.id)?.finalMainSize ?? null,
       // 观测尚未产生时保持 null，不用 0 冒充
       actual: record ? (isRow ? record.width : record.height) : null,
       diagnostic: diagnosticById.get(item.id) ?? null,
@@ -83,20 +85,20 @@ function px(value: number): string {
               {{ row.label }}
             </td>
             <td data-testid="theoretical" class="py-1 pr-3 text-center">
-              {{ px(row.theoretical) }}
+              {{ row.theoretical === null ? '—' : px(row.theoretical) }}
             </td>
             <td data-testid="actual" class="py-1 pr-3 text-center">
               {{ row.actual === null ? '—' : px(row.actual) }}
             </td>
             <td data-testid="diagnosis" class="py-1 text-center font-sans">
-              <span v-if="row.actual === null" class="op-60">—</span>
-              <span v-else-if="!row.diagnostic" class="op-60">✓</span>
-              <span v-else-if="row.diagnostic.severity === 'info'" class="text-accent">
+              <span v-if="row.diagnostic?.severity === 'info'" class="text-accent">
                 ℹ {{ ruleText[row.diagnostic.rule](row.diagnostic) }}
               </span>
-              <span v-else class="text-accent2">
+              <span v-else-if="row.diagnostic" class="text-accent2">
                 ⚠ {{ ruleText[row.diagnostic.rule](row.diagnostic) }}
               </span>
+              <span v-else-if="row.actual === null || row.theoretical === null" class="op-60">—</span>
+              <span v-else class="op-60">✓</span>
             </td>
           </tr>
         </tbody>

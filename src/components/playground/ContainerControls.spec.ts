@@ -24,7 +24,6 @@ describe('containerControls', () => {
   it('每个枚举属性的取值一次全摆出来，没有折叠区', () => {
     const wrapper = mount(ContainerControls)
 
-    // 原先收在「更多值」里的近义值，现在首屏就在
     expect(wrapper.find('[data-value="left"]').exists()).toBe(true)
     expect(wrapper.find('[data-value="self-start"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="toggle-advanced"]').exists()).toBe(false)
@@ -44,6 +43,25 @@ describe('containerControls', () => {
     const { state } = useFlexState()
     expect(state.container.rowGap).toBe(24)
     expect(typeof state.container.rowGap).toBe('number')
+  })
+
+  it('每个输入控件都有各不相同的可访问名称，读屏下分得清两个 gap 滑块', () => {
+    const wrapper = mount(ContainerControls)
+    const names = wrapper.findAll('input').map(input => input.attributes('aria-label'))
+
+    expect(names.length).toBeGreaterThan(0)
+    for (const name of names)
+      expect(name).toBeTruthy()
+    expect(new Set(names).size).toBe(names.length)
+  })
+
+  it('枚举选项按属性分组，并用 aria-pressed 暴露当前取值', () => {
+    useFlexState().state.container.justifyContent = 'center'
+    const wrapper = mount(ContainerControls)
+    const group = wrapper.get('[role="group"][aria-label="justify-content"]')
+
+    expect(group.get('[data-value="center"]').attributes('aria-pressed')).toBe('true')
+    expect(group.get('[data-value="flex-start"]').attributes('aria-pressed')).toBe('false')
   })
 
   it('当前值对应的选项带 is-active 标记', () => {

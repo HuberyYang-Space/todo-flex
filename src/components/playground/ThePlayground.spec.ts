@@ -18,7 +18,6 @@ describe('thePlayground', () => {
     expect(wrapper.text()).toContain('容器属性')
     expect(wrapper.text()).toContain('盒子属性')
 
-    // CSS 从原来的标签页挪到了独立的右栏，和明细表同时可见
     expect(wrapper.find('[data-testid="css-code"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="metrics"]').exists()).toBe(true)
   })
@@ -75,15 +74,8 @@ describe('thePlayground', () => {
   })
 
   /*
-   * 这条守卫钉的是「演示区四周的留白只有一份」。
-   *
-   * 块体伸出演示区边界的那些面靠的是 .stage-wrapper 的 --overhang 外边距（32px，
-   * 阈值由 DemoStage.spec.ts 那条守卫钉着）。滚动容器这层再写一份内边距，
-   * 就是把同一件事付两遍钱：留白叠到 40px 以上，演示区被推离面板左上角，
-   * 可视范围白白缩水，而防裁切的能力一点没增加。
-   *
-   * 只能读源码断言：padding 是 UnoCSS 的原子类，happy-dom 里不会生成真实样式值，
-   * 挂载后量 computed style 恒为 0，测不出来。
+   * 留白已由 .stage-wrapper 的 --overhang 承担，滚动容器再写一份只会白缩可视范围。
+   * 只能读源码断言：UnoCSS 原子类在 happy-dom 里不生成真实样式值，computed style 恒为 0。
    */
   it('演示区滚动容器不再叠加内边距，留白只由 stage-wrapper 的 overhang 承担', () => {
     const src = readFileSync(resolve(process.cwd(), 'src/components/playground/ThePlayground.vue'), 'utf-8')
@@ -99,29 +91,20 @@ describe('thePlayground', () => {
   })
 
   /*
-   * 这条守卫钉的是「整页不滚动，只有操作区和检视面板内部滚」这个布局前提。
-   *
-   * flex 子项的 min-height 默认是 auto——内容多高它就多高，不肯被父容器压缩。
-   * 所以从锁死滚动的那一层到真正该滚的那一层之间，中间每一级都得写 min-h-0，
-   * 漏掉任何一级，多出来的高度就会一路顶到 body 上，整页重新开始滚，
-   * 用户为了调属性又得把演示区滚出视野——这次改版要消灭的正是这件事。
-   *
-   * 与上面那条同理，只能读源码断言：UnoCSS 是原子类，happy-dom 里不生成真实样式值。
+   * 整页不滚、只有各栏内部滚：flex 子项的 min-height 默认是 auto，中间漏一级 min-h-0 整页就重新开始滚。
+   * 同上，只能读源码断言。
    */
   it('整页不滚动的滚动链一层不缺', () => {
     const app = readFileSync(resolve(process.cwd(), 'src/App.vue'), 'utf-8')
     const playground = readFileSync(resolve(process.cwd(), 'src/components/playground/ThePlayground.vue'), 'utf-8')
 
-    /*
-     * 每一条都带 lg: 前缀，是有意的：窄屏两栏塌成一栏，一屏根本放不下，
-     * 高度锁死只会把内容永久切掉，所以窄屏必须退回普通文档流滚动。
-     */
+    // 都带 lg: 前缀是有意的：窄屏塌成一栏后一屏放不下，必须退回普通文档流滚动
     const appRoot = /<div class="([^"]*)"[^>]*>\s*(?:<!--[\s\S]*?-->\s*)?<header/.exec(app)
     expect(appRoot, '没找到 App.vue 的根容器').toBeTruthy()
     expect(appRoot![1], 'App 根容器要占满视口高度').toMatch(/(?:^|\s)lg:h-full(?:\s|$)/)
     expect(appRoot![1], '宽屏下整页不得滚动').toMatch(/(?:^|\s)lg:overflow-hidden(?:\s|$)/)
 
-    const pgRoot = /<div class="([^"]*)"[^>]*>\s*<!-- 操作区 -->/.exec(playground)
+    const pgRoot = /<div class="([^"]*)"[^>]*>\s*<aside/.exec(playground)
     expect(pgRoot, '没找到 ThePlayground 的根容器').toBeTruthy()
     expect(pgRoot![1], 'Playground 要吃满 header 之外的剩余高度').toMatch(/(?:^|\s)lg:flex-1(?:\s|$)/)
     expect(pgRoot![1], 'Playground 根容器缺 min-h-0，高度会顶破父级').toMatch(/(?:^|\s)lg:min-h-0(?:\s|$)/)
@@ -144,10 +127,7 @@ describe('thePlayground', () => {
     expect(scroller[1], '演示区滚动容器要吃满面板的剩余高度').toMatch(/(?:^|\s)lg:flex-1(?:\s|$)/)
     expect(scroller[1], '演示区滚动容器缺 min-h-0，超高的演示区会把面板顶破').toMatch(/(?:^|\s)lg:min-h-0(?:\s|$)/)
 
-    /*
-     * 第三列（CSS）的链条独立于中列，断在哪一级都是整页重新开始滚：
-     * 栏本身要能被压到行高以下，栏里的滚动区还得自己吃满剩余高度。
-     */
+    // 第三列的链条独立于中列：栏本身要能被压到行高以下，栏里的滚动区还得吃满剩余高度
     const cssColumn = /<CssOutput class="([^"]*)"/.exec(playground)
     expect(cssColumn, '没找到右侧 CSS 栏').toBeTruthy()
     expect(cssColumn![1], 'CSS 栏缺 min-h-0，长 CSS 会把整行顶高').toMatch(/(?:^|\s)lg:min-h-0(?:\s|$)/)
@@ -160,25 +140,14 @@ describe('thePlayground', () => {
   })
 
   /*
-   * 这条守卫钉的是「窗口收窄时右侧 CSS 栏不会被顶出视口」。
-   *
-   * 起因是浏览器实测：视口 1100px 时三列算出来是 `320px 834px 320px`，
-   * 合计 1498px 塞进 1100px 的 grid，CSS 栏落在 left: 1190——整块在视口之外，
-   * 而 lg:overflow-hidden 把溢出裁掉了，文档横向也不可滚（scrollWidth === clientWidth），
-   * 于是那一栏既看不见也够不着。lg 到约 1500px 之间的每个宽度都是这个样子。
-   *
-   * 根因不在 CSS 栏自己身上：`1fr` 等价于 `minmax(auto, 1fr)`，
-   * 那个 auto 下限取的是这一列的 min-content，而演示区滚动层的 min-content 是 808px
-   * （.stage 固定 720px 加两侧内边距）——它自己的 overflow-auto 只挡得住自己溢出，
-   * 挡不住 min-content 往上冒到 grid 轨道。所以要让 fr 真能收缩，
-   * 轨道得写 minmax(0, 1fr)，同时 grid 项自己也得 min-w-0，两者缺一不可。
-   *
+   * 窗口收窄时右侧 CSS 栏不能被顶出视口：`1fr` 的下限是 min-content，演示区的 min-content 会冒到 grid 轨道上，
+   * 所以轨道得写 minmax(0, 1fr)，grid 项自己也得 min-w-0，两者缺一不可。
    * happy-dom 不排版，量不出 min-content，只能读源码断言。
    */
   it('中间列能被压缩，窄窗口下右侧 CSS 栏不会被顶出视口', () => {
     const playground = readFileSync(resolve(process.cwd(), 'src/components/playground/ThePlayground.vue'), 'utf-8')
 
-    const pgRoot = /<div class="([^"]*)"[^>]*>\s*<!-- 操作区 -->/.exec(playground)
+    const pgRoot = /<div class="([^"]*)"[^>]*>\s*<aside/.exec(playground)
     expect(pgRoot, '没找到 ThePlayground 的根容器').toBeTruthy()
 
     const cols = /lg:grid-cols-\[([^\]]+)\]/.exec(pgRoot![1])
@@ -201,15 +170,8 @@ describe('thePlayground', () => {
   })
 
   /*
-   * 这条守卫钉的是「全站只有两档间距」。
-   *
-   * 统一之前模块间距有四档（16 / 16 / 12 / 20），而且 margin 与 gap 混用：
-   * 字段各自带 margin-bottom，外层再叠一层 gap，边界处就是两份间距相加，
-   * 于是「分节之间」看起来远宽于「字段之间」——那不是设计意图，是叠加的副产物。
-   * 一旦有人再写回一个硬编码的 gap-4 / mb-2，这份对齐立刻又散掉，而且散得很不显眼。
-   *
-   * 只查竖向节奏用得上的那几个属性：gap / mb / mt / space-y / p。
-   * px-* 与 py-* 是控件自己的内边距（列表行、文本框），不参与模块之间的节奏，不在此列。
+   * 全站只有两档间距，且一律由父级 gap 承担：子元素再带 margin，边界处就是两份间距相加。
+   * 只查竖向节奏用得上的 gap / mb / mt / space-y / p；px-* 与 py-* 是控件自己的内边距，不在此列。
    */
   it('模块间距只走 --space / --space-tight，没有硬编码的数值类', () => {
     const files = [
