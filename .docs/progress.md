@@ -33,29 +33,19 @@
 
 ## 交接：下次开工从这里接
 
-> 2026-09-23 的状态。新会话读完 CLAUDE.md 后读这一节。方案 1（M14）已实施，**待浏览器核对与提交**。
+> 2026-09-23 的状态。新会话读完 CLAUDE.md 后读这一节。M13 收尾与 M14 已提交（`1887414`、`88fd481`），
+> `dev` 与 `main` 已推送，Pages 部署成功，线上资源哈希与本地构建逐字节一致。工作区干净，下一件是待处理第 3 条。
 
-### 工作区有未提交的改动（有意保留）
-
-用户决定：**与方案 1 一起提交**。新会话不要单独提交，也不要当成遗留改动清掉。M13 收尾那批：
-
-- [CLAUDE.md](../CLAUDE.md)：新增「改滚动条样式之前 → 读 M9 节」的触发式索引（用户已同意）
-- 初始状态的默认值改由属性表推导，只写一份：[defaults.ts](../src/core/defaults.ts)
-- 演示区尺寸手柄取消方向键：[StageResizer.vue](../src/components/playground/StageResizer.vue)
-- 方案 4，叠加层与诊断按浏览器实际分行：新增 [measuredLines.ts](../src/core/measuredLines.ts) 及其测试与 Chrome 夹具，
-  改动 `overlay.ts`、`diagnostics.ts`、`splitLines.ts`、`deriveLayout.ts`、`types.ts`、`MetricsTable.vue`，详见[下面的补记](#m13-补记叠加层与诊断按浏览器实际分行)
-
-方案 1（M14）的全部改动，见[下面的 M14 节](#m14设置区演示区css-区三处一致)；以及本文件、[CLAUDE.md](../CLAUDE.md) 的红线 9。
-
-当前状态：`pnpm test` 625/625、`pnpm lint`、`pnpm build` 全部通过；M14 的 38 条变异全部因断言失败变红；独立终审的 Important 与用户选定的 Minor 已全部修完；浏览器核对已做。
+当前状态：`pnpm test` 625/625、`pnpm lint`、`pnpm build` 全部通过；M14 的 38 条变异全部因断言失败变红；
+独立终审的 Important 与用户选定的 Minor 已全部修完；浏览器核对已做。
 
 ### 待处理（方向已定，按顺序做）
 
 1. **M14 新界面的浏览器核对**：✅ 2026-09-23 做完，结果见 [M14 节](#m14设置区演示区css-区三处一致)。
    **自动化做不到、需要人手试的两件**：真实拼音输入法按回车上屏（只验证了模拟的 `isComposing` / `keyCode 229` 事件）；
    Safari 上点预设按钮时输入框是否先失焦（本机没有 Safari）
-2. **与上面的未提交改动一起提交**（走 `/commit`），快进 `main`、推送 `dev` 与 `main`，确认 Pages 部署成功、线上资源哈希与本地构建一致。
-   拆分提交时逐个在临时 worktree 里验证暂存区：pnpm 11 执行脚本前会检查依赖、拒绝软链过去的 `node_modules`，
+2. **提交与部署**：✅ 2026-09-23 做完。M13 收尾那批与 M14 的改动在同一批文件里交错，合成一个提交 `1887414`。
+   以后要拆提交时逐个在临时 worktree 里验证暂存区：pnpm 11 执行脚本前会检查依赖、拒绝软链过去的 `node_modules`，
    所以直接调 `node_modules/.bin/vitest run` 与 `node_modules/.bin/vue-tsc --noEmit`，并先在干净 HEAD 上跑出基线自证
 3. **浏览器排查（M13 遗留）**（用户已同意届时开浏览器；调用 claude-in-chrome 前仍先说一声）
    - 挤压动画的 `gsap.fromTo` 没设 `overwrite`：连续两次状态变化时两组形变是否并行、
