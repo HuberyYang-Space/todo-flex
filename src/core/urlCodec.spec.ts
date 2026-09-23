@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { containerProperties, itemProperties } from '~/data/flexProperties'
-import { createDefaultItem, createDefaultState, MAX_ITEMS, STAGE_LIMITS } from './defaults'
+import { containerProperties, itemProperties, numberProp } from '~/data/flexProperties'
+import { MAX_ITEMS } from './constants'
+import { createDefaultItem, createDefaultState } from './defaults'
 import { decode, decodeOrDefault, encode } from './urlCodec'
 
 describe('urlCodec', () => {
@@ -150,6 +151,22 @@ describe('urlCodec 对非法输入的回退', () => {
     expect(decode(query)).toBeNull()
   })
 
+  it.each(['50', 'initial', 'var(--x)', 'calc-size(auto, size)', '100pxx', '0.', 'calc(100%-20px)', 'calc(1px)}*{display:none}a{b:calc(1px)'])('basis 是面板不收的 %j 就整个拒掉', (basis) => {
+    const warn = silenceWarn()
+    const state = createDefaultState()
+    state.items[1].basis = basis
+
+    expect(decode(encode(state))).toBeNull()
+    expect(warn).toHaveBeenCalledOnce()
+  })
+
+  it('basis 解出来时规范成去首尾空白的小写，与面板写进状态的写法一致', () => {
+    const state = createDefaultState()
+    state.items[0].basis = ' CALC(10PX) '
+
+    expect(decode(encode(state))?.items[0].basis).toBe('calc(10px)')
+  })
+
   it('basis 超过属性表的长度上限就整个拒掉，恰好在上限上照常解出来', () => {
     const basisProp = itemProperties.find(prop => prop.key === 'basis')
     const limit = basisProp?.kind === 'text' ? basisProp.maxLength : Number.NaN
@@ -185,7 +202,14 @@ describe('urlCodec 对非法输入的回退', () => {
 // 往 flexProperties 里加了带短横线或空格的新值、却忘了配短码，会在这里当场失败
 // 链接可以手写：越界的数值夹回面板能调出的区间，而不是整条拒掉或原样放进状态
 describe('urlCodec 把越界数值夹回面板区间', () => {
-  it('容器的间距与宽高夹到属性表与拖拽区间里', () => {
+  const heightProp = numberProp(containerProperties, 'height')
+  const originalMax = heightProp.max
+
+  afterEach(() => {
+    heightProp.max = originalMax
+  })
+
+  it('容器的间距与宽高夹到属性表的区间里', () => {
     const state = createDefaultState()
     Object.assign(state.container, { rowGap: -5, columnGap: 999, width: 99999, height: -50 })
 
@@ -193,8 +217,16 @@ describe('urlCodec 把越界数值夹回面板区间', () => {
 
     expect(back.rowGap).toBe(0)
     expect(back.columnGap).toBe(64)
-    expect(back.width).toBe(STAGE_LIMITS.maxWidth)
-    expect(back.height).toBe(STAGE_LIMITS.minHeight)
+    expect(back.width).toBe(numberProp(containerProperties, 'width').max)
+    expect(back.height).toBe(heightProp.min)
+  })
+
+  it('宽高的区间取自属性表，改了表解码跟着变', () => {
+    heightProp.max = 400
+    const state = createDefaultState()
+    state.container.height = 500
+
+    expect(decode(encode(state))!.container.height).toBe(400)
   })
 
   it('盒子的 grow / shrink / order / size 夹到属性表的区间里', () => {

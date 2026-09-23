@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { useFlexState } from '~/composables/useFlexState'
-import { STAGE_LIMITS } from '~/core/defaults'
+import { containerProperties, numberProp } from '~/data/flexProperties'
 import StageResizer from './StageResizer.vue'
 
 /** happy-dom 未必有 PointerEvent 构造器，手工造事件保证测试环境无关 */
@@ -45,53 +45,70 @@ describe('stageResizer', () => {
 
     await wrapper.get('[data-testid="stage-resizer"]').trigger('pointerdown', { clientX: 0, clientY: 0 })
     firePointer('pointermove', -9999, -9999)
-    expect(state.container.width).toBe(STAGE_LIMITS.minWidth)
-    expect(state.container.height).toBe(STAGE_LIMITS.minHeight)
+    expect(state.container.width).toBe(numberProp(containerProperties, 'width').min)
+    expect(state.container.height).toBe(numberProp(containerProperties, 'height').min)
 
     firePointer('pointermove', 9999, 9999)
-    expect(state.container.width).toBe(STAGE_LIMITS.maxWidth)
-    expect(state.container.height).toBe(STAGE_LIMITS.maxHeight)
+    expect(state.container.width).toBe(numberProp(containerProperties, 'width').max)
+    expect(state.container.height).toBe(numberProp(containerProperties, 'height').max)
 
     // 用例之间不卸载组件，监听器留在 window 上——松手收尾，免得串到后面的用例
     firePointer('pointerup', 0, 0)
   })
 
-  it('点击手柄后焦点落在手柄上，接着按方向键才改的是尺寸', async () => {
+  // 拖完手柄焦点若还留在上一个控件（比如某个滑块）上，接着按方向键就会改掉那个属性
+  it('按下手柄后焦点落在手柄上，不留在上一个控件', async () => {
     const wrapper = mount(StageResizer, { attachTo: document.body })
     const handle = wrapper.get('[data-testid="stage-resizer"]')
 
     await handle.trigger('pointerdown', { clientX: 0, clientY: 0 })
+    firePointer('pointerup', 0, 0)
 
     expect(document.activeElement).toBe(handle.element)
   })
 
-  it('方向键微调 1px，保住键盘可达', async () => {
-    const { state } = useFlexState()
-    const wrapper = mount(StageResizer)
-    const handle = wrapper.get('[data-testid="stage-resizer"]')
+  // 它不响应键盘，留在 Tab 序列里就是一个按了没反应的按钮；键盘改用设置区的宽高滑块
+  it('手柄不进 Tab 序列，可访问名称指向宽高滑块', () => {
+    const handle = mount(StageResizer).get('[data-testid="stage-resizer"]')
 
-    await handle.trigger('keydown', { key: 'ArrowRight' })
-    await handle.trigger('keydown', { key: 'ArrowUp' })
-
-    expect(state.container.width).toBe(721)
-    expect(state.container.height).toBe(319)
+    expect(handle.attributes('tabindex')).toBe('-1')
+    expect(handle.attributes('aria-label')).toContain('width')
+    expect(handle.attributes('aria-label')).toContain('height')
   })
 
-  it('按住 Shift 步长变 10px', async () => {
+  it('方向键不改尺寸，也不拦截浏览器的默认行为', async () => {
     const { state } = useFlexState()
-    const wrapper = mount(StageResizer)
+    const handle = mount(StageResizer).get('[data-testid="stage-resizer"]')
 
-    await wrapper.get('[data-testid="stage-resizer"]').trigger('keydown', { key: 'ArrowLeft', shiftKey: true })
-
-    expect(state.container.width).toBe(710)
-  })
-
-  it('无关按键不改尺寸', async () => {
-    const { state } = useFlexState()
-    const wrapper = mount(StageResizer)
-
-    await wrapper.get('[data-testid="stage-resizer"]').trigger('keydown', { key: 'Enter' })
+    for (const key of ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown']) {
+      const event = new KeyboardEvent('keydown', { key, shiftKey: true, bubbles: true, cancelable: true })
+      handle.element.dispatchEvent(event)
+      expect(event.defaultPrevented, key).toBe(false)
+    }
 
     expect(state.container.width).toBe(720)
+    expect(state.container.height).toBe(320)
+  })
+})
+
+describe('stageResizer 的区间取自属性表', () => {
+  const widthProp = numberProp(containerProperties, 'width')
+  const originalMax = widthProp.max
+
+  afterEach(() => {
+    widthProp.max = originalMax
+  })
+
+  it('改了表里的上限，拖拽跟着变', async () => {
+    useFlexState().resetState()
+    widthProp.max = 1000
+    const { state } = useFlexState()
+    const wrapper = mount(StageResizer, { attachTo: document.body })
+
+    await wrapper.get('[data-testid="stage-resizer"]').trigger('pointerdown', { clientX: 0, clientY: 0 })
+    firePointer('pointermove', 9999, 0)
+    expect(state.container.width).toBe(1000)
+
+    firePointer('pointerup', 0, 0)
   })
 })

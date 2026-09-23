@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import { createDefaultState } from '~/core/defaults'
+import type { FlexContainerState, FlexItemState } from '~/core/types'
+import { afterEach, describe, expect, it } from 'vitest'
+import { createDefaultItem, createDefaultState } from '~/core/defaults'
 import { containerProperties, flexShorthandPresets, itemProperties } from './flexProperties'
 
 const allProperties = [...containerProperties, ...itemProperties]
@@ -26,29 +27,109 @@ describe('属性元信息表', () => {
     }
   })
 
-  it('容器属性覆盖状态里所有可控字段（width/height 由拖拽控制，不在表内）', () => {
-    const state = createDefaultState()
-    const controllable = Object.keys(state.container).filter(key => key !== 'width' && key !== 'height')
-    expect(containerProperties.map(prop => prop.key).sort()).toEqual(controllable.sort())
+  // 用类型锚定字段清单：接口加了字段而这里没跟上，类型检查就报错；表里漏了，断言就红
+  it('容器属性覆盖状态里所有字段', () => {
+    const fields: Record<keyof FlexContainerState, true> = {
+      display: true,
+      width: true,
+      height: true,
+      direction: true,
+      wrap: true,
+      justifyContent: true,
+      alignItems: true,
+      alignContent: true,
+      rowGap: true,
+      columnGap: true,
+    }
+    expect(containerProperties.map(prop => prop.key).sort()).toEqual(Object.keys(fields).sort())
   })
 
   it('项目属性覆盖盒子状态里除 id 外的所有字段', () => {
-    const state = createDefaultState()
-    const controllable = Object.keys(state.items[0]).filter(key => key !== 'id')
-    expect(itemProperties.map(prop => prop.key).sort()).toEqual(controllable.sort())
+    const fields: Record<Exclude<keyof FlexItemState, 'id'>, true> = {
+      grow: true,
+      shrink: true,
+      basis: true,
+      order: true,
+      alignSelf: true,
+      size: true,
+      minWidthAuto: true,
+      marginAuto: true,
+    }
+    expect(itemProperties.map(prop => prop.key).sort()).toEqual(Object.keys(fields).sort())
   })
 
-  it('每个属性都带 MDN 链接', () => {
-    for (const prop of allProperties)
-      expect(prop.mdn).toMatch(/^https:\/\/developer\.mozilla\.org\//)
+  it('每个 CSS 属性都带 MDN 链接，仅演示区的属性不是 CSS、没有链接', () => {
+    for (const prop of allProperties) {
+      if (prop.demoOnly)
+        expect(prop.mdn, prop.key).toBeUndefined()
+      else
+        expect(prop.mdn, prop.key).toMatch(/^https:\/\/developer\.mozilla\.org\//)
+    }
   })
 
-  it('表里的默认值与 createDefaultState 一致', () => {
-    const state = createDefaultState()
-    for (const prop of containerProperties)
-      expect(prop.default).toBe(state.container[prop.key as keyof typeof state.container])
-    for (const prop of itemProperties)
-      expect(prop.default).toBe(state.items[0][prop.key as keyof typeof state.items[0]])
+  it('只有内容尺寸标为仅演示区', () => {
+    expect(allProperties.filter(prop => prop.demoOnly).map(prop => prop.key)).toEqual(['size'])
+  })
+
+  it('文本属性的默认值、预设都过得了自己的 check，flex 简写预设的 basis 也过得了', () => {
+    for (const prop of allProperties) {
+      if (prop.kind !== 'text')
+        continue
+      expect(prop.check(prop.default), prop.default).toBeNull()
+      for (const preset of prop.presets)
+        expect(prop.check(preset), preset).toBeNull()
+    }
+
+    const basis = itemProperties.find(prop => prop.key === 'basis')
+    if (basis?.kind !== 'text')
+      throw new Error('basis 应当是 text 类型的属性')
+    for (const preset of flexShorthandPresets)
+      expect(basis.check(preset.basis), preset.label).toBeNull()
+  })
+
+  it('文本属性的默认值与预设已经是规范写法，规范化不会改动它们', () => {
+    for (const prop of allProperties) {
+      if (prop.kind !== 'text')
+        continue
+      for (const value of [prop.default, ...prop.presets])
+        expect(prop.normalize(value), value).toBe(value)
+    }
+  })
+
+  it('basis 的 check 对被拒的值给出改法', () => {
+    const basis = itemProperties.find(prop => prop.key === 'basis')
+    if (basis?.kind !== 'text')
+      throw new Error('basis 应当是 text 类型的属性')
+
+    expect(basis.check('50')).toContain('50px')
+    expect(basis.check('initial')).toContain('auto')
+    expect(basis.check('var(--x)')).toContain('var()')
+    expect(basis.check('calc-size(auto, size)')).toContain('calc-size()')
+    expect(basis.check('calc(100%-20px)')).toContain('两边要留空格')
+    expect(basis.check('abc')).toContain('不是合法的 flex-basis')
+  })
+
+  describe('默认值只在属性表里写一份', () => {
+    const sizeProp = itemProperties.find(prop => prop.key === 'size')!
+    const gapProp = containerProperties.find(prop => prop.key === 'rowGap')!
+    const widthProp = containerProperties.find(prop => prop.key === 'width')!
+    const [originalSize, originalGap, originalWidth] = [sizeProp.default, gapProp.default, widthProp.default]
+
+    afterEach(() => {
+      sizeProp.default = originalSize
+      gapProp.default = originalGap
+      widthProp.default = originalWidth
+    })
+
+    it('改了表里的默认值，初始状态跟着变', () => {
+      sizeProp.default = 123
+      gapProp.default = 7
+      widthProp.default = 640
+
+      expect(createDefaultItem('x').size).toBe(123)
+      expect(createDefaultState().container.rowGap).toBe(7)
+      expect(createDefaultState().container.width).toBe(640)
+    })
   })
 })
 

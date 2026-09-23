@@ -94,19 +94,6 @@ describe('metricsTable', () => {
     expect(diagnosis).not.toContain('⚠')
   })
 
-  it('basis 非法时说清浏览器怎么处理、导出的 CSS 会怎样', async () => {
-    useFlexState().state.items[0].basis = '50'
-    useMeasure().measured.value = measureAll([80, 80, 80])
-
-    const wrapper = mount(MetricsTable)
-    await wrapper.vm.$nextTick()
-
-    const diagnosis = rows(wrapper)[0].get('[data-testid="diagnosis"]').text()
-    expect(diagnosis).toContain('⚠')
-    expect(diagnosis).toContain('flex-basis')
-    expect(diagnosis).toContain('auto')
-  })
-
   it('理论值无法静态推导时，理论列留空，只在起因那一行说明，其余不冒充通过', async () => {
     useFlexState().state.items[0].basis = 'calc(10% + 1px)'
     useMeasure().measured.value = measureAll([73, 80, 80])
@@ -120,6 +107,33 @@ describe('metricsTable', () => {
     expect(culprit.get('[data-testid="diagnosis"]').text()).toContain('运行')
     expect(bystander.get('[data-testid="theoretical"]').text()).toBe('—')
     expect(bystander.get('[data-testid="diagnosis"]').text()).toBe('—')
+  })
+
+  // 真实 Chrome：A 的内容 150 被 min-width:auto 兜住后 C 被挤到下一行，B、C 的尺寸都是跟着换行重新分出来的
+  it('换行位置与推导不同时，说清是换行变了，不误报成尺寸被截断', async () => {
+    const { state } = useFlexState()
+    Object.assign(state.container, { width: 300, wrap: 'wrap', columnGap: 0, rowGap: 0 })
+    for (const item of state.items)
+      Object.assign(item, { basis: '100px', grow: 1, size: 20 })
+    state.items[0].size = 150
+    useMeasure().measured.value = {
+      width: 300,
+      height: 200,
+      items: [
+        { id: 'item-1', left: 0, top: 0, width: 150, height: 100 },
+        { id: 'item-2', left: 150, top: 0, width: 150, height: 100 },
+        { id: 'item-3', left: 0, top: 100, width: 300, height: 100 },
+      ],
+    }
+
+    const wrapper = mount(MetricsTable)
+    await wrapper.vm.$nextTick()
+    const texts = rows(wrapper).map(row => row.get('[data-testid="diagnosis"]').text())
+
+    expect(texts[0]).toContain('撑到了内容尺寸')
+    expect(texts[1]).toContain('换行位置与推导不同')
+    expect(texts[2]).toContain('换行位置与推导不同')
+    expect(texts.join('')).not.toContain('截断')
   })
 
   it('增删盒子后行数同步', async () => {

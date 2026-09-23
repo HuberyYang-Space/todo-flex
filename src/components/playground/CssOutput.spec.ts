@@ -15,6 +15,14 @@ describe('cssOutput', () => {
     expect(code).toContain('.item-1')
   })
 
+  it('顶部说明仅演示区的属性不是 CSS、不会导出，代码里也确实没有它', () => {
+    const wrapper = mount(CssOutput)
+
+    expect(wrapper.get('[data-testid="css-note"]').text()).toContain('「内容尺寸」')
+    expect(wrapper.get('[data-testid="css-note"]').text()).toContain('不是 CSS 属性')
+    expect(wrapper.get('[data-testid="css-code"]').text()).not.toContain('内容尺寸')
+  })
+
   it('状态变化后 CSS 同步更新', async () => {
     const { state } = useFlexState()
     const wrapper = mount(CssOutput)

@@ -1,6 +1,8 @@
 import type { Direction, FlexContainerState, FlexItemState, FlexState, Wrap } from './types'
-import { containerProperties, itemProperties } from '~/data/flexProperties'
-import { createDefaultState, MAX_ITEMS, STAGE_LIMITS } from './defaults'
+import type { PropertyDef } from '~/data/flexProperties'
+import { containerProperties, itemProperties, numberProp } from '~/data/flexProperties'
+import { MAX_ITEMS } from './constants'
+import { createDefaultState } from './defaults'
 
 /** 格式一旦不兼容就进位，老链接会被拒掉而不是解出错的状态 */
 const VERSION = '1'
@@ -39,17 +41,20 @@ function fromCode(code: string): string {
 }
 
 /** 合法值直接取自属性元信息表，短码与面板不会各说各话 */
-function allowedValues(props: typeof containerProperties, key: string): Set<string> | null {
+function allowedValues(props: PropertyDef[], key: string): Set<string> | null {
   const prop = props.find(item => item.key === key)
   return prop?.kind === 'enum' ? new Set(prop.options.map(option => option.value)) : null
 }
 
-/** 面板输入框的 maxlength 与解码同一个上限，面板能输入的链接就一定解得回来 */
-function textMaxLength(props: typeof itemProperties, key: string): number {
+/**
+ * 输入框的 maxlength、check 与规范写法都与解码同源：面板能输入的链接一定解得回来，面板不收的也解不出来。
+ * 收下返回规范写法，不收返回 null
+ */
+function acceptText(props: PropertyDef[], key: string, value: string): string | null {
   const prop = props.find(item => item.key === key)
   if (prop?.kind !== 'text')
     throw new Error(`属性表里没有文本属性 ${key}`)
-  return prop.maxLength
+  return value.length <= prop.maxLength && prop.check(value) === null ? prop.normalize(value) : null
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -57,11 +62,9 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /** 夹回属性表里该数值控件的区间，与面板滑块能调出的范围同源 */
-function clampToProp(props: typeof containerProperties, key: string, value: number): number {
-  const prop = props.find(item => item.key === key)
-  if (prop?.kind !== 'number')
-    throw new Error(`属性表里没有数值属性 ${key}`)
-  return clamp(value, prop.min, prop.max)
+function clampToProp(props: PropertyDef[], key: string, value: number): number {
+  const { min, max } = numberProp(props, key)
+  return clamp(value, min, max)
 }
 
 /**
@@ -210,8 +213,8 @@ function decodeContainer(raw: string): FlexContainerState | null {
     alignContent,
     rowGap: clampToProp(containerProperties, 'rowGap', rowGap),
     columnGap: clampToProp(containerProperties, 'columnGap', columnGap),
-    width: clamp(width, STAGE_LIMITS.minWidth, STAGE_LIMITS.maxWidth),
-    height: clamp(height, STAGE_LIMITS.minHeight, STAGE_LIMITS.maxHeight),
+    width: clampToProp(containerProperties, 'width', width),
+    height: clampToProp(containerProperties, 'height', height),
   }
 }
 
@@ -226,15 +229,16 @@ function decodeItem(raw: string, index: number): FlexItemState | null {
   const shrink = parseEscapedNumber(shrinkRaw)
   const order = parseEscapedNumber(orderRaw)
   const size = parseEscapedNumber(sizeRaw)
-  const basis = unescapeText(basisRaw)
+  const basisText = unescapeText(basisRaw)
   const minWidthAuto = parseIntegerFlag(minWidthRaw)
   const marginAuto = parseIntegerFlag(marginRaw)
   if (grow === null || shrink === null || order === null || size === null
-    || basis === null || minWidthAuto === null || marginAuto === null) {
+    || basisText === null || minWidthAuto === null || marginAuto === null) {
     return null
   }
 
-  if (basis.length > textMaxLength(itemProperties, 'basis'))
+  const basis = acceptText(itemProperties, 'basis', basisText)
+  if (basis === null)
     return null
 
   const alignSelf = fromCode(alignSelfRaw)

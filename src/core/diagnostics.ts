@@ -8,7 +8,8 @@ import type {
   MeasuredStage,
 } from './types'
 import { isRowDirection } from './axis'
-import { basisKind } from './resolveBasis'
+import { basisKind } from './basisSyntax'
+import { measuredLines } from './measuredLines'
 
 /** 亚像素舍入随时带来零点几像素的偏差，不设阈值会满屏误报 */
 const TOLERANCE = 0.5
@@ -38,6 +39,13 @@ export function diagnose(
   const measuredById = new Map(measured.items.map(item => [item.id, item]))
   const lineByIndex = new Map(derived.lines.map(line => [line.index, line]))
 
+  // 每个盒子所在行的成员，推导一份、实际一份；两份对不上的行，逐项比尺寸就是在错的行里比
+  const membersOf = (lines: string[][]): Map<string, string> =>
+    new Map(lines.flatMap(ids => ids.map(id => [id, [...ids].sort().join(' ')] as const)))
+  // 只比测到的：盒子刚增删、还没采样时，实际行里少了它，不能当成成员变了
+  const theoreticalMembers = membersOf(derived.lines.map(line => line.itemIds.filter(id => measuredById.has(id))))
+  const actualMembers = membersOf(measuredLines(state, measured, derived.fontSize))
+
   const mainSizeOf = (record: { width: number, height: number }): number =>
     isRow ? record.width : record.height
 
@@ -53,12 +61,14 @@ export function diagnose(
     const base = { itemId: item.id, theoretical, actual }
     const line = lineByIndex.get(derivedItem.lineIndex)
 
-    // 排在尺寸比对之前：浏览器按 auto 取到的内容尺寸，与 min-width:auto 撑住的现象长得一模一样
-    const kind = basisKind(item.basis)
-    if (kind === 'invalid')
-      return { ...base, rule: 'invalid-basis', severity: 'warn', params: {} }
     if (theoretical === null)
-      return kind === 'runtime' ? { ...base, rule: 'runtime-basis', severity: 'info', params: {} } : null
+      return basisKind(item.basis) === 'runtime' ? { ...base, rule: 'runtime-basis', severity: 'info', params: {} } : null
+
+    if (actualMembers.get(item.id) !== theoreticalMembers.get(item.id)) {
+      // 浏览器断行用的假设尺寸含 min-width:auto 的下限，推导引擎不含：内容比 basis 大的盒子参与换行时被撑宽了
+      const widened = item.minWidthAuto && item.size > derivedItem.hypotheticalMainSize
+      return { ...base, rule: widened ? 'line-break-widened' : 'line-break-shifted', severity: 'warn', params: {} }
+    }
 
     if (Math.abs(actual - theoretical) > TOLERANCE) {
       const rule = matchSizeRule(item, actual)

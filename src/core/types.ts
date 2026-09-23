@@ -1,7 +1,6 @@
 export type Direction = 'row' | 'row-reverse' | 'column' | 'column-reverse'
 export type Wrap = 'nowrap' | 'wrap' | 'wrap-reverse'
 
-/** width/height 由演示区拖拽调整，不在控制面板的属性表里 */
 export interface FlexContainerState {
   display: 'flex' | 'inline-flex'
   direction: Direction
@@ -68,6 +67,8 @@ export interface DerivedLine {
 export interface DerivedLayout {
   lines: DerivedLine[]
   items: DerivedItem[]
+  /** 推导时用的根字号。给实测盒子分行时要用同一个，从这里取而不是另外传，两边才不会各用各的 */
+  fontSize: number
 }
 
 /** 尺寸与位置都取自 offset*，不受 transform 影响，GSAP Flip 动画期间数字照样准 */
@@ -85,10 +86,16 @@ export interface MeasuredStage {
   items: MeasuredItem[]
 }
 
-export type DiagnosticRule = 'invalid-basis' | 'runtime-basis' | 'min-width-auto' | 'margin-auto' | 'max-size-clamp'
+export type DiagnosticRule
+  = | 'runtime-basis'
+    | 'line-break-widened'
+    | 'line-break-shifted'
+    | 'min-width-auto'
+    | 'margin-auto'
+    | 'max-size-clamp'
 
 /**
- * - `warn`：理论值与实际值对不上，指出是哪条规则介入了；或状态本身就不合法（如非法的 flex-basis）
+ * - `warn`：理论值与实际值对不上，指出是哪条规则介入了
  * - `info`：由状态直接推出的提示，如 `margin: auto`——它只改位置、不改尺寸，不会体现为尺寸偏差
  */
 export interface Diagnostic {

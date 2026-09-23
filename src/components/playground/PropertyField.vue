@@ -13,21 +13,94 @@ const emit = defineEmits<{
 
 const { setScrubbing } = useFlip()
 
+/** 输入框显示的是草稿：被拒的值只停在这里，不进状态 */
+const draft = ref(String(props.modelValue))
+const hint = ref<string | null>(null)
+const draftInvalid = computed(() => props.prop.kind === 'text' && props.prop.check(draft.value) !== null)
+
+const fieldId = useId()
+const hintId = `${fieldId}-hint`
+const demoOnlyId = `${fieldId}-demo-only`
+const describedBy = computed(() =>
+  [props.prop.demoOnly && demoOnlyId, props.prop.kind === 'text' && hintId].filter(Boolean).join(' ') || undefined,
+)
+
+watch(() => props.modelValue, (value) => {
+  draft.value = String(value)
+  hint.value = null
+})
+
 function onNumberInput(event: Event): void {
   emit('update:modelValue', Number((event.target as HTMLInputElement).value))
 }
 
 function onTextInput(event: Event): void {
-  emit('update:modelValue', (event.target as HTMLInputElement).value)
+  if (props.prop.kind !== 'text')
+    return
+  draft.value = (event.target as HTMLInputElement).value
+  hint.value = props.prop.check(draft.value)
+  if (hint.value === null)
+    emit('update:modelValue', draft.value)
+}
+
+/** 失焦或回车时还不合法就退回生效的值：输入框不能停在一个没生效的值上，看着像是改成功了 */
+function onTextCommit(): void {
+  if (props.prop.kind !== 'text')
+    return
+  const reason = props.prop.check(draft.value)
+  if (reason === null) {
+    const normalized = props.prop.normalize(draft.value)
+    if (normalized !== draft.value)
+      emit('update:modelValue', normalized)
+    return
+  }
+  draft.value = String(props.modelValue)
+  hint.value = `${reason}，已恢复为 ${props.modelValue}`
+}
+
+// capture：别的控件拦掉冒泡也照样记得住「按着」
+const { pressed } = useMousePressed({ capture: true })
+
+/**
+ * 按住别处的控件导致的失焦要等松手再恢复：恢复时提示可能由一行变两行，把按住的那个控件挤走，
+ * 松手时指针已不在它上面，点击落空（真实 Chrome 复现过）
+ */
+async function onTextBlur(): Promise<void> {
+  if (pressed.value)
+    await until(pressed).toBe(false)
+  onTextCommit()
+}
+
+/** 值没变时 watch 不会触发，点同一个预设也得亲手清掉「已恢复为」的提示 */
+function pickPreset(preset: string): void {
+  draft.value = preset
+  hint.value = null
+  emit('update:modelValue', preset)
+}
+
+/** 输入法组合中的回车是上屏，不是提交；Safari 这时 isComposing 已经为假，只能靠 keyCode 229 认出来 */
+function onTextEnter(event: KeyboardEvent): void {
+  if (event.isComposing || event.keyCode === 229)
+    return
+  onTextCommit()
 }
 </script>
 
 <template>
   <div class="flex flex-col gap-tight">
     <div class="flex items-center justify-between text-xs op-70">
-      <a :href="props.prop.mdn" target="_blank" rel="noopener" class="font-mono hover:underline">
-        {{ props.prop.cssName }}
-      </a>
+      <span class="flex items-center gap-tight">
+        <a v-if="props.prop.mdn" :href="props.prop.mdn" target="_blank" rel="noopener" class="font-mono hover:underline">
+          {{ props.prop.cssName }}
+        </a>
+        <span v-else class="font-mono">{{ props.prop.cssName }}</span>
+        <span
+          v-if="props.prop.demoOnly"
+          :id="demoOnlyId"
+          data-testid="demo-only"
+          class="border border-bd rounded-full px-1.5 text-[10px] leading-4"
+        >仅演示区</span>
+      </span>
       <span v-if="props.prop.kind === 'number'" class="font-mono">{{ props.modelValue }}</span>
     </div>
 
@@ -36,6 +109,7 @@ function onTextInput(event: Event): void {
       class="flex flex-wrap gap-tight"
       role="group"
       :aria-label="props.prop.cssName"
+      :aria-describedby="describedBy"
     >
       <button
         v-for="option in props.prop.options"
@@ -57,6 +131,7 @@ function onTextInput(event: Event): void {
       type="range"
       class="slider"
       :aria-label="props.prop.cssName"
+      :aria-describedby="describedBy"
       :min="props.prop.min"
       :max="props.prop.max"
       :step="props.prop.step"
@@ -65,38 +140,50 @@ function onTextInput(event: Event): void {
       @pointerdown="setScrubbing(true)"
     >
 
-    <div
-      v-else-if="props.prop.kind === 'text'"
-      class="flex flex-wrap gap-tight"
-      role="group"
-      :aria-label="props.prop.cssName"
-    >
-      <button
-        v-for="preset in props.prop.presets"
-        :key="preset"
-        data-testid="option"
-        :data-value="preset"
-        type="button"
-        class="option"
-        :class="{ 'is-active': props.modelValue === preset }"
-        :aria-pressed="props.modelValue === preset"
-        @click="emit('update:modelValue', preset)"
+    <div v-else-if="props.prop.kind === 'text'">
+      <div class="flex flex-wrap gap-tight" role="group" :aria-label="props.prop.cssName">
+        <button
+          v-for="preset in props.prop.presets"
+          :key="preset"
+          data-testid="option"
+          :data-value="preset"
+          type="button"
+          class="option"
+          :class="{ 'is-active': props.modelValue === preset }"
+          :aria-pressed="props.modelValue === preset"
+          @click="pickPreset(preset)"
+        >
+          {{ preset }}
+        </button>
+        <input
+          class="w-20 border border-bd rounded-1 bg-transparent px-2 py-1 text-xs font-mono"
+          :aria-label="`${props.prop.cssName} 自定义值`"
+          :aria-describedby="describedBy"
+          :aria-invalid="draftInvalid"
+          :maxlength="props.prop.maxLength"
+          :value="draft"
+          @input="onTextInput"
+          @blur="onTextBlur"
+          @keydown.enter="onTextEnter"
+        >
+      </div>
+      <!-- live region 要一直在场，内容变了读屏才会播报；没提示时是空段落，不占高度 -->
+      <p
+        :id="hintId"
+        data-testid="field-hint"
+        role="status"
+        class="text-xs op-70"
+        :class="{ 'mt-tight': hint }"
       >
-        {{ preset }}
-      </button>
-      <input
-        class="w-20 border border-bd rounded-1 bg-transparent px-2 py-1 text-xs font-mono"
-        :aria-label="`${props.prop.cssName} 自定义值`"
-        :maxlength="props.prop.maxLength"
-        :value="props.modelValue"
-        @input="onTextInput"
-      >
+        {{ hint }}
+      </p>
     </div>
 
     <label v-else class="flex cursor-pointer items-center gap-tight text-xs">
       <input
         type="checkbox"
         :aria-label="props.prop.cssName"
+        :aria-describedby="describedBy"
         :checked="Boolean(props.modelValue)"
         @change="emit('update:modelValue', ($event.target as HTMLInputElement).checked)"
       >

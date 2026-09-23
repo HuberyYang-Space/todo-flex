@@ -1,6 +1,6 @@
 import type { FlexContainerState, FlexItemState } from './types'
 import { mainAxisGap, mainAxisSize } from './axis'
-import { DEFAULT_FONT_SIZE } from './defaults'
+import { DEFAULT_FONT_SIZE } from './constants'
 import { resolveBasis } from './resolveBasis'
 
 function hypotheticalSize(item: FlexItemState, container: FlexContainerState, fontSize: number): number {

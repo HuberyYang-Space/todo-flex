@@ -1,7 +1,7 @@
 # 架构综述
 
 > 什么时候读：改 `src/core/` 下的模块、往数据流里新增一层、或者拿不准某段逻辑该放哪一层的时候。
-> 约束性的部分（八条设计红线）留在 [CLAUDE.md](../CLAUDE.md)，这里只讲结构长什么样。
+> 约束性的部分（九条设计红线）留在 [CLAUDE.md](../CLAUDE.md)，这里只讲结构长什么样。
 
 ## 核心原则
 
@@ -19,7 +19,7 @@ state ──→ 渲染 ──→ 观测 ──→ 诊断 ──→ 展示
 
 | 层 | 位置 | 说明 |
 | --- | --- | --- |
-| 纯逻辑 | `src/core/` | 零 DOM、零 vue 依赖。推导引擎按步骤拆分：`resolveBasis` → `splitLines` → `distribute`，由 `deriveLayout` 组装。`cssEmit` 生成可复制 CSS，`axis` 负责 direction → 主轴/交叉轴换算，`styleMap` 负责状态 → CSS 属性的映射 |
+| 纯逻辑 | `src/core/` | 零 DOM、零 vue 依赖。推导引擎按步骤拆分：`resolveBasis` → `splitLines` → `distribute`，由 `deriveLayout` 组装。`cssEmit` 生成可复制 CSS，`axis` 负责 direction → 主轴/交叉轴换算，`styleMap` 负责状态 → CSS 属性的映射。`basisSyntax` 判断 flex-basis 属于哪一类、本站收不收，是 `data/` 唯一依赖的 core 模块，自身零 import，才不会与反过来依赖属性表的 `defaults` / `urlCodec` 成环。推导引擎要的常量从零依赖的 `constants` 取，不经 `defaults`，整条推导链才不间接依赖属性表 |
 | 元信息 | `src/data/flexProperties.ts` | 属性元信息表（`PropertyDef` 四种 kind：enum/number/boolean/text），控制面板遍历它生成控件 |
 | 状态源 | `src/composables/useFlexState.ts` | **模块级单例** `reactive(createDefaultState())`——全站唯一状态源，组件各自 `useFlexState()` 拿到的是同一份。`derived` / `css` 是从它派生的 computed |
 | 视图 | `src/components/playground/` | 只负责渲染与事件。`DemoStage` 是真实 flex 容器，`PropertyField` 是表驱动的通用控件 |

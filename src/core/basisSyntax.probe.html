@@ -1,0 +1,320 @@
+<!doctype html>
+<!--
+  生成 basisSyntax.chrome.json 的探针页：每个候选值分别写成 `flex: 2 3 <值>` 与三条单项属性，
+  比较计算值与 offsetWidth，全部相同才算 consistent。重新生成的命令见 .docs/pitfalls.md 的
+  「flex 简写与单项属性对 basis 的分歧」一节。
+
+  ACCEPTED 必须与 basisSyntax.spec.ts 的 STATIC + RUNTIME 保持一致：spec 会断言它们与它们的每个打字前缀都在夹具里。
+-->
+<html>
+  <body>
+    <div style="display: flex; width: 720px; height: 100px">
+      <div id="a"><div style="width: 80px; height: 20px"></div></div>
+    </div>
+    <pre id="out"></pre>
+    <script>
+      const ACCEPTED = [
+        '50px',
+        '30%',
+        '0',
+        'auto',
+        'content',
+        '2em',
+        '0.5rem',
+        '12.5%',
+        'max-content',
+        'min-content',
+        'fit-content',
+        'AUTO',
+        ' auto ',
+        '1in',
+        '2.54cm',
+        '72pt',
+        '6pc',
+        '10mm',
+        '40q',
+        '+10px',
+        '.5px',
+        '1e2px',
+        '0.0',
+        '\t100px',
+        '100px\n',
+        '1PX',
+        'calc(50% - 10px)',
+        'min(100px, 50%)',
+        'max(10px, 5em)',
+        'clamp(10px, 5em, 100px)',
+        'round(10px, 3px)',
+        'round(up, 10px, 3px)',
+        'mod(10px, 3px)',
+        'rem(10px, 3px)',
+        'abs(-10px)',
+        'hypot(3px, 4px)',
+        'CALC(10px)',
+        'calc( 1px )',
+        'calc(10px * 2)',
+        'calc(2 * 10px)',
+        'calc(10px / 2)',
+        'calc((10px + 5px) * 2)',
+        'calc(10% + 5px)',
+        'calc(-10px + 20px)',
+        'min(10%, 5px)',
+        'max(calc(1px + 2px), 3px)',
+        'calc(1px*2)',
+        '5ch',
+        '3ex',
+        '2lh',
+        '10vw',
+        '5cqw',
+      ]
+
+      // 分类器认得的长度单位全列上，再加一批不是长度的单位：分类器若误收，这里测得出
+      const LENGTH_UNITS = [
+        'px',
+        'cm',
+        'mm',
+        'q',
+        'in',
+        'pt',
+        'pc',
+        'em',
+        'rem',
+        'ex',
+        'rex',
+        'cap',
+        'rcap',
+        'ch',
+        'rch',
+        'ic',
+        'ric',
+        'lh',
+        'rlh',
+        'vw',
+        'vh',
+        'vi',
+        'vb',
+        'vmin',
+        'vmax',
+        'svw',
+        'svh',
+        'svi',
+        'svb',
+        'svmin',
+        'svmax',
+        'lvw',
+        'lvh',
+        'lvi',
+        'lvb',
+        'lvmin',
+        'lvmax',
+        'dvw',
+        'dvh',
+        'dvi',
+        'dvb',
+        'dvmin',
+        'dvmax',
+        'cqw',
+        'cqh',
+        'cqi',
+        'cqb',
+        'cqmin',
+        'cqmax',
+      ]
+      const OTHER_UNITS = [
+        'fr',
+        'deg',
+        'grad',
+        'rad',
+        'turn',
+        's',
+        'ms',
+        'hz',
+        'khz',
+        'dpi',
+        'dpcm',
+        'dppx',
+        'x',
+        'e',
+        'p',
+        'foo',
+      ]
+      const NUMBERS = [
+        '0',
+        '1',
+        '+1',
+        '-1',
+        '.5',
+        '0.5',
+        '1.',
+        '0.',
+        '1e2',
+        '1E2',
+        '1e',
+        '1.e2',
+        '-0',
+        '+0',
+        '0.0',
+        '00',
+        '1e-2',
+        '1e+2',
+      ]
+      const UNIT_NUMBERS = ['1', '0', '-1', '1.', '.5', '1e2', '+1']
+
+      const KEYWORDS = [
+        'auto',
+        'content',
+        'max-content',
+        'min-content',
+        'fit-content',
+        'stretch',
+        'none',
+        'normal',
+        'fill',
+        'Auto',
+        'initial',
+        'inherit',
+        'unset',
+        'revert',
+        'revert-layer',
+        'INITIAL',
+        ' inherit ',
+      ]
+
+      const EXPLICIT = [
+        'calc(100% - 20px)',
+        'calc(1px)',
+        'calc(1px + 2px)',
+        'calc(1px - -2px)',
+        'calc(2em + 3vw)',
+        'calc(100% - 2 * 10px)',
+        'calc(min(10px, 5%) + 1px)',
+        'Min(1px, 2px)',
+        'calc(1px/2)',
+        'calc(1.5 * 2px)',
+        'calc(1e1px + 1px)',
+        'min(1px)',
+        'calc((1px))',
+        'calc(((1px + 2px)))',
+        'round(nearest, 10px, 3px)',
+        'round(to-zero, 10px, 3px)',
+        'round(down, 10px, 3px)',
+        'calc(100%-20px)',
+        'calc(100% -20px)',
+        'calc(100% +20px)',
+        'calc(1px +2px)',
+        'calc(1px+ 2px)',
+        'calc(1px -(2px))',
+        'calc(1px - (2px))',
+        'calc(1px +calc(2px))',
+        'calc(1px -min(2px, 3px))',
+        'calc(2px*-1)',
+        'calc(50)',
+        'calc(auto)',
+        'calc()',
+        'min()',
+        'min(10px,)',
+        'max(1px 2px)',
+        'clamp(1px, 2px)',
+        'clamp(1px, 2px, 3px, 4px)',
+        'abs(10)',
+        'calc(1px) calc(2px)',
+        'calc(100px))',
+        'calc((100px)',
+        'calc(1px',
+        'calc(10px * 10px)',
+        'calc(10px / 2px)',
+        'calc(10px / 0)',
+        'calc(10px + 5)',
+        'calc(pi * 1px)',
+        'calc(e * 1px)',
+        'calc(infinity * 1px)',
+        'calc(sign(-1px) * 10px)',
+        'round(10px)',
+        'round(foo, 10px, 3px)',
+        'mod(10px)',
+        'hypot()',
+        'sign(-1px)',
+        'exp(1)',
+        'calc(var(--x))',
+        'min(10px, var(--y))',
+        'calc(1px + env(x))',
+        'max(attr(data-x px), 1px)',
+        'min(calc-size(auto, size), 10px)',
+        'calc(calc-size(auto, size))',
+        'calc(1px)}*{display:none}a{b:calc(1px)',
+        'fit-content(100px)',
+        'foo(1px)',
+        'minmax(10px, 20px)',
+        'anchor-size(width)',
+        'calc-size(auto, size)',
+        'Calc-Size(auto, size)',
+        'var(--x)',
+        'var(--x, 10px)',
+        'env(x)',
+        'env(x, 10px)',
+        'attr(data-x px)',
+        'attr(data-x px, 10px)',
+        'VAR(--x)',
+        '50',
+        '12.5',
+        '1e3',
+        '-10px',
+        '100pxx',
+        'abc',
+        '',
+        '50 px',
+        '100.px',
+        '0.px',
+        '1.e2px',
+        '10px;color:red',
+        '10px!important',
+        '10px !important',
+        '10px}',
+        '/**/10px',
+        '10px/*x*/',
+        '10px 20px',
+        'auto auto',
+        'content 10px',
+        '"10px"',
+        '\\31 0px',
+      ]
+
+      const WHITESPACE_BASES = ['100px', 'auto', 'calc(1px)', '30%']
+      const WHITESPACE = [' ', '\t', '\n', '\f', '\u00A0']
+
+      const prefixes = (value) => Array.from({ length: value.length }, (_, index) => value.slice(0, index + 1))
+
+      const candidates = new Set([
+        ...ACCEPTED,
+        ...ACCEPTED.flatMap(prefixes),
+        ...NUMBERS,
+        ...NUMBERS.map((number) => `${number}%`),
+        ...UNIT_NUMBERS.flatMap((number) => [...LENGTH_UNITS, ...OTHER_UNITS].map((unit) => number + unit)),
+        ...['1PX', '1Em', '1VW', '1Q'],
+        ...KEYWORDS,
+        ...EXPLICIT,
+        ...WHITESPACE_BASES.flatMap((base) => WHITESPACE.flatMap((space) => [space + base, base + space])),
+      ])
+
+      const a = document.getElementById('a')
+      function snapshot() {
+        const cs = getComputedStyle(a)
+        return [cs.flexGrow, cs.flexShrink, cs.flexBasis, a.offsetWidth].join('|')
+      }
+
+      // grow / shrink 故意不取初始值：简写整条失效时退回 0 1 auto，与单项属性的 2 3 一比就露出来
+      const rows = [...candidates].map((value) => {
+        a.removeAttribute('style')
+        a.style.flex = `2 3 ${value}`
+        const shorthand = snapshot()
+        a.removeAttribute('style')
+        a.style.flexGrow = '2'
+        a.style.flexShrink = '3'
+        a.style.flexBasis = value
+        const longhand = snapshot()
+        return shorthand === longhand ? { value, consistent: true } : { value, consistent: false, shorthand, longhand }
+      })
+      document.getElementById('out').textContent = JSON.stringify({ userAgent: navigator.userAgent, rows })
+    </script>
+  </body>
+</html>

@@ -163,6 +163,55 @@ x 轴是垂直纹路做左右平移，y 轴靠 `patternTransform="rotate(90)"` �
 
 现在是 `composables/useShareUrl.ts` 防抖 300ms + `replaceState`。
 
+## flex 简写与单项属性对 basis 的分歧
+
+演示区用单项属性渲染（`flex-grow` / `flex-shrink` / `flex-basis`），CSS 区导出的是 `flex` 简写。
+2026-09-23 在真实 Chrome（HeadlessChrome/154）里逐个实测：720px 容器里一个 80px 内容的盒子，
+分别写 `flex: 2 3 <值>` 与三条单项属性，比较计算值与 `offsetWidth`。
+
+| 类别 | 例子 | 简写 | 单项属性 |
+| --- | --- | --- | --- |
+| 关键字、长度、百分比、运行期单位、数学函数 | `auto` `content` `0` `100px` `30%` `2em` `10vw` `5ch` `calc()` `min()` `round()` `abs()` | 正常 | 正常，两边一致 |
+| 没带单位的非 0 数、拼错的值、负值 | `50` `100pxx` `-10px` `fit-content(100px)` | 整条失效 → `0 1 auto` | 只丢 basis → `2 3 auto` |
+| CSS 全局关键字 | `initial` `inherit` `unset` `revert` `revert-layer` | 整条失效 | 只丢 basis |
+| 无回退的替换函数 | `var(--x)` `env(x)` `attr(data-x px)` | 计算期整条失效 | 只丢 basis |
+| 带回退的替换函数 | `var(--x, 10px)` `env(x, 10px)` `attr(data-x px, 10px)` | 取回退值 | 取回退值，两边一致 |
+| `calc-size()` | `calc-size(auto, size)` | `CSS.supports` 为假，整条失效 | 正常生效 |
+
+所以只要收下后四类里的任何一个值，「复制这段 CSS 到项目里」得到的布局就和演示区不一样。
+写错的数学函数（`calc(100%-20px)`、`calc(50)`）、小数点结尾的数（`0.`）、首尾带 NBSP 的值也属于「简写整条失效」这一类。现在的规矩：
+
+- 判断在 [basisSyntax.ts](../src/core/basisSyntax.ts)，属性表 basis 条目的 `check` 调它，面板输入框与分享链接解码走同一道关
+- **判定是保守的**：只收写法确定合法的子集，拿不准的一律拒。错拒只是少一种写法，错收会让导出的 CSS 整条失效。
+  所以 `pi`、`sign()`、省略第二参数的 `round()`、`stretch` 这些 Chrome 其实认的写法也拒——**不要为了「多支持一种写法」放宽判定，除非先在夹具里测过**
+- **只去 CSS 空白，不要换回 `trim()`**：`trim()` 连 NBSP 一起去掉，而 CSS 不把 NBSP 当空白，从网页复制来的值常带它
+- **替换函数与 `calc-size()` 嵌在哪一层都拒**：只看最外层函数名的话 `calc(var(--x))` 会漏过去
+- **带回退的替换函数照样拒**：两边虽一致，但演示区没有可引用的东西，写它等于绕一圈写回退值，只会让人以为本站支持自定义属性
+- **`calc-size()` 最初不在拒收清单里**，是实测时发现、按「放进简写也不失效」的同一原则补上的——这类分歧靠读规范推不出来，只能实测
+- **不用 `CSS.supports` 做判定**：会让 core 依赖 DOM；happy-dom 测不出真实语义；各浏览器判定不一，同一条分享链接会解出不同状态
+
+守卫在 [basisSyntax.spec.ts](../src/core/basisSyntax.spec.ts)：[basisSyntax.probe.html](../src/core/basisSyntax.probe.html) 在真实 Chrome 里测 1000 个候选值
+（全部长度单位与一批非长度单位 × 各种数字写法、写错的数学函数、注入串、各种空白、收下示例的每个打字前缀），
+单测断言**分类器收下的每一个都一致**。它钉的是分类器本身：往单位表里加 `fr` 这种改动会让它变红。
+最初那版只钉住了例子表，同样的改动全绿——这是一条被变异证实过的瞎守卫，别退回去。
+
+### 新增一类可输入的值之前
+
+1. 把示例加进 [basisSyntax.probe.html](../src/core/basisSyntax.probe.html) 的 `ACCEPTED`（写错的变体加进 `EXPLICIT`），重新生成夹具：
+
+   ```bash
+   perl -e 'alarm 40; exec @ARGV' "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+     --headless=new --disable-gpu --no-first-run --no-default-browser-check --disable-extensions \
+     --password-store=basic --use-mock-keychain --virtual-time-budget=5000 \
+     --user-data-dir=<临时目录> --dump-dom "file://$PWD/src/core/basisSyntax.probe.html" > out.html
+   ```
+
+   从 `out.html` 的 `<pre id="out">` 取出 JSON，每行一个对象写回 [basisSyntax.chrome.json](../src/core/basisSyntax.chrome.json)，
+   再跑 `node_modules/.bin/eslint --fix` 统一格式（非 ASCII 空白要写成 `\u00a0` 转义，否则 lint 报错）
+2. 再把示例放进 [basisSyntax.spec.ts](../src/core/basisSyntax.spec.ts) 的 `STATIC` / `RUNTIME`，改分类器
+
+顺序反过来，「夹具覆盖了每个收下的示例和它的每个打字前缀」那条守卫会红——它就是为这一步设的。
+
 ## i18n 预埋字段：为什么被删净
 
 2026-09-11 决定：站点首版就是纯简体中文单语站，`src/i18n/` 与 `useI18n.ts` 都不建，

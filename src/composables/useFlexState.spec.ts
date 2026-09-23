@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { MAX_ITEMS } from '~/core/defaults'
+import { MAX_ITEMS } from '~/core/constants'
 import { useFlexState } from './useFlexState'
 
 describe('useFlexState', () => {

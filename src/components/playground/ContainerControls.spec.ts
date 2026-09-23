@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useFlexState } from '~/composables/useFlexState'
-import { containerProperties } from '~/data/flexProperties'
+import { containerProperties, numberProp } from '~/data/flexProperties'
 import ContainerControls from './ContainerControls.vue'
 
 describe('containerControls', () => {
@@ -38,11 +38,27 @@ describe('containerControls', () => {
 
   it('数值控件写回状态且为数字类型', async () => {
     const wrapper = mount(ContainerControls)
-    const input = wrapper.get('input[type="range"]')
-    await input.setValue('24')
+    await wrapper.get('input[aria-label="row-gap"]').setValue('24')
     const { state } = useFlexState()
     expect(state.container.rowGap).toBe(24)
     expect(typeof state.container.rowGap).toBe('number')
+  })
+
+  it('宽高滑块与拖拽手柄写同一份状态，两边互相跟着走', async () => {
+    const { state } = useFlexState()
+    const wrapper = mount(ContainerControls)
+    const width = wrapper.get('input[aria-label="width"]')
+    const widthProp = numberProp(containerProperties, 'width')
+
+    expect(width.attributes('min')).toBe(String(widthProp.min))
+    expect(width.attributes('max')).toBe(String(widthProp.max))
+
+    state.container.width = 900
+    await wrapper.vm.$nextTick()
+    expect((width.element as HTMLInputElement).value).toBe('900')
+
+    await wrapper.get('input[aria-label="height"]').setValue('400')
+    expect(state.container.height).toBe(400)
   })
 
   it('每个输入控件都有各不相同的可访问名称，读屏下分得清两个 gap 滑块', () => {

@@ -27,6 +27,10 @@ todo-flex 演示的是「尺寸是怎么算出来的」：把剩余空间画出�
   或把 shiki 按「多个 `import()`」切成 5 个 chunk，比现在还大。
 - **想推翻下面任何一条禁令之前** → 读 [`.docs/pitfalls.md`](./.docs/pitfalls.md)
   → 不读的后果：重蹈一条已经走死的路，白做一遍。
+- **改滚动条样式（[`main.css`](./src/styles/main.css) 里的 `::-webkit-scrollbar` / `scrollbar-width`）之前**
+  → 读 [`.docs/progress.md` 的 M9 节](./.docs/progress.md#m9滚动条悬停余量叠加层层序已完成经浏览器实测)
+  → 不读的后果：把 `@supports not selector(::-webkit-scrollbar)` 当成多余的写法删掉——
+  Chrome 一见到标准属性就整个忽略伪元素样式，滚动条退回 2px 细条，而这种失效只有真实渲染才量得出来。
 - **改某个里程碑的既有实现之前** → 读 [`.docs/superpowers/`](./.docs/superpowers/) 下对应的 spec 与 plan
   （索引在 [`.docs/progress.md`](./.docs/progress.md#设计与计划文档)）
   → 不读的后果：推翻一个当初有理由的取舍而不自知。
@@ -65,6 +69,11 @@ pnpm build                    # 类型检查 + 生产构建
    一旦裁剪，`min-width: auto` 立刻失效，本站的头号陷阱就演示不出来。盒子被压得比内容还窄时，内容溢出正是要给用户看的现象。
 8. **item 的内容只用一个 `size` 数字表示**（主轴方向上的内容固有尺寸），不支持自定义文本——
    它要驱动 `min-width: auto` 陷阱，也让后续 URL 序列化免于处理文本转义。
+9. **设置区、演示区、CSS 区三处必须一致**：设置区收下的每个值，演示区（单项属性）与导出的 CSS（`flex` 简写）要渲染出同一个布局。
+   `flex` 简写遇到某些 basis 会整条失效（grow、shrink 一起丢），单项属性只丢 basis——所以 basis 由属性表的 `check` 把关、分享链接走同一道关；
+   判定只收确定合法的写法，拿不准就拒；新增可输入的值类型前先用 [`basisSyntax.probe.html`](./src/core/basisSyntax.probe.html) 在真实 Chrome 里重测，
+   [`basisSyntax.chrome.json`](./src/core/basisSyntax.chrome.json) 的守卫对整个候选集钉着「收下即一致」。
+   → [详见](./.docs/pitfalls.md#flex-简写与单项属性对-basis-的分歧)
 
 ## 现役禁令
 

@@ -28,12 +28,17 @@ describe('thePlayground', () => {
     expect(wrapper.findAll('[data-testid="metrics-row"]')).toHaveLength(3)
   })
 
-  it('拖拽手柄的键盘微调改变演示区尺寸', async () => {
+  it('拖拽手柄改变演示区尺寸，一路生效到演示区的真实样式', async () => {
     const wrapper = mount(ThePlayground)
-    await wrapper.get('[data-testid="stage-resizer"]').trigger('keydown', { key: 'ArrowRight', shiftKey: true })
+    await wrapper.get('[data-testid="stage-resizer"]').trigger('pointerdown', { clientX: 0, clientY: 0 })
+    const move = Object.assign(new Event('pointermove'), { clientX: 10, clientY: 0 })
+    window.dispatchEvent(move)
+    window.dispatchEvent(new Event('pointerup'))
+    await wrapper.vm.$nextTick()
 
     expect(useFlexState().state.container.width).toBe(730)
     expect(wrapper.get('[data-testid="stage"]').attributes('style')).toContain('width: 730px')
+    wrapper.unmount()
   })
 
   it('叠加层开关能收起整层', async () => {

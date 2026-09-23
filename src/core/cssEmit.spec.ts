@@ -58,10 +58,23 @@ describe('emitCss', () => {
     expect(emitCss(state)).toContain('min-height: 0;')
   })
 
+  it('容器宽高写进 .container，粘过去才复现得出演示区的布局', () => {
+    const state = createDefaultState()
+    state.container.width = 640
+    state.container.height = 280
+    const containerBlock = emitCss(state).split('\n\n')[0]
+
+    expect(containerBlock).toMatch(/^\.container \{/)
+    expect(containerBlock).toContain('  width: 640px;')
+    expect(containerBlock).toContain('  height: 280px;')
+  })
+
   it('输出结果可直接粘贴使用（结构快照）', () => {
     expect(emitCss(createDefaultState())).toMatchInlineSnapshot(`
       ".container {
         display: flex;
+        width: 720px;
+        height: 320px;
         flex-direction: row;
         flex-wrap: nowrap;
         justify-content: flex-start;

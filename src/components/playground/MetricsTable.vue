@@ -12,8 +12,9 @@ const { measured } = useMeasure()
 
 // 文案住在展示层：core/ 只产出 rule 标识与数值
 const ruleText: Record<DiagnosticRule, (diagnostic: Diagnostic) => string> = {
-  'invalid-basis': () => 'flex-basis 非法（非 0 数值要带单位），浏览器按 auto 处理，导出的 flex 简写会整条失效',
   'runtime-basis': () => 'flex-basis 要到运行期才能确定（calc()、vw、ch 等），理论值无法推导',
+  'line-break-widened': () => 'min-width:auto 把它参与换行的尺寸撑到了内容尺寸，换行位置因此与推导不同',
+  'line-break-shifted': () => '换行位置与推导不同：有盒子被 min-width:auto 撑宽，它所在行的成员变了',
   'min-width-auto': () => 'min-width:auto 撑住了内容固有尺寸，收缩到此为止',
   'margin-auto': d => `margin:auto 吃掉了 ${px(d.params.freeSpace)} 剩余空间，justify-content 已失效`,
   'max-size-clamp': () => '尺寸被某个上下限截断了',

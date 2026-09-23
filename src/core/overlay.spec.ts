@@ -15,7 +15,31 @@ function makeLines(lines: { index: number, itemIds: string[], remainingFreeSpace
       totalShrinkWeighted: 0,
     })),
     items: [],
+    fontSize: 16,
   }
+}
+
+/*
+ * 真实 Chrome，根字号 20：A 宽 0，B 的 16em = 320px 放不下 300 的容器，换到第二行。
+ * 几何上分不出来（A 宽 0、两者交叉轴不重叠），只能靠断行算法——而它必须用推导时的同一个字号，
+ * 按默认 16 算 B 只有 256px，会被错排成同一行。
+ */
+function emScene() {
+  const state = createDefaultState()
+  Object.assign(state.container, { width: 300, wrap: 'wrap', columnGap: 0, rowGap: 0 })
+  state.items = [
+    { ...createDefaultItem('A'), basis: '0', size: 20, minWidthAuto: false },
+    { ...createDefaultItem('B'), basis: '16em', size: 20 },
+  ]
+  const measured: MeasuredStage = {
+    width: 300,
+    height: 200,
+    items: [
+      { id: 'A', left: 0, top: 0, width: 0, height: 15 },
+      { id: 'B', left: 0, top: 15, width: 300, height: 15 },
+    ],
+  }
+  return { state, measured }
 }
 
 function stage(width: number, height: number, items: MeasuredStage['items']): MeasuredStage {
@@ -119,6 +143,34 @@ describe('computeOverlay', () => {
       { kind: 'free', lineIndex: 0, x: 200, y: 0, width: 100, height: 90, flow: 'reverse', flowAxis: 'x' },
       { kind: 'free', lineIndex: 1, x: 100, y: 110, width: 200, height: 90, flow: 'reverse', flowAxis: 'x' },
     ])
+  })
+
+  // 真实 Chrome：min-width:auto 把三个 basis 100px 的盒子撑到 150，浏览器排成两行，推导引擎是一行
+  it('按浏览器实际分行来画，而不是按推导引擎的分行', () => {
+    const state = createDefaultState()
+    Object.assign(state.container, { width: 300, wrap: 'wrap', columnGap: 0, rowGap: 0 })
+    state.items = ['A', 'B', 'C'].map(id => ({ ...createDefaultItem(id), basis: '100px', size: 150 }))
+    const measured = stage(300, 200, [
+      { id: 'A', left: 0, top: 0, width: 150, height: 20 },
+      { id: 'B', left: 150, top: 0, width: 150, height: 20 },
+      { id: 'C', left: 0, top: 20, width: 150, height: 20 },
+    ])
+
+    const overlay = computeOverlay(state, deriveLayout(state), measured)
+
+    expect(overlay.bands).toEqual([
+      { kind: 'free', lineIndex: 1, x: 150, y: 20, width: 150, height: 20, flow: 'reverse', flowAxis: 'x' },
+    ])
+    // 实际的两行在推导里都不存在，理论剩余无从对照
+    expect(overlay.lines).toEqual([
+      { index: 0, theoretical: null, actual: 0 },
+      { index: 1, theoretical: null, actual: 150 },
+    ])
+  })
+
+  it('分行用的是推导时的同一个根字号', () => {
+    const { state, measured } = emScene()
+    expect(computeOverlay(state, deriveLayout(state, 20), measured).lines.map(line => line.index)).toEqual([0, 1])
   })
 
   it('亚像素级的空隙不画，免得满屏发丝色块', () => {

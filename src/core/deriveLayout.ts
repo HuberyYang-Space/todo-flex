@@ -1,8 +1,9 @@
 import type { DerivedItem, DerivedLayout, DerivedLine, FlexState } from './types'
 import { mainAxisSize } from './axis'
-import { DEFAULT_FONT_SIZE } from './defaults'
+import { basisKind } from './basisSyntax'
+import { DEFAULT_FONT_SIZE } from './constants'
 import { computeFreeSpace, distributeGrow, distributeShrink, shrinkWeight } from './distribute'
-import { basisKind, resolveBasis } from './resolveBasis'
+import { resolveBasis } from './resolveBasis'
 import { splitLines } from './splitLines'
 
 /**
@@ -61,5 +62,5 @@ export function deriveLayout(state: FlexState, fontSize = DEFAULT_FONT_SIZE): De
     })
   })
 
-  return { lines, items: derivedItems }
+  return { lines, items: derivedItems, fontSize }
 }

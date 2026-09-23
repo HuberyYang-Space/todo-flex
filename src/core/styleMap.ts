@@ -3,7 +3,7 @@ import { isRowDirection } from './axis'
 
 /**
  * 状态 → 渲染用的行内样式。与 `cssEmit` 口径不同、刻意不合并：
- * 那边产出可粘贴的 CSS，省略初始值与容器宽高；这边状态里写了什么就输出什么。
+ * 那边产出可粘贴的 CSS，省略初始值；这边状态里写了什么就输出什么。
  * 返回自己的 StyleDecls 而不是 vue 的 CSSProperties，保持 core 零 vue 依赖。
  * 键名用 camelCase，值带单位。
  */

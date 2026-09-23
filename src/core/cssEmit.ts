@@ -5,12 +5,14 @@ function block(selector: string, rules: string[]): string {
   return `${selector} {\n${rules.map(rule => `  ${rule};`).join('\n')}\n}`
 }
 
-/** 可直接粘贴进项目的 CSS：省略初始值，不含演示区的容器宽高 */
+/** 可直接粘贴进项目的 CSS：省略初始值；容器宽高照写，演示区的布局才复现得出来 */
 export function emitCss(state: FlexState): string {
   const { container, items } = state
 
   const containerRules = [
     `display: ${container.display}`,
+    `width: ${container.width}px`,
+    `height: ${container.height}px`,
     `flex-direction: ${container.direction}`,
     `flex-wrap: ${container.wrap}`,
     `justify-content: ${container.justifyContent}`,

@@ -61,7 +61,7 @@ function isPresetActive(item: FlexItemState, preset: FlexShorthandPreset): boole
 
       <PropertyField
         v-for="prop in itemProperties"
-        :key="prop.key"
+        :key="`${selectedItem.id}:${prop.key}`"
         :prop="prop"
         :model-value="valueOf(selectedItem, prop.key)"
         @update:model-value="update(selectedItem, prop.key, $event)"

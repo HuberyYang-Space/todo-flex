@@ -193,21 +193,75 @@ describe('diagnose', () => {
     expect(real[0].actual).toBe(130)
   })
 
-  it('basis 非法时直接指出，不归因成 min-width:auto', () => {
-    // 浏览器丢弃 flex-basis: 50、按 auto 取内容尺寸 80，恰好与 min-width:auto 撑住的现象长得一样
-    const state = stateWith([{ basis: '50', size: 80 }])
-
-    const [diagnostic] = diagnoseWith(state, { i1: { width: 80 } })
-
-    expect(diagnostic).toMatchObject({ rule: 'invalid-basis', severity: 'warn' })
-  })
-
   it('basis 要到运行期才能确定时指出是谁，同一容器里的其余盒子不做比对', () => {
     const state = stateWith([{ basis: 'calc(50% - 10px)', size: 80 }, { basis: '100px' }])
 
     expect(diagnoseWith(state, { i1: { width: 290 }, i2: { width: 100 } })).toEqual([
       expect.objectContaining({ itemId: 'i1', rule: 'runtime-basis', severity: 'info' }),
     ])
+  })
+
+  // 真实 Chrome：A 的内容 150 被 min-width:auto 兜住，参与换行的尺寸变大，C 被挤到下一行，一行的成员跟着变了
+  it('换行位置与推导不同时，按行给出解释，不再拿错的行去比尺寸', () => {
+    const state = stateWith([
+      { basis: '100px', grow: 1, size: 150 },
+      { basis: '100px', grow: 1, size: 20 },
+      { basis: '100px', grow: 1, size: 20 },
+    ], 300)
+    state.container.wrap = 'wrap'
+    const measured: MeasuredStage = {
+      width: 300,
+      height: 200,
+      items: [
+        { id: 'i1', left: 0, top: 0, width: 150, height: 100 },
+        { id: 'i2', left: 150, top: 0, width: 150, height: 100 },
+        { id: 'i3', left: 0, top: 100, width: 300, height: 100 },
+      ],
+    }
+
+    const byId = new Map(diagnose(state, deriveLayout(state), measured).map(d => [d.itemId, d.rule]))
+
+    expect(byId.get('i1')).toBe('line-break-widened')
+    expect(byId.get('i2')).toBe('line-break-shifted')
+    expect(byId.get('i3')).toBe('line-break-shifted')
+  })
+
+  it('换行与推导一致的行照旧逐项比尺寸', () => {
+    // 两行都与推导一致：第一行的 i1 被 min-width:auto 撑住仍然报 min-width-auto
+    const state = stateWith([{ basis: '100px', size: 150 }, { basis: '250px', size: 20 }], 300)
+    state.container.wrap = 'wrap'
+    const measured: MeasuredStage = {
+      width: 300,
+      height: 200,
+      items: [
+        { id: 'i1', left: 0, top: 0, width: 150, height: 100 },
+        { id: 'i2', left: 0, top: 100, width: 250, height: 100 },
+      ],
+    }
+
+    const [diagnostic] = diagnose(state, deriveLayout(state), measured)
+    expect(diagnostic).toMatchObject({ itemId: 'i1', rule: 'min-width-auto' })
+  })
+
+  it('给实测盒子分行时用推导时的同一个根字号，不把一致的换行误报成不一致', () => {
+    // 根字号 20：推导与浏览器都是 A、B 各占一行；若分行时退回默认 16，会以为 B 没换行
+    const state = stateWith([
+      { basis: '0', size: 20, minWidthAuto: false },
+      { basis: '16em', size: 20 },
+    ], 300)
+    state.container.wrap = 'wrap'
+    const measured: MeasuredStage = {
+      width: 300,
+      height: 200,
+      items: [
+        { id: 'i1', left: 0, top: 0, width: 0, height: 15 },
+        { id: 'i2', left: 0, top: 15, width: 300, height: 15 },
+      ],
+    }
+
+    const rules = diagnose(state, deriveLayout(state, 20), measured).map(d => d.rule)
+    expect(rules).not.toContain('line-break-shifted')
+    expect(rules).not.toContain('line-break-widened')
   })
 
   it('缺少观测值的项直接跳过，不猜测', () => {

@@ -98,3 +98,30 @@ Vue 的 DOM 更新是异步的。`while (删除按钮数量 > 1) 点一下` 这�
 因此窄屏（<768px）降级与 `prefers-reduced-motion` 降级两项**无法自动验证**，只能靠人眼。
 两项都已核对通过，记录见 [progress.md](./progress.md#人眼核对清单已全部核对通过)——
 但这个限制本身不会消失：再动这两处，自动化照样不会报。
+
+## 五、headless Chrome 对拍
+
+判据依赖真实排版（`CSS.supports`、尺寸、断行），又用不着看得见的页面时，直接起一个 headless Chrome 跑探针页。
+它不是 claude-in-chrome 插件，不碰用户的标签页，也不需要窗口可见。2026-09-23 的全面 review 靠它做了数千个场景的对拍。
+
+```bash
+perl -e 'alarm 40; exec @ARGV' "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --headless=new --disable-gpu --no-first-run --no-default-browser-check --disable-extensions \
+  --password-store=basic --use-mock-keychain --virtual-time-budget=5000 \
+  --user-data-dir=<临时目录> --dump-dom "file://<探针页>.html" > out.html
+```
+
+探针页把结果写进 `<pre id="out">` 的文本，再从 dump 出的 DOM 里解析；对比推导引擎时，写一个临时 vitest spec
+读这份 JSON 调用 `src/core` 的函数。踩过的坑：
+
+1. **不加 `alarm` 会卡住不退出**。退出码 142 是超时信号，结果在那之前已经写完
+2. **生成探针页的 heredoc 要加引号**（`<<'EOF'`），否则 JS 模板字符串里的反引号被 shell 当成命令替换，页面悄悄坏掉
+3. **结果数量要断言对得上**。有一次页面没重新生成，Chrome 渲染的还是旧场景，差点拿旧数据下结论
+4. **探针要先自证**：先跑已知答案——百分比、`calc()` 算出的宽度，或「全部关掉 min-width:auto 时推导引擎应与浏览器一致」
+5. **内容块要有高度**：没设高度时每行高 0，按 `offsetTop` 分不出行
+6. **用 `stretch` 渲染提取「真实分行」时要去掉 `margin: auto`**：交叉轴上的 auto margin 会让盒子居中，不受 stretch 影响；
+   断行不看 auto margin，去掉不改变分行
+7. **要搭 app 的真实 DOM 结构**（`.stage-item > .stage-box > .content` 加字母标签，CSS 照搬 DemoStage.vue）。
+   简化结构里所有盒子交叉尺寸相同，会掩盖第 6 条那类问题
+8. **临时 spec 用完挪出 `src/`**，否则 `pnpm test` 会跑到它
+9. **比对 `offset*` 要留 1.5px 容差**：位置与尺寸各自取整，小数排版下会伪装成重叠或回退

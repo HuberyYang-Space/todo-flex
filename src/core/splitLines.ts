@@ -1,10 +1,18 @@
 import type { FlexContainerState, FlexItemState } from './types'
 import { mainAxisGap, mainAxisSize } from './axis'
-import { DEFAULT_FONT_SIZE } from './defaults'
+import { DEFAULT_FONT_SIZE } from './constants'
 import { resolveBasis } from './resolveBasis'
 
-/** 按 order 排序后分行。返回值按视觉行序排列，wrap-reverse 会反转行的先后 */
-export function splitLines(items: FlexItemState[], container: FlexContainerState, fontSize = DEFAULT_FONT_SIZE): string[][] {
+/**
+ * 按 order 排序后分行。返回值按视觉行序排列，wrap-reverse 会反转行的先后。
+ * 断行看的是假设尺寸：引擎默认只取 basis、不含 min-width:auto 的下限；观测侧可以换成浏览器的算法。
+ */
+export function splitLines(
+  items: FlexItemState[],
+  container: FlexContainerState,
+  fontSize = DEFAULT_FONT_SIZE,
+  hypotheticalSize = (item: FlexItemState): number => Math.max(0, resolveBasis(item, container, fontSize)),
+): string[][] {
   // sort 是稳定排序，order 相同的项保持文档顺序——这正是规范要求的
   const ordered = [...items].sort((a, b) => a.order - b.order)
 
@@ -18,7 +26,7 @@ export function splitLines(items: FlexItemState[], container: FlexContainerState
   let used = 0
 
   for (const item of ordered) {
-    const size = Math.max(0, resolveBasis(item, container, fontSize))
+    const size = hypotheticalSize(item)
     const nextUsed = current.length === 0 ? size : used + gap + size
 
     // 当前行已有内容且放不下时才断行，保证单个超宽盒子独占一行而非产生空行

@@ -1,7 +1,8 @@
 import type { FlexItemState, FlexState } from '~/core/types'
 import { computed, reactive } from 'vue'
+import { DEFAULT_FONT_SIZE, MAX_ITEMS } from '~/core/constants'
 import { emitCss } from '~/core/cssEmit'
-import { createDefaultItem, createDefaultState, DEFAULT_FONT_SIZE, MAX_ITEMS } from '~/core/defaults'
+import { createDefaultItem, createDefaultState } from '~/core/defaults'
 import { deriveLayout } from '~/core/deriveLayout'
 import { decodeOrDefault } from '~/core/urlCodec'
 

@@ -5,6 +5,7 @@ import type {
   MeasuredStage,
 } from './types'
 import { isRowDirection, mainAxisGap } from './axis'
+import { measuredLines } from './measuredLines'
 
 /** 与 diagnostics.ts 的 TOLERANCE 同一个理由：不设阈值会画出满屏发丝色块 */
 const EPSILON = 0.5
@@ -72,11 +73,15 @@ export function computeOverlay(
   const crossStart = (record: MeasuredItem): number => (isRow ? record.top : record.left)
   const crossSize = (record: MeasuredItem): number => (isRow ? record.height : record.width)
 
+  // 推导引擎的某一行与实际某一行的盒子完全相同时，它的理论剩余才有对照意义
+  const theoreticalByMembers = new Map(derived.lines.map(line => [[...line.itemIds].sort().join(' '), line.remainingFreeSpace]))
+
   const bands: OverlayBand[] = []
   const lines: OverlayLine[] = []
 
-  for (const line of derived.lines) {
-    const records = line.itemIds
+  for (const [index, ids] of measuredLines(state, measured, derived.fontSize).entries()) {
+    const line = { index, remainingFreeSpace: theoreticalByMembers.get([...ids].sort().join(' ')) ?? null }
+    const records = ids
       .map(id => measuredById.get(id))
       .filter((record): record is MeasuredItem => Boolean(record))
       .sort((a, b) => mainStart(a) - mainStart(b))

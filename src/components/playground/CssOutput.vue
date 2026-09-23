@@ -2,9 +2,12 @@
 import { useTimeoutFn } from '@vueuse/core'
 import { computed, ref, shallowRef, watchEffect } from 'vue'
 import { useFlexState } from '~/composables/useFlexState'
+import { itemProperties } from '~/data/flexProperties'
 import { highlightCss } from '~/visual/highlight'
 
 const { css } = useFlexState()
+
+const demoOnlyNames = itemProperties.filter(prop => prop.demoOnly).map(prop => `「${prop.cssName}」`).join('、')
 
 // 不用 VueUse 的 useClipboard：它退回 execCommand 后不看返回值，一律报「已复制」，假成功比明说失败更糟
 const copyStatus = ref<'idle' | 'copied' | 'failed'>('idle')
@@ -69,6 +72,10 @@ async function copy(): Promise<void> {
         <div :class="copyIcon" />
       </button>
     </header>
+
+    <p v-if="demoOnlyNames" data-testid="css-note" class="shrink-0 text-xs op-60">
+      {{ demoOnlyNames }}只用于演示区，不是 CSS 属性，不会导出
+    </p>
 
     <!-- min-h-0 不能漏，否则长 CSS 会把整块面板顶破 -->
     <div class="min-h-0 flex-1 overflow-auto">
