@@ -8,7 +8,7 @@ import { STAGE_LIMITS } from '~/core/defaults'
 const { state } = useFlexState()
 const { setScrubbing } = useFlip()
 
-/** 按下时记住起点与当时的尺寸，位移量直接加在起始尺寸上，避免累积误差 */
+/** 位移量直接加在按下时的尺寸上，不逐帧累加，避免累积误差 */
 const origin = ref<{ x: number, y: number, width: number, height: number } | null>(null)
 
 function clamp(value: number, min: number, max: number): number {
@@ -22,19 +22,17 @@ function onPointerdown(event: PointerEvent): void {
     width: state.container.width,
     height: state.container.height,
   }
-  // 拖拽期间抑制 Flip：手已经到了方块还在追，反而拖泥带水
   setScrubbing(true)
-  // 指针捕获让快速拖出手柄范围时事件不丢；happy-dom 里没有这个方法，可选链兜住
+  // happy-dom 里没有 setPointerCapture，可选链兜住
   ;(event.target as HTMLElement).setPointerCapture?.(event.pointerId)
 
-  // preventDefault 挡住了拖拽时的文本选中，但也连带挡掉了 pointerdown 默认的焦点转移，
-  // 于是点完手柄再按方向键，改的是上一个焦点元素。手动补一次 focus 把这条路接回来。
-  // 浏览器实测发现，单元测试与 Tab 聚焦路径都盖不住这个缺口。
+  // preventDefault 挡住拖拽时的文本选中，也连带挡掉了默认的焦点转移，
+  // 不手动补 focus 的话，点完手柄再按方向键改的是上一个焦点元素
   event.preventDefault()
   ;(event.currentTarget as HTMLElement).focus()
 }
 
-// 监听挂在 window 上而不是手柄上：鼠标甩出手柄之后拖拽仍要跟手
+// 挂在 window 上：鼠标甩出手柄之后拖拽仍要跟手
 useEventListener(window, 'pointermove', (event: PointerEvent) => {
   const from = origin.value
   if (!from)
@@ -57,7 +55,6 @@ useEventListener(window, 'pointerup', () => {
   setScrubbing(false)
 })
 
-// 方向键微调是这个手柄的键盘等价物——它替掉了原来两个可聚焦的 range 滑块
 function onKeydown(event: KeyboardEvent): void {
   const step = event.shiftKey ? 10 : 1
   const moves: Record<string, [number, number]> = {
@@ -89,13 +86,8 @@ function onKeydown(event: KeyboardEvent): void {
 </template>
 
 <style scoped>
-/*
- * 手柄贴在演示区右下角外沿，落在 wrapper 上而不是 .stage 里——
- * .stage 是真实 flex 容器，塞进去会变成一个盒子。
- */
 .resizer {
   position: absolute;
-  /* 盒子现在是 z-index: 1，手柄不抬到它上面会被贴着右下角的盒子压住 */
   z-index: 2;
   right: -6px;
   bottom: -6px;

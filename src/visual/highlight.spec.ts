@@ -19,10 +19,7 @@ function contrast(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05)
 }
 
-/**
- * 面板底色取自 main.css 而不是写死：代码块是贴在 `panel` 上的，
- * 主题变量一改，这里的判据就得跟着改，不该还在对着一个过期的常数算。
- */
+/** 取自 main.css 而不是写死：主题变量一改，判据要跟着改 */
 function panelColors(): { light: string, dark: string } {
   const css = readFileSync(resolve(process.cwd(), 'src/styles/main.css'), 'utf-8')
   const light = /:root\s*\{[\s\S]*?--panel:\s*(#[0-9a-f]{6})/i.exec(css)
@@ -41,10 +38,7 @@ function tokenColors(html: string, which: 'light' | 'dark'): string[] {
 }
 
 describe('highlightCss', () => {
-  /*
-   * 覆盖面尽量宽：取值越长、种类越多，能染到的 token 种类就越多。
-   * 只拿默认状态去测，标点之外的 token 有好几种根本不会出现。
-   */
+  // 只拿默认状态去测，好几种 token 根本不会出现
   const state = createDefaultState()
   state.container.justifyContent = 'space-between'
   state.container.alignContent = 'space-between'
@@ -62,17 +56,7 @@ describe('highlightCss', () => {
     ).toBeGreaterThan(2)
   })
 
-  /*
-   * 这条守卫钉的是「代码高亮在两套主题下都读得清」。
-   *
-   * 起因是实测：上一版选的 vitesse 在亮色面板（#ffffff）上有三个 token 够不着 AA——
-   * 标点 #999999 只有 2.85、选择器名 #b07d48 3.58、属性名 #998418 3.70，
-   * 而选择器名和属性名恰恰是这个站最该让人读清的两样东西。
-   *
-   * 这类缺陷只在亮色下出现，站点默认跟随系统，光看暗色永远发现不了；
-   * 而「好不好看」没法自动判，「读不读得清」可以算——所以按算的来。
-   * 换主题之前先跑这条，别挑完好看的再回头发现一套主题不达标。
-   */
+  // 换高亮主题之前先跑这条：只在亮色下出现的不达标，光看暗色永远发现不了
   it('两套主题下每个 token 对面板底色都够 AA 的 4.5', async () => {
     const html = await highlightCss(sample)
     const panel = panelColors()

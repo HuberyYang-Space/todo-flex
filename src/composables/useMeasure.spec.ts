@@ -102,7 +102,7 @@ describe('useMeasure', () => {
   })
 
   it('只读 offset*，绝不调用 getBoundingClientRect', async () => {
-    // 红线：M4 接入 GSAP Flip 后 rect 会返回 transform 的中间态，明细表数字会乱跳
+    // rect 会返回 Flip 动画的 transform 中间态，明细表数字会乱跳
     const stage = buildStage()
     const spy = vi.spyOn(Element.prototype, 'getBoundingClientRect')
 

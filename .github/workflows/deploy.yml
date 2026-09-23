@@ -31,7 +31,6 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # 三道门禁与本地 CLAUDE.md 里的「完成前必须给证据」一致，缺一道就可能把红的推上线
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build

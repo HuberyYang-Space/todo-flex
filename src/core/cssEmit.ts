@@ -5,7 +5,7 @@ function block(selector: string, rules: string[]): string {
   return `${selector} {\n${rules.map(rule => `  ${rule};`).join('\n')}\n}`
 }
 
-/** 把当前状态转成可以直接粘贴进项目的 CSS */
+/** 可直接粘贴进项目的 CSS：省略初始值，不含演示区的容器宽高 */
 export function emitCss(state: FlexState): string {
   const { container, items } = state
 
@@ -17,14 +17,12 @@ export function emitCss(state: FlexState): string {
     `align-items: ${container.alignItems}`,
   ]
 
-  // normal 是初始值，输出出来只会增加噪音
   if (container.alignContent !== 'normal')
     containerRules.push(`align-content: ${container.alignContent}`)
 
   containerRules.push(`gap: ${container.rowGap}px ${container.columnGap}px`)
 
   const blocks = [block('.container', containerRules)]
-  // 主轴方向决定该关掉哪个方向的自动最小尺寸
   const minSizeProp = isRowDirection(container.direction) ? 'min-width' : 'min-height'
 
   items.forEach((item, index) => {
