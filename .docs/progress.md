@@ -20,7 +20,7 @@
 | M12 间距再收紧 | ✅ 完成，经浏览器实测 | `--space` 降到 8px、标题上下同源、演示区不再付两份留白、按钮图标调大 |
 | M13 全面 review | ✅ 完成，经单测与真实 Chrome 对拍；遗留的界面排查见 [M13 遗留排查](#m13-遗留排查与工程项2026-09-24) | 推导引擎对齐规范 §9.7、分享链接与诊断误报、可访问性、瞎守卫、注释清理（`2b0adab` … `63d70ce`） |
 | M14 三处一致 | ✅ 完成，经单测、真实 Chrome 对拍与变异验证 | basis 输入框把关、容器宽高进设置区与 CSS 区、「内容尺寸」标明仅演示区，[详见](#m14设置区演示区css-区三处一致) |
-| M13 遗留排查与工程项 | 🚧 排查与 7 条工程项已提交（`7cd4f16`、`e6e28a5`、`ee4301d`）；meta 与诊断兜底误导待做 | [详见](#m13-遗留排查与工程项2026-09-24) |
+| M13 遗留排查与工程项 | 🚧 排查与 7 条工程项已提交（`7cd4f16`、`e6e28a5`、`ee4301d`）；meta 已提交；诊断兜底误导待做 | [详见](#m13-遗留排查与工程项2026-09-24) |
 
 > `.docs/superpowers/plans/` 下的计划文档现在是**过程记录，不是待办清单**，每份开头都有状态横幅。
 > 判断进度一律以 git 历史和实际代码为准。
@@ -36,9 +36,9 @@
 
 > 2026-09-24 的状态。新会话读完 CLAUDE.md 后读这一节。待处理第 3 条（浏览器排查）与第 4 条里用户定为「按建议做」的
 > 7 项都已做完，排查中冒出的窄屏横滚与诊断列对齐也已修，已提交到 `dev`（`7cd4f16` 修复、`e6e28a5` 工程项、`ee4301d` 分享链接提示），**未推送**。
-> 还没开始的：用户定为单独做的 meta、另开一项的诊断兜底误导（先 brainstorming）。
+> meta 单独提交。还没开始的：另开一项的诊断兜底误导（先 brainstorming）。
 
-当前状态：`pnpm test` 637/637、`pnpm lint`、`pnpm tscheck`、`pnpm build` 全部通过。
+当前状态：`pnpm test` 641/641、`pnpm lint`、`pnpm tscheck`、`pnpm build` 全部通过。
 
 ### 待处理（方向已定，按顺序做）
 
@@ -61,7 +61,9 @@
      放在演示区标题行下方，说清原因类别（版本不认识 / 缺参数 / 有无法解析的值），点关闭或状态第一次变化时撤掉；局部修正（夹回区间、截掉盒子、忽略选中项）照旧静默。
      `decode` 改为返回 `{ state, issue }`，文案住在 [ShareNotice.vue](../src/components/playground/ShareNotice.vue)。
      开发态与生产构建都在 headless Chrome 里核对过：三类坏链接各自显示对应文案、加载 2.5s 后仍在，真实点击关闭与改属性都能撤掉，正常链接与首次访问不出现
-   - ⏳ [index.html](../index.html) 缺 og / twitter / theme-color meta，用户定为单独做
+   - ✅ [index.html](../index.html) 补上文字类 meta（用户定为不做分享图）：og 的 type / url / title / description、`twitter:card=summary`、
+     按系统暗亮主题各一条 theme-color。[indexHtml.spec.ts](../src/indexHtml.spec.ts) 钉住它们与唯一来源一致（`<title>`、description、
+     `package.json` 的 homepage、两套主题的 `--bg`），7 条变异全红。**theme-color 跟的是系统主题**，站内手动切换主题时浏览器外观色不跟着变
    - CI 只在 push `main` 时跑，`dev` 与 PR 没有门禁——用户定为不动
 5. **诊断的兜底解释会误导**（2026-09-24 排查中发现，用户定为另开一项、先走 brainstorming），复现见
    [M13 遗留排查](#m13-遗留排查与工程项2026-09-24)
