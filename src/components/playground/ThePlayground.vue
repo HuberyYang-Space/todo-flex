@@ -28,7 +28,7 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
       </button>
     </aside>
 
-    <main class="flex flex-col gap-space lg:min-h-0 lg:min-w-0">
+    <main class="min-w-0 flex flex-col gap-space lg:min-h-0">
       <div class="flex flex-col gap-space panel p-space lg:min-h-0 lg:flex-1">
         <div class="flex shrink-0 flex-wrap items-center gap-space text-xs">
           <h2 class="panel-title">

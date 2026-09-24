@@ -27,13 +27,14 @@ const { state, addItem, removeItem, selectItem } = useFlexState()
       <li
         v-for="(item, index) in state.items"
         :key="item.id"
-        class="flex items-center justify-between border border-bd rounded-1 px-2 py-1 text-xs"
+        class="flex items-center justify-between border border-bd rounded-1 text-xs"
         :class="{ 'border-accent text-accent': state.selectedId === item.id }"
       >
+        <!-- 内边距写在按钮上而不是 li 上：写在 li 上，整行边框里有四成面积点了没反应 -->
         <button
           data-testid="item-row"
           type="button"
-          class="flex-1 cursor-pointer bg-transparent text-left color-inherit font-mono"
+          class="flex-1 cursor-pointer bg-transparent px-2 py-1 text-left color-inherit font-mono"
           :aria-pressed="state.selectedId === item.id"
           @click="selectItem(item.id)"
         >
@@ -42,7 +43,7 @@ const { state, addItem, removeItem, selectItem } = useFlexState()
         <button
           data-testid="remove-item"
           type="button"
-          class="op-60 disabled:cursor-not-allowed disabled:op-30 hover:op-100"
+          class="px-2 py-1 op-60 disabled:cursor-not-allowed disabled:op-30 hover:op-100"
           :disabled="state.items.length <= 1"
           :aria-label="`删除盒子 ${itemLabel(index)}`"
           @click="removeItem(item.id)"

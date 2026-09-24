@@ -110,7 +110,7 @@ describe('metricsTable', () => {
   })
 
   // 真实 Chrome：A 的内容 150 被 min-width:auto 兜住后 C 被挤到下一行，B、C 的尺寸都是跟着换行重新分出来的
-  it('换行位置与推导不同时，说清是换行变了，不误报成尺寸被截断', async () => {
+  async function mountWithShiftedLineBreak() {
     const { state } = useFlexState()
     Object.assign(state.container, { width: 300, wrap: 'wrap', columnGap: 0, rowGap: 0 })
     for (const item of state.items)
@@ -128,12 +128,25 @@ describe('metricsTable', () => {
 
     const wrapper = mount(MetricsTable)
     await wrapper.vm.$nextTick()
+    return wrapper
+  }
+
+  it('换行位置与推导不同时，说清是换行变了，不误报成尺寸被截断', async () => {
+    const wrapper = await mountWithShiftedLineBreak()
     const texts = rows(wrapper).map(row => row.get('[data-testid="diagnosis"]').text())
 
     expect(texts[0]).toContain('撑到了内容尺寸')
     expect(texts[1]).toContain('换行位置与推导不同')
     expect(texts[2]).toContain('换行位置与推导不同')
     expect(texts.join('')).not.toContain('截断')
+  })
+
+  // 连字符是断行机会：窄列里 min-width:auto 会被拆成「min-」与「width:auto」两行
+  it('诊断文案里的 CSS 属性名整体不断行', async () => {
+    const wrapper = await mountWithShiftedLineBreak()
+    const unbreakable = rows(wrapper)[1].get('[data-testid="diagnosis"]').findAll('.whitespace-nowrap').map(span => span.text())
+
+    expect(unbreakable).toEqual(['min-width:auto'])
   })
 
   it('增删盒子后行数同步', async () => {

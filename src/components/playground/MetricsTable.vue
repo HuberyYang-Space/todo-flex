@@ -48,6 +48,13 @@ const rows = computed(() => {
 function px(value: number): string {
   return `${Math.round(value * 10) / 10}px`
 }
+
+// 连字符是断行机会：窄列里 min-width:auto 会被拆成「min-」与「width:auto」两行
+const CSS_NAME = /([a-z]+(?:-[a-z]+)+(?::[a-z]+)?)/
+
+function segments(text: string) {
+  return text.split(CSS_NAME).map((part, index) => ({ text: part, unbreakable: index % 2 === 1 }))
+}
 </script>
 
 <template>
@@ -60,16 +67,16 @@ function px(value: number): string {
       <table class="w-full text-xs font-mono">
         <thead class="op-60">
           <tr>
-            <th class="py-1 pr-3 text-center font-normal">
+            <th class="whitespace-nowrap py-1 pr-3 text-center font-normal">
               #
             </th>
-            <th class="py-1 pr-3 text-center font-normal">
+            <th class="whitespace-nowrap py-1 pr-3 text-center font-normal">
               理论
             </th>
-            <th class="py-1 pr-3 text-center font-normal">
+            <th class="whitespace-nowrap py-1 pr-3 text-center font-normal">
               实际
             </th>
-            <th class="py-1 text-center font-normal">
+            <th class="whitespace-nowrap py-1 text-left font-normal">
               诊断
             </th>
           </tr>
@@ -91,12 +98,13 @@ function px(value: number): string {
             <td data-testid="actual" class="py-1 pr-3 text-center">
               {{ row.actual === null ? '—' : px(row.actual) }}
             </td>
-            <td data-testid="diagnosis" class="py-1 text-center font-sans">
-              <span v-if="row.diagnostic?.severity === 'info'" class="text-accent">
-                ℹ {{ ruleText[row.diagnostic.rule](row.diagnostic) }}
-              </span>
-              <span v-else-if="row.diagnostic" class="text-accent2">
-                ⚠ {{ ruleText[row.diagnostic.rule](row.diagnostic) }}
+            <td data-testid="diagnosis" class="py-1 text-left font-sans">
+              <span v-if="row.diagnostic" :class="row.diagnostic.severity === 'info' ? 'text-accent' : 'text-accent2'">
+                {{ row.diagnostic.severity === 'info' ? 'ℹ' : '⚠' }}
+                <template v-for="(segment, index) in segments(ruleText[row.diagnostic.rule](row.diagnostic))" :key="index">
+                  <span v-if="segment.unbreakable" class="whitespace-nowrap">{{ segment.text }}</span>
+                  <template v-else>{{ segment.text }}</template>
+                </template>
               </span>
               <span v-else-if="row.actual === null || row.theoretical === null" class="op-60">—</span>
               <span v-else class="op-60">✓</span>

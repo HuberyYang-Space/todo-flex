@@ -147,6 +147,7 @@ describe('thePlayground', () => {
   /*
    * 窗口收窄时右侧 CSS 栏不能被顶出视口：`1fr` 的下限是 min-content，演示区的 min-content 会冒到 grid 轨道上，
    * 所以轨道得写 minmax(0, 1fr)，grid 项自己也得 min-w-0，两者缺一不可。
+   * min-w-0 不能带 lg: 前缀：塌成一栏后同一个 min-content 会把整页撑宽，视口 390 时页面 810 宽。
    * happy-dom 不排版，量不出 min-content，只能读源码断言。
    */
   it('中间列能被压缩，窄窗口下右侧 CSS 栏不会被顶出视口', () => {
@@ -170,8 +171,8 @@ describe('thePlayground', () => {
     expect(main, '没找到右侧 main').toBeTruthy()
     expect(
       main![1],
-      'main 缺 lg:min-w-0：轨道让开了，grid 项自己的自动最小尺寸仍会把它撑到 min-content',
-    ).toMatch(/(?:^|\s)lg:min-w-0(?:\s|$)/)
+      'main 缺不带前缀的 min-w-0：轨道让开了，grid 项自己的自动最小尺寸仍会把它撑到 min-content；只写 lg: 的话窄屏整页被撑宽',
+    ).toMatch(/(?:^|\s)min-w-0(?:\s|$)/)
   })
 
   /*
