@@ -20,7 +20,7 @@
 | M12 间距再收紧 | ✅ 完成，经浏览器实测 | `--space` 降到 8px、标题上下同源、演示区不再付两份留白、按钮图标调大 |
 | M13 全面 review | ✅ 完成，经单测与真实 Chrome 对拍；遗留的界面排查见 [M13 遗留排查](#m13-遗留排查与工程项2026-09-24) | 推导引擎对齐规范 §9.7、分享链接与诊断误报、可访问性、瞎守卫、注释清理（`2b0adab` … `63d70ce`） |
 | M14 三处一致 | ✅ 完成，经单测、真实 Chrome 对拍与变异验证 | basis 输入框把关、容器宽高进设置区与 CSS 区、「内容尺寸」标明仅演示区，[详见](#m14设置区演示区css-区三处一致) |
-| M13 遗留排查与工程项 | 🚧 排查与 7 条工程项已提交（`7cd4f16`、`e6e28a5`、`ee4301d`）；meta 已提交；诊断兜底误导待做 | [详见](#m13-遗留排查与工程项2026-09-24) |
+| M13 遗留排查与工程项 | ✅ 完成，经单测、真实 Chrome 与变异验证（`7cd4f16` … `05615a0`） | 浏览器排查五项、工程项、分享链接失败提示、meta、诊断连带归因，[详见](#m13-遗留排查与工程项2026-09-24) |
 
 > `.docs/superpowers/plans/` 下的计划文档现在是**过程记录，不是待办清单**，每份开头都有状态横幅。
 > 判断进度一律以 git 历史和实际代码为准。
@@ -34,39 +34,42 @@
 
 ## 交接：下次开工从这里接
 
-> 2026-09-24 的状态。新会话读完 CLAUDE.md 后读这一节。待处理第 3 条（浏览器排查）与第 4 条里用户定为「按建议做」的
-> 7 项都已做完，排查中冒出的窄屏横滚与诊断列对齐也已修，已提交到 `dev`（`7cd4f16` 修复、`e6e28a5` 工程项、`ee4301d` 分享链接提示），**未推送**。
-> meta 单独提交。还没开始的：另开一项的诊断兜底误导（先 brainstorming）。
+> 2026-09-24 收尾时的状态。新会话读完 CLAUDE.md 后读这一节。
+> 本轮（M13 遗留排查、工程项、分享链接失败提示、meta、诊断连带归因）全部做完并提交，工作区干净。
+> `main` 停在 `806acdb`（已部署，线上资源与本地构建逐字节一致）；`dev` 多出诊断连带归因 `05615a0` 与本节的文档同步，**未推送**。
+> **下一件由用户重新定计划**——开工先问用户，别自己从下面挑一件开做。
 
-当前状态：`pnpm test` 641/641、`pnpm lint`、`pnpm tscheck`、`pnpm build` 全部通过。
+当前状态：`pnpm test` 650/650、`pnpm lint`、`pnpm tscheck`、`pnpm build` 全部通过。
 
-### 待处理（方向已定，按顺序做）
+### 还开着的事（等用户排进新计划）
 
-1. **M14 新界面的浏览器核对**：✅ 2026-09-23 做完，结果见 [M14 节](#m14设置区演示区css-区三处一致)。
-   **自动化做不到、需要人手试的两件**：真实拼音输入法按回车上屏（只验证了模拟的 `isComposing` / `keyCode 229` 事件）；
+1. **观测层取整导致的误报**（2026-09-24 随机扫描时发现）：[useMeasure.ts](../src/composables/useMeasure.ts) 用 `offsetWidth` 读尺寸，
+   整数取整最多差 0.5px，与诊断的 0.5px 容差相撞——实际 17.5 读成 18，理论 17.4946，差 0.505 被判为不一致，明细表的「实际」也显示成 18。
+   随机 120 个状态里约 420 行出现 1 次，落在「没能归到已知规则」的兜底里。
+   复现链接：`?v=1&c=flex.row.nowrap.fs.stretch.normal.12.12.210.320&i=2-1-200px-0-auto-110-0-0,1-1-150px-0-auto-280-0-0,0-1-50px-0-auto-210-0-0,1-1-0-0-auto-200-0-0,2-1-30~25-0-auto-200-0-0`（盒子 C）。
+   ResizeObserver 的 `borderBoxSize` 是小数、同样不受 transform 影响，可以考虑改读它；位置仍是整数的 `offsetLeft` / `offsetTop`。
+   修之前先在真实 Chrome 里用这条链接看到它出错
+2. **需要人手试的两件**（自动化做不到）：真实拼音输入法按回车上屏（只验证了模拟的 `isComposing` / `keyCode 229` 事件）；
    Safari 上点预设按钮时输入框是否先失焦（本机没有 Safari）
-2. **提交与部署**：✅ 2026-09-23 做完。M13 收尾那批与 M14 的改动在同一批文件里交错，合成一个提交 `1887414`。
-   以后要拆提交时逐个在临时 worktree 里验证暂存区：pnpm 11 执行脚本前会检查依赖、拒绝软链过去的 `node_modules`，
-   所以直接调 `node_modules/.bin/vitest run` 与 `node_modules/.bin/vue-tsc --noEmit`，并先在干净 HEAD 上跑出基线自证
-3. **浏览器排查（M13 遗留）**：✅ 2026-09-24 做完，五项结论见 [M13 遗留排查](#m13-遗留排查与工程项2026-09-24)
-4. **工程项**（2026-09-24 用户逐条定了方向）
-   - ✅ `pnpm-workspace.yaml` 删掉 3 条指向锁文件里不存在的包的配置，`semver@6.3.1` 的信任例外仍在起作用、保留
-   - ✅ 删掉全仓库手写的、auto-import 已覆盖的 import（30 个文件 62 行，类型 import 保留），以及模板里用到的组件 import 11 行
-     （unplugin-vue-components 覆盖；`main.ts` 的 `App` 与 spec 里给 `mount()` 用的组件是脚本用法，插件管不到，保留）
-   - ✅ [deploy.yml](../.github/workflows/deploy.yml) 的写权限挪到 deploy job，build job 只读——**下次 push `main` 才是第一次真跑**
-   - ✅ `package.json` 补 `engines.node: >=24`（pnpm 对根项目只警告不拦截）
-   - ✅ `PropertyDef.key` 受状态字段约束，key 拼错编译期报错
-   - ✅ `noUncheckedIndexedAccess` 打开试过：211 个报错、没发现真缺陷，用户定为**不开**，数字见 [M13 遗留排查](#m13-遗留排查与工程项2026-09-24)
-   - ✅ 分享链接被整条拒掉时给提示（原先完全静默：`dropConsole` 删掉了唯一的 warn）。用户定的设计：只在整条回退默认时提示，
-     放在演示区标题行下方，说清原因类别（版本不认识 / 缺参数 / 有无法解析的值），点关闭或状态第一次变化时撤掉；局部修正（夹回区间、截掉盒子、忽略选中项）照旧静默。
-     `decode` 改为返回 `{ state, issue }`，文案住在 [ShareNotice.vue](../src/components/playground/ShareNotice.vue)。
-     开发态与生产构建都在 headless Chrome 里核对过：三类坏链接各自显示对应文案、加载 2.5s 后仍在，真实点击关闭与改属性都能撤掉，正常链接与首次访问不出现
-   - ✅ [index.html](../index.html) 补上文字类 meta（用户定为不做分享图）：og 的 type / url / title / description、`twitter:card=summary`、
-     按系统暗亮主题各一条 theme-color。[indexHtml.spec.ts](../src/indexHtml.spec.ts) 钉住它们与唯一来源一致（`<title>`、description、
-     `package.json` 的 homepage、两套主题的 `--bg`），7 条变异全红。**theme-color 跟的是系统主题**，站内手动切换主题时浏览器外观色不跟着变
-   - CI 只在 push `main` 时跑，`dev` 与 PR 没有门禁——用户定为不动
-5. **诊断的兜底解释会误导**（2026-09-24 排查中发现，用户定为另开一项、先走 brainstorming），复现见
-   [M13 遗留排查](#m13-遗留排查与工程项2026-09-24)
+3. **公式展开**：已定要做、时间未定，见[下文](#待办已定要做时间未定公式展开)
+4. GitHub 提示 `ubuntu-latest` 从 2026-10-19 起迁到 Ubuntu 26，[deploy.yml](../.github/workflows/deploy.yml) 用的就是它；届时部署若出问题先查这个
+
+### 本轮做完的（2026-09-23 ～ 09-24）
+
+- **M14 新界面的浏览器核对**与**提交部署**：见 [M14 节](#m14设置区演示区css-区三处一致)
+- **M13 遗留的五项浏览器排查**：挤压动画没复现缺陷、不改；标签宽度系数仍成立；主题刷新不闪；
+  列表行点击死区、表头逐字折行、属性名在连字符处断行三处缺陷已修（`7cd4f16`）。结论与数字见 [M13 遗留排查](#m13-遗留排查与工程项2026-09-24)
+- **排查中冒出的两条**：窄屏整页横滚已修、诊断列改左对齐（`7cd4f16`）
+- **工程项**（`e6e28a5`）：删掉 auto-import 与组件自动注册已覆盖的手写 import 73 行；属性表 key 受状态字段约束；
+  部署写权限只给 deploy job（09-24 部署第一次真跑即通过）；补 `engines.node: >=24`（pnpm 对根项目只警告）；
+  删掉 `pnpm-workspace.yaml` 里 3 条死配置（`semver@6.3.1` 的信任例外仍在起作用，保留）。
+  `noUncheckedIndexedAccess` 打开试过 211 个报错、没发现真缺陷，用户定为不开；CI 只在 push `main` 时跑，用户定为不动
+- **分享链接被整条拒掉时给提示**（`ee4301d`）：只在整条回退默认时提示，放在演示区标题行下方，说清原因类别，
+  点关闭或状态第一次变化时撤掉；局部修正照旧静默。`decode` 返回 `{ state, issue }`，文案住在 [ShareNotice.vue](../src/components/playground/ShareNotice.vue)
+- **meta**（`806acdb`）：og 的 type / url / title / description、`twitter:card=summary`、按系统暗亮主题各一条 theme-color，
+  [indexHtml.spec.ts](../src/indexHtml.spec.ts) 钉住它们与唯一来源一致。不做分享图；**theme-color 跟的是系统主题**，站内切换主题时浏览器外观色不跟
+- **诊断连带归因**（`05615a0`）：新增「被同行连带」规则点名源头，兜底改为如实说没归因，min-width:auto 文案分伸缩两种说法；
+  规则改动记在[设计文档 6.3 节的 2026-09-24 修订](./superpowers/specs/2026-09-08-todo-flex-design.md#63-诊断层理论-vs-实际)
 
 ### 终审 Minor 的处理（2026-09-23 用户决定）
 
@@ -97,7 +100,11 @@ grow / shrink 分配（含冻结循环与因子和小于 1 的按比例分配）
 
 - **变异验证**：把变异写成列表（文件、查找串、替换串、要跑的测试），逐条执行。查找串必须恰好出现一次，
   否则报「探针失效」而不是给结论；变异前后都比对文件哈希，证明改动确实落地、还原确实干净
-- **headless Chrome 对拍**：见 [browser-verification.md](./browser-verification.md#五headless-chrome-对拍)
+- **headless Chrome 对拍**：见 [browser-verification.md](./browser-verification.md#五headless-chrome-对拍)；
+  要交互、逐帧采样或压窄视口用 CDP 驱动，见[第六节](./browser-verification.md#六cdp-驱动的-headless-chrome)
+- **拆提交**（同一批文件里交错着几类改动时）：先把最终版本整份备份并 `git stash -u`，按提交顺序逐阶段生成文件内容写进工作区，
+  每个阶段在工作区里跑 test / lint / tscheck 后再提交；全部提交完，逐字节比对 HEAD 与备份，确认没丢没串。
+  注意入库的生成物（`components.d.ts`）要跟着它所属的阶段走，开着的 dev server 会按当时的文件自动重写它
 
 ## M13 遗留排查与工程项（2026-09-24）
 
@@ -114,7 +121,7 @@ grow / shrink 分配（含冻结循环与因子和小于 1 的按比例分配）
 
 排查中冒出的新发现与用户的决定：
 
-- **诊断的兜底解释会误导**（另开一项，先 brainstorming）：一行里某个盒子被 `min-width:auto` 兜住后，剩余空间重新分给同行其余盒子，
+- **诊断的兜底解释会误导**（已修，`05615a0`，改法见[设计文档 6.3 节的 2026-09-24 修订](./superpowers/specs/2026-09-08-todo-flex-design.md#63-诊断层理论-vs-实际)）：一行里某个盒子被 `min-width:auto` 兜住后，剩余空间重新分给同行其余盒子，
   其余盒子被判成 `max-size-clamp`「尺寸被某个上下限截断了」——而本站根本没有 max 类属性。
   复现：容器 300、gap 12、三个盒子 basis `100px` grow 1、A 的内容 150 → B 理论 144、实际 138
 - **窄屏整页横向滚动**（已修）：lg 以下单栏时 `<main>` 没有 `min-w-0`，演示区把整页撑宽——默认状态下视口 390 与 768 时页面都是 810 宽，
