@@ -60,7 +60,8 @@ pnpm build                    # 类型检查 + 生产构建
    是产品的差异化所在，不要当成 bug 补上。
 4. **控制面板必须由 `data/flexProperties.ts` 驱动生成**，禁止为每个属性手写一遍 select/radio 模板。
 5. **观测层禁止使用 `getBoundingClientRect()`**。GSAP Flip 用 transform 做动画，
-   rect 会返回动画中间态导致明细表数字乱跳；尺寸用 `ResizeObserver`，位置用 `offsetLeft/offsetTop`，两者都不受 transform 影响。
+   rect 会返回动画中间态导致明细表数字乱跳；尺寸读计算样式（小数），位置用 `offsetLeft/offsetTop`，两者都不受 transform 影响，
+   ResizeObserver 只负责触发重采。尺寸不要改回 `offsetWidth`：它取整，差出的 0.5px 会撞上诊断容差造成误报。
    `useMeasure.spec.ts` 里有一条测试直接 spy 这个方法并断言从未被调用。
 6. **演示区的描边一律用 `outline`，禁止 `border` 与 `padding`**。border 占布局空间：容器少 2px 可用宽度、
    每个盒子实际尺寸比推导值多 2px，诊断层会把这个恒定偏差误报成「有规则介入」。而 `emitCss` 输出的 CSS 里没有 border，
