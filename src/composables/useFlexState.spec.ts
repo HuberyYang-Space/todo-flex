@@ -97,12 +97,40 @@ describe('useFlexState 的首屏初始化', () => {
   })
 
   it('地址栏是坏短码时回退默认状态，绝不白屏', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-
     const { state } = await loadWith('?v=1&c=坏掉了&i=也坏了')
 
     expect(state.container.direction).toBe('row')
     expect(state.items).toHaveLength(3)
+  })
+
+  it('坏短码回退默认时记下被拒的原因，供面板提示', async () => {
+    const { shareIssue } = await loadWith('?v=1&c=坏掉了&i=也坏了')
+
+    expect(shareIssue.value).toBe('content')
+  })
+
+  it('首次访问与正常短码都不算链接出错', async () => {
+    expect((await loadWith('/')).shareIssue.value).toBeNull()
+    expect((await loadWith('?v=1&c=flex.row.nowrap.fs.stretch.normal.12.12.720.320&i=0-1-auto-0-auto-80-1-0')).shareIssue.value).toBeNull()
+  })
+
+  // 状态一变，地址栏就被改写成当前状态，提示说的那条链接已经不在了
+  it('状态第一次变化后提示随之撤掉', async () => {
+    const { state, shareIssue } = await loadWith('?v=2')
+    expect(shareIssue.value).toBe('version')
+
+    state.container.wrap = 'wrap'
+    await nextTick()
+
+    expect(shareIssue.value).toBeNull()
+  })
+
+  it('可以手动关掉提示', async () => {
+    const { shareIssue, dismissShareIssue } = await loadWith('?v=2')
+
+    dismissShareIssue()
+
+    expect(shareIssue.value).toBeNull()
   })
 
   it('推导按页面加载时的根字号换算 em——用户调大了浏览器默认字号也算得对', async () => {

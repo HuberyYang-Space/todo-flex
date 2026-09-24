@@ -38,6 +38,20 @@ describe('thePlayground', () => {
     wrapper.unmount()
   })
 
+  // 打开别人的链接时第一眼看的是演示区，提示要挨着它，不能藏进操作区或 CSS 栏
+  it('分享链接被拒的提示挂在演示区面板里：标题行之后、演示区之前', () => {
+    useFlexState().shareIssue.value = 'content'
+    const wrapper = mount(ThePlayground)
+
+    const notice = wrapper.get('[data-testid="share-notice"]').element
+    const stage = wrapper.get('[data-testid="stage"]').element
+    expect(notice.previousElementSibling?.textContent).toContain('演示区')
+    expect(notice.parentElement?.contains(stage)).toBe(true)
+    expect(notice.compareDocumentPosition(stage) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    useFlexState().shareIssue.value = null
+  })
+
   it('叠加层开关能收起整层', async () => {
     const wrapper = mount(ThePlayground)
     expect(wrapper.find('[data-testid="overlay-toggle"]').exists()).toBe(true)

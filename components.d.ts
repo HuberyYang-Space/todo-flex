@@ -19,6 +19,7 @@ declare module 'vue' {
     MetricsTable: typeof import('./src/components/playground/MetricsTable.vue')['default']
     OverlayLayer: typeof import('./src/components/playground/OverlayLayer.vue')['default']
     PropertyField: typeof import('./src/components/playground/PropertyField.vue')['default']
+    ShareNotice: typeof import('./src/components/playground/ShareNotice.vue')['default']
     StageResizer: typeof import('./src/components/playground/StageResizer.vue')['default']
     ThePlayground: typeof import('./src/components/playground/ThePlayground.vue')['default']
   }

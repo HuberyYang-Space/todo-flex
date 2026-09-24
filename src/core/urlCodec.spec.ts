@@ -7,7 +7,7 @@ import { decode, decodeOrDefault, encode } from './urlCodec'
 describe('urlCodec', () => {
   it('默认状态编码后能原样解回来', () => {
     const state = createDefaultState()
-    expect(decode(encode(state))).toEqual(state)
+    expect(decode(encode(state))).toEqual({ state, issue: null })
   })
 
   it('编成带版本前缀的可读短码，不是 base64', () => {
@@ -28,7 +28,7 @@ describe('urlCodec 的分隔符与特殊字符', () => {
     state.items[0].alignSelf = 'flex-start'
     state.items[1].alignSelf = 'flex-end'
 
-    const back = decode(encode(state))
+    const back = decode(encode(state)).state
 
     expect(back?.items[0].alignSelf).toBe('flex-start')
     expect(back?.items[1].alignSelf).toBe('flex-end')
@@ -39,7 +39,7 @@ describe('urlCodec 的分隔符与特殊字符', () => {
     state.items[0].order = -1
     state.items[1].order = -5
 
-    const back = decode(encode(state))
+    const back = decode(encode(state)).state
 
     expect(back?.items[0].order).toBe(-1)
     expect(back?.items[1].order).toBe(-5)
@@ -49,7 +49,7 @@ describe('urlCodec 的分隔符与特殊字符', () => {
     const query = '?v=1&c=flex.row.nowrap.fs.stretch.normal.12.12.720.320'
       + '&i=0-1-auto-0-auto-80-1-0,0-1-auto-0-auto-80-1-0,0-1-auto-0-auto-80-1-0'
 
-    expect(decode(query)).toEqual(createDefaultState())
+    expect(decode(query).state).toEqual(createDefaultState())
   })
 
   it('容器段自带短横线的值同样能解回来', () => {
@@ -58,7 +58,7 @@ describe('urlCodec 的分隔符与特殊字符', () => {
     state.container.wrap = 'wrap-reverse'
     state.container.justifyContent = 'space-between'
 
-    const back = decode(encode(state))
+    const back = decode(encode(state)).state
 
     expect(back?.container.direction).toBe('column-reverse')
     expect(back?.container.wrap).toBe('wrap-reverse')
@@ -69,14 +69,14 @@ describe('urlCodec 的分隔符与特殊字符', () => {
     const state = createDefaultState()
     state.container.alignItems = 'first baseline'
 
-    expect(decode(encode(state))?.container.alignItems).toBe('first baseline')
+    expect(decode(encode(state)).state?.container.alignItems).toBe('first baseline')
   })
 
   it('basis 带百分号不会把查询串拆坏', () => {
     const state = createDefaultState()
     state.items[0].basis = '30%'
 
-    expect(decode(encode(state))?.items[0].basis).toBe('30%')
+    expect(decode(encode(state)).state?.items[0].basis).toBe('30%')
   })
 
   it('basis 里塞进分隔符也只影响它自己', () => {
@@ -84,7 +84,7 @@ describe('urlCodec 的分隔符与特殊字符', () => {
     // 极端但合法：calc 里同时有空格、百分号、减号、括号
     state.items[1].basis = 'calc(100% - 10px)'
 
-    const back = decode(encode(state))
+    const back = decode(encode(state)).state
 
     expect(back?.items[1].basis).toBe('calc(100% - 10px)')
     expect(back?.items).toHaveLength(3)
@@ -94,7 +94,7 @@ describe('urlCodec 的分隔符与特殊字符', () => {
     const state = createDefaultState()
     state.selectedId = state.items[2].id
 
-    expect(decode(encode(state))?.selectedId).toBe('item-3')
+    expect(decode(encode(state)).state?.selectedId).toBe('item-3')
   })
 })
 
@@ -108,63 +108,50 @@ describe('urlCodec 对非法输入的回退', () => {
     return vi.spyOn(console, 'warn').mockImplementation(() => {})
   }
 
-  it('没有 v 参数属于首次访问，返回 null 但不警告', () => {
-    const warn = silenceWarn()
-
-    expect(decode('')).toBeNull()
-    expect(warn).not.toHaveBeenCalled()
+  it('没有 v 参数属于首次访问，不算链接出错', () => {
+    expect(decode('')).toEqual({ state: null, issue: null })
   })
 
-  it('版本对不上就整个拒掉', () => {
-    const warn = silenceWarn()
+  it('版本对不上就整个拒掉，原因记为 version', () => {
     const query = encode(createDefaultState()).replace('v=1', 'v=2')
 
-    expect(decode(query)).toBeNull()
-    expect(warn).toHaveBeenCalledOnce()
+    expect(decode(query)).toEqual({ state: null, issue: 'version' })
   })
 
-  it('缺少 c 或 i 参数就整个拒掉', () => {
-    silenceWarn()
-
-    expect(decode('?v=1&i=0-1-auto-0-auto-80-1-0')).toBeNull()
-    expect(decode('?v=1&c=flex.row.nowrap.fs.stretch.normal.12.12.720.320')).toBeNull()
+  it('缺少 c 或 i 参数就整个拒掉，原因记为 missing', () => {
+    expect(decode('?v=1&i=0-1-auto-0-auto-80-1-0')).toEqual({ state: null, issue: 'missing' })
+    expect(decode('?v=1&c=flex.row.nowrap.fs.stretch.normal.12.12.720.320')).toEqual({ state: null, issue: 'missing' })
   })
 
-  it('容器段数不对就整个拒掉', () => {
-    silenceWarn()
-
-    expect(decode('?v=1&c=flex.row.nowrap&i=0-1-auto-0-auto-80-1-0')).toBeNull()
+  it('容器段数不对就整个拒掉，原因记为 content', () => {
+    expect(decode('?v=1&c=flex.row.nowrap&i=0-1-auto-0-auto-80-1-0')).toEqual({ state: null, issue: 'content' })
   })
 
   it('枚举值不在属性表里就整个拒掉', () => {
-    silenceWarn()
     // justify-content 没有 middle 这个值
     const query = encode(createDefaultState()).replace('.fs.', '.middle.')
 
-    expect(decode(query)).toBeNull()
+    expect(decode(query)).toEqual({ state: null, issue: 'content' })
   })
 
   it('数字位塞了非数字就整个拒掉', () => {
-    silenceWarn()
     const query = encode(createDefaultState()).replace('.720.320', '.wide.320')
 
-    expect(decode(query)).toBeNull()
+    expect(decode(query)).toEqual({ state: null, issue: 'content' })
   })
 
   it.each(['50', 'initial', 'var(--x)', 'calc-size(auto, size)', '100pxx', '0.', 'calc(100%-20px)', 'calc(1px)}*{display:none}a{b:calc(1px)'])('basis 是面板不收的 %j 就整个拒掉', (basis) => {
-    const warn = silenceWarn()
     const state = createDefaultState()
     state.items[1].basis = basis
 
-    expect(decode(encode(state))).toBeNull()
-    expect(warn).toHaveBeenCalledOnce()
+    expect(decode(encode(state))).toEqual({ state: null, issue: 'content' })
   })
 
   it('basis 解出来时规范成去首尾空白的小写，与面板写进状态的写法一致', () => {
     const state = createDefaultState()
     state.items[0].basis = ' CALC(10PX) '
 
-    expect(decode(encode(state))?.items[0].basis).toBe('calc(10px)')
+    expect(decode(encode(state)).state?.items[0].basis).toBe('calc(10px)')
   })
 
   it('basis 超过属性表的长度上限就整个拒掉，恰好在上限上照常解出来', () => {
@@ -176,26 +163,26 @@ describe('urlCodec 对非法输入的回退', () => {
     over.items[0].basis = `calc(${'1'.repeat(limit - 7)}px)`
 
     expect(at.items[0].basis).toHaveLength(limit)
-    expect(decode(encode(at))?.items[0].basis).toBe(at.items[0].basis)
-    expect(decode(encode(over))).toBeNull()
+    expect(decode(encode(at)).state?.items[0].basis).toBe(at.items[0].basis)
+    expect(decode(encode(over))).toEqual({ state: null, issue: 'content' })
   })
 
   it('sel 越界只丢掉选中项，其余照常解出来', () => {
     const warn = silenceWarn()
     const query = `${encode(createDefaultState())}&sel=9`
 
-    const back = decode(query)
+    const { state: back, issue } = decode(query)
 
+    expect(issue).toBeNull()
     expect(back).not.toBeNull()
     expect(back?.selectedId).toBeNull()
     expect(back?.items).toHaveLength(3)
     expect(warn).toHaveBeenCalledOnce()
   })
 
-  it('decodeOrDefault 把兜底做掉，调用方不必自己判空', () => {
-    silenceWarn()
-
-    expect(decodeOrDefault('?v=99&c=x&i=y')).toEqual(createDefaultState())
+  it('decodeOrDefault 把兜底做掉、带上被拒的原因，调用方不必自己判空', () => {
+    expect(decodeOrDefault('?v=99&c=x&i=y')).toEqual({ state: createDefaultState(), issue: 'version' })
+    expect(decodeOrDefault('')).toEqual({ state: createDefaultState(), issue: null })
   })
 })
 
@@ -213,7 +200,7 @@ describe('urlCodec 把越界数值夹回面板区间', () => {
     const state = createDefaultState()
     Object.assign(state.container, { rowGap: -5, columnGap: 999, width: 99999, height: -50 })
 
-    const back = decode(encode(state))!.container
+    const back = decode(encode(state)).state!.container
 
     expect(back.rowGap).toBe(0)
     expect(back.columnGap).toBe(64)
@@ -226,7 +213,7 @@ describe('urlCodec 把越界数值夹回面板区间', () => {
     const state = createDefaultState()
     state.container.height = 500
 
-    expect(decode(encode(state))!.container.height).toBe(400)
+    expect(decode(encode(state)).state!.container.height).toBe(400)
   })
 
   it('盒子的 grow / shrink / order / size 夹到属性表的区间里', () => {
@@ -234,7 +221,7 @@ describe('urlCodec 把越界数值夹回面板区间', () => {
     Object.assign(state.items[0], { grow: 99, shrink: -3, order: -99, size: 1 })
     Object.assign(state.items[1], { size: 5000 })
 
-    const [first, second] = decode(encode(state))!.items
+    const [first, second] = decode(encode(state)).state!.items
 
     expect(first).toMatchObject({ grow: 10, shrink: 0, order: -5, size: 20 })
     expect(second.size).toBe(400)
@@ -244,7 +231,7 @@ describe('urlCodec 把越界数值夹回面板区间', () => {
     const state = createDefaultState()
     Object.assign(state.items[0], { grow: 1.5, shrink: 0.5 })
 
-    expect(decode(encode(state))!.items[0]).toMatchObject({ grow: 1.5, shrink: 0.5 })
+    expect(decode(encode(state)).state!.items[0]).toMatchObject({ grow: 1.5, shrink: 0.5 })
   })
 
   it('盒子数超过上限时只留前面那几个，越界的选中项一并丢掉', () => {
@@ -252,7 +239,7 @@ describe('urlCodec 把越界数值夹回面板区间', () => {
     state.items = Array.from({ length: MAX_ITEMS + 4 }, (_, index) => createDefaultItem(`item-${index + 1}`))
     state.selectedId = `item-${MAX_ITEMS + 2}`
 
-    const back = decode(encode(state))!
+    const back = decode(encode(state)).state!
 
     expect(back.items).toHaveLength(MAX_ITEMS)
     expect(back.selectedId).toBeNull()
@@ -270,7 +257,7 @@ describe('urlCodec 与属性元信息表同源', () => {
         const container = state.container as unknown as Record<string, string>
         container[prop.key] = option.value
 
-        const back = decode(encode(state))
+        const back = decode(encode(state)).state
         const hint = `${prop.key}=${option.value}`
 
         expect(back, hint).not.toBeNull()
@@ -289,7 +276,7 @@ describe('urlCodec 与属性元信息表同源', () => {
         const item = state.items[0] as unknown as Record<string, string>
         item[prop.key] = option.value
 
-        const back = decode(encode(state))
+        const back = decode(encode(state)).state
         const hint = `${prop.key}=${option.value}`
 
         expect(back, hint).not.toBeNull()
@@ -329,7 +316,7 @@ describe('urlCodec 与属性元信息表同源', () => {
       const state = createDefaultState()
       state.items[0].basis = preset
 
-      expect(decode(encode(state))?.items[0].basis, preset).toBe(preset)
+      expect(decode(encode(state)).state?.items[0].basis, preset).toBe(preset)
     }
   })
 })

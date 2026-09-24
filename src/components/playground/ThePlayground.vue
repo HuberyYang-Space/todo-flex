@@ -41,6 +41,8 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
           </span>
         </div>
 
+        <ShareNotice />
+
         <!-- 不写内边距：留白全由 .stage-wrapper 的 --overhang 承担，再叠一份只会白缩可视范围 -->
         <div class="overflow-auto lg:min-h-0 lg:flex-1">
           <DemoStage />

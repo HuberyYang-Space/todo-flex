@@ -258,36 +258,33 @@ function decodeItem(raw: string, index: number): FlexItemState | null {
   }
 }
 
+/** 分享链接被整条拒掉的原因；面板据此提示，文案住在展示层 */
+export type ShareIssue = 'version' | 'missing' | 'content'
+
 /**
- * 带不带开头的 `?` 都吃。结构性错误（版本、段数、非法枚举）一律返回 `null`，绝不解出半对半错的状态。
+ * 带不带开头的 `?` 都吃。结构性错误（版本、段数、非法枚举）一律整条拒掉并给出原因，绝不解出半对半错的状态。
  * 越界的数值夹回面板区间、超出上限的盒子截掉——链接能手写，但状态只能是面板调得出来的样子。
- * 没有 `v` 参数是正常的首次访问，不警告。
+ * 没有 `v` 参数是正常的首次访问，不算出错。
  */
-export function decode(query: string): FlexState | null {
+export function decode(query: string): { state: FlexState | null, issue: ShareIssue | null } {
   const params = new URLSearchParams(query.startsWith('?') ? query.slice(1) : query)
+  const rejected = (issue: ShareIssue) => ({ state: null, issue })
 
   const version = params.get('v')
   if (version === null)
-    return null
-
-  if (version !== VERSION) {
-    console.warn(`[todo-flex] 无法识别的分享链接版本 v=${version}，已回退默认状态`)
-    return null
-  }
+    return { state: null, issue: null }
+  if (version !== VERSION)
+    return rejected('version')
 
   const containerRaw = params.get('c')
   const itemsRaw = params.get('i')
-  if (containerRaw === null || itemsRaw === null) {
-    console.warn('[todo-flex] 分享链接缺少 c 或 i 参数，已回退默认状态')
-    return null
-  }
+  if (containerRaw === null || itemsRaw === null)
+    return rejected('missing')
 
   const container = decodeContainer(containerRaw)
   const items = itemsRaw.split(',').slice(0, MAX_ITEMS).map(decodeItem)
-  if (container === null || items.includes(null)) {
-    console.warn('[todo-flex] 分享链接的内容无法解析，已回退默认状态')
-    return null
-  }
+  if (container === null || items.includes(null))
+    return rejected('content')
 
   const state: FlexState = {
     container,
@@ -306,9 +303,10 @@ export function decode(query: string): FlexState | null {
     }
   }
 
-  return state
+  return { state, issue: null }
 }
 
-export function decodeOrDefault(query: string): FlexState {
-  return decode(query) ?? createDefaultState()
+export function decodeOrDefault(query: string): { state: FlexState, issue: ShareIssue | null } {
+  const { state, issue } = decode(query)
+  return { state: state ?? createDefaultState(), issue }
 }
