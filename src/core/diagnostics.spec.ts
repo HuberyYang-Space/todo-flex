@@ -147,7 +147,7 @@ describe('diagnose', () => {
     ])
   })
 
-  it('该行没有剩余空间时，margin:auto 不成立，落到兜底解释', () => {
+  it('该行没有剩余空间时，margin:auto 不成立，落到没归因的兜底', () => {
     // 容器 300、两项各 300px，剩余为负
     const state = stateWith([
       { basis: '300px', size: 20, marginAuto: true },
@@ -156,7 +156,7 @@ describe('diagnose', () => {
 
     const [diagnostic] = diagnoseWith(state, { i1: { width: 200 } })
 
-    expect(diagnostic.rule).toBe('max-size-clamp')
+    expect(diagnostic.rule).toBe('unexplained')
   })
 
   it('同时开着 margin:auto 时，尺寸被下限接住仍报 min-width-auto', () => {
@@ -170,12 +170,82 @@ describe('diagnose', () => {
     expect(diagnostic.rule).toBe('min-width-auto')
   })
 
-  it('实际值不贴内容尺寸的偏差落到 max-size-clamp 兜底', () => {
+  it('实际值不贴内容尺寸、同行也没有盒子被兜住的偏差，如实落到没归因的兜底', () => {
     const state = stateWith([{ basis: '100px', size: 80 }])
 
     const [diagnostic] = diagnoseWith(state, { i1: { width: 130 } })
 
-    expect(diagnostic.rule).toBe('max-size-clamp')
+    expect(diagnostic.rule).toBe('unexplained')
+  })
+
+  // 真实 Chrome：A 的内容 250 被 min-width:auto 兜住，多占的空间由 B、C 分摊，两者从 158.7 缩到 113
+  it('收缩时同行有盒子被 min-width:auto 兜住，其余盒子判为被它连带并点名源头', () => {
+    const state = stateWith([
+      { basis: '300px', size: 250 },
+      { basis: '300px' },
+      { basis: '300px' },
+    ], 500, 12)
+
+    expect(diagnoseWith(state, { i1: { width: 250 }, i2: { width: 113 }, i3: { width: 113 } })).toEqual([
+      expect.objectContaining({ itemId: 'i1', rule: 'min-width-auto', params: { freeSpace: -424 } }),
+      expect.objectContaining({ itemId: 'i2', rule: 'min-width-auto-sibling', causedBy: ['i1'] }),
+      expect.objectContaining({ itemId: 'i3', rule: 'min-width-auto-sibling', causedBy: ['i1'] }),
+    ])
+  })
+
+  // 真实 Chrome：A 分到 152 比内容 200 小，被撑到 200，B、C 分到的剩余空间跟着变少，152 → 128
+  it('伸展时同样认得出连带，min-width:auto 那条带上为正的剩余空间', () => {
+    const state = stateWith([
+      { basis: '100px', grow: 1, size: 200 },
+      { basis: '100px', grow: 1 },
+      { basis: '100px', grow: 1 },
+    ], 480, 12)
+
+    expect(diagnoseWith(state, { i1: { width: 200 }, i2: { width: 128 }, i3: { width: 128 } })).toEqual([
+      expect.objectContaining({ itemId: 'i1', rule: 'min-width-auto', params: { freeSpace: 156 } }),
+      expect.objectContaining({ itemId: 'i2', rule: 'min-width-auto-sibling', causedBy: ['i1'] }),
+      expect.objectContaining({ itemId: 'i3', rule: 'min-width-auto-sibling', causedBy: ['i1'] }),
+    ])
+  })
+
+  it('同行有多个盒子被兜住时一并点名', () => {
+    // 理论各 166；A、B 被内容 250 兜住，C、D 分剩下的 164
+    const state = stateWith([
+      { basis: '300px', size: 250 },
+      { basis: '300px', size: 250 },
+      { basis: '300px' },
+      { basis: '300px' },
+    ], 700, 12)
+
+    const diagnostics = diagnoseWith(state, { i1: { width: 250 }, i2: { width: 250 }, i3: { width: 82 }, i4: { width: 82 } })
+
+    expect(diagnostics.filter(d => d.rule === 'min-width-auto-sibling').map(d => d.causedBy)).toEqual([['i1', 'i2'], ['i1', 'i2']])
+  })
+
+  it('比理论值大的偏差不硬套连带：被兜住的盒子只会挤小别人', () => {
+    const state = stateWith([
+      { basis: '300px', size: 250 },
+      { basis: '300px' },
+      { basis: '300px' },
+    ], 500, 12)
+
+    const byId = new Map(diagnoseWith(state, { i1: { width: 250 }, i2: { width: 200 } }).map(d => [d.itemId, d.rule]))
+
+    expect(byId.get('i2')).toBe('unexplained')
+  })
+
+  it('贴住内容尺寸却没多占空间的盒子不算源头', () => {
+    // 理论 158.7，A 的内容 159 恰好落在容差内，它没有挤占任何人
+    const state = stateWith([
+      { basis: '300px', size: 159 },
+      { basis: '300px' },
+      { basis: '300px' },
+    ], 500, 12)
+
+    const byId = new Map(diagnoseWith(state, { i1: { width: 159 }, i2: { width: 150 } }).map(d => [d.itemId, d.rule]))
+
+    expect(byId.get('i1')).toBeUndefined()
+    expect(byId.get('i2')).toBe('unexplained')
   })
 
   it('column 方向拿高度与理论值比对，不看宽度', () => {

@@ -91,8 +91,9 @@ export type DiagnosticRule
     | 'line-break-widened'
     | 'line-break-shifted'
     | 'min-width-auto'
+    | 'min-width-auto-sibling'
     | 'margin-auto'
-    | 'max-size-clamp'
+    | 'unexplained'
 
 /**
  * - `warn`：理论值与实际值对不上，指出是哪条规则介入了
@@ -106,4 +107,6 @@ export interface Diagnostic {
   actual: number
   /** 补充数值，供展示层写进文案（如被 margin 吃掉的剩余空间） */
   params: Record<string, number>
+  /** 被同行连带时，是哪些盒子被 min-width:auto 兜住、多占了空间 */
+  causedBy?: string[]
 }

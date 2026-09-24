@@ -78,6 +78,63 @@ describe('metricsTable', () => {
     expect(diagnosis).not.toContain('✓')
   })
 
+  async function diagnosisTexts(widths: number[]) {
+    useMeasure().measured.value = measureAll(widths)
+    const wrapper = mount(MetricsTable)
+    await wrapper.vm.$nextTick()
+    return rows(wrapper).map(row => row.get('[data-testid="diagnosis"]').text())
+  }
+
+  // 真实 Chrome：A 的内容 250 被兜住，B、C 从 158.7 缩到 113
+  it('收缩时被同行连带的盒子点名源头，源头自己说收缩到此为止', async () => {
+    const { state } = useFlexState()
+    state.container.width = 500
+    for (const item of state.items)
+      item.basis = '300px'
+    state.items[0].size = 250
+
+    const [a, b, c] = await diagnosisTexts([250, 113, 113])
+
+    expect(a).toContain('收缩到此为止')
+    expect(b).toContain('同一行的 A 被 min-width:auto 兜住')
+    expect(c).toContain('跟着变小')
+  })
+
+  // 真实 Chrome：A 分到 152 比内容 200 小，被撑到 200
+  it('伸展时被内容撑住，不说成收缩', async () => {
+    const { state } = useFlexState()
+    state.container.width = 480
+    for (const item of state.items)
+      Object.assign(item, { basis: '100px', grow: 1 })
+    state.items[0].size = 200
+
+    const [a] = await diagnosisTexts([200, 128, 128])
+
+    expect(a).toContain('撑到了内容尺寸')
+    expect(a).not.toContain('收缩')
+  })
+
+  it('同行有多个源头时一并点名', async () => {
+    const { state, addItem } = useFlexState()
+    addItem()
+    state.container.width = 700
+    for (const item of state.items)
+      item.basis = '300px'
+    state.items[0].size = 250
+    state.items[1].size = 250
+
+    const texts = await diagnosisTexts([250, 250, 82, 82])
+
+    expect(texts[2]).toContain('同一行的 A、B 被 min-width:auto 兜住')
+  })
+
+  it('归不到已知规则的偏差如实说没归因，不编造上下限', async () => {
+    const [a] = await diagnosisTexts([130, 80, 80])
+
+    expect(a).toContain('没能归到已知规则')
+    expect(a).not.toContain('上下限')
+  })
+
   it('margin:auto 吃掉剩余空间时给出提示，而不是报成尺寸偏差', async () => {
     // 默认态：容器 720、三个盒子各 80、两道 12px 间隙 → 剩余 456
     useFlexState().state.items[0].marginAuto = true
