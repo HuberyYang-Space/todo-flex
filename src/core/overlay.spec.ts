@@ -185,6 +185,21 @@ describe('computeOverlay', () => {
     expect(computeOverlay(state, derived, measured).bands).toEqual([])
   })
 
+  // 真实 Chrome：211px 容器三等分，位置只读得到整数的 offsetLeft（0 / 70 / 141），
+  // 拼上小数尺寸，B 的末端 140.34 与 C 的起点 141 之间凭空多出 0.66px，实际上两者紧贴
+  it('位置取整造成的不到 1px 的空隙不画色块', () => {
+    const state = createDefaultState()
+    Object.assign(state.container, { width: 211, columnGap: 0 })
+    const derived = makeLines([{ index: 0, itemIds: ['item-1', 'item-2', 'item-3'], remainingFreeSpace: 0 }])
+    const measured = stage(211, 320, [
+      { id: 'item-1', left: 0, top: 0, width: 70.3281, height: 320 },
+      { id: 'item-2', left: 70, top: 0, width: 70.3438, height: 320 },
+      { id: 'item-3', left: 141, top: 0, width: 70.3281, height: 320 },
+    ])
+
+    expect(computeOverlay(state, derived, measured).bands).toEqual([])
+  })
+
   it('观测里还没有这一行的盒子时跳过，不猜', () => {
     const state = createDefaultState()
     const derived = makeLines([{ index: 0, itemIds: ['item-1'], remainingFreeSpace: 100 }])

@@ -71,7 +71,7 @@ export interface DerivedLayout {
   fontSize: number
 }
 
-/** 尺寸与位置都取自 offset*，不受 transform 影响，GSAP Flip 动画期间数字照样准 */
+/** 尺寸取自计算样式（小数），位置取自 offset*（整数），都不受 transform 影响，GSAP Flip 动画期间数字照样准 */
 export interface MeasuredItem {
   id: string
   width: number

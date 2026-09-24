@@ -13,21 +13,23 @@ let activeStage: HTMLElement | null = null
  */
 let pauseDepth = 0
 
-/** 只用 offset*，不含 transform 的影响。禁止改用 getBoundingClientRect：它会返回 Flip 动画的中间态 */
+/**
+ * 尺寸读计算样式的小数值：offsetWidth 会取整，差出的 0.5px 正好撞上诊断的容差。
+ * 位置只能读整数的 offset*——没有不受 transform 影响的小数读法
+ */
+function sizeOf(el: HTMLElement): { width: number, height: number } {
+  const style = getComputedStyle(el)
+  return { width: Number.parseFloat(style.width), height: Number.parseFloat(style.height) }
+}
+
+/** 计算样式与 offset* 都不含 transform 的影响。禁止改用 getBoundingClientRect：它会返回 Flip 动画的中间态 */
 function readStage(stage: HTMLElement): MeasuredStage {
   const items: MeasuredItem[] = []
 
-  for (const el of stage.querySelectorAll<HTMLElement>('[data-item-id]')) {
-    items.push({
-      id: el.dataset.itemId!,
-      width: el.offsetWidth,
-      height: el.offsetHeight,
-      left: el.offsetLeft,
-      top: el.offsetTop,
-    })
-  }
+  for (const el of stage.querySelectorAll<HTMLElement>('[data-item-id]'))
+    items.push({ id: el.dataset.itemId!, ...sizeOf(el), left: el.offsetLeft, top: el.offsetTop })
 
-  return { width: stage.offsetWidth, height: stage.offsetHeight, items }
+  return { ...sizeOf(stage), items }
 }
 
 /** 由 DemoStage 在 setup 里调用一次，观测器随该组件的作用域自动回收 */

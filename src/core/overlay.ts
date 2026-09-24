@@ -7,8 +7,8 @@ import type {
 import { isRowDirection, mainAxisGap } from './axis'
 import { measuredLines } from './measuredLines'
 
-/** 与 diagnostics.ts 的 TOLERANCE 同一个理由：不设阈值会画出满屏发丝色块 */
-const EPSILON = 0.5
+/** 位置是取整的 offsetLeft / offsetTop，各差 ±0.5，算出的空隙最多差 1px；阈值再低，紧贴的盒子之间就会冒出发丝色块 */
+const EPSILON = 1
 
 type BandKind = 'free' | 'overflow'
 

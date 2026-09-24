@@ -3,11 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 interface Offsets { width: number, height: number, left: number, top: number }
 
-/** happy-dom 不做排版，offset* 全是 0，这里手工塞进去模拟浏览器算出的布局 */
+/**
+ * happy-dom 不做排版，这里手工模拟浏览器算出的布局：尺寸写进内联样式，由计算样式读出小数；
+ * offset* 像浏览器那样取整，尺寸一旦读错成 offsetWidth 就对不上
+ */
 function setOffsets(el: HTMLElement, offsets: Offsets): void {
+  el.style.width = `${offsets.width}px`
+  el.style.height = `${offsets.height}px`
   const map = {
-    offsetWidth: offsets.width,
-    offsetHeight: offsets.height,
+    offsetWidth: Math.round(offsets.width),
+    offsetHeight: Math.round(offsets.height),
     offsetLeft: offsets.left,
     offsetTop: offsets.top,
   }
@@ -98,7 +103,21 @@ describe('useMeasure', () => {
     })
   })
 
-  it('只读 offset*，绝不调用 getBoundingClientRect', async () => {
+  // 真实 Chrome：盒子排出来 17.5px，offsetWidth 取整成 18，与理论值 17.4946 差 0.505，越过了诊断的 0.5 容差
+  it('尺寸取浏览器排版的小数值，不取被取整的 offsetWidth / offsetHeight', async () => {
+    const stage = buildStage()
+    setOffsets(stage, { width: 210.5, height: 320.25, left: 0, top: 0 })
+    setOffsets(stage.querySelector<HTMLElement>('[data-item-id="i1"]')!, { width: 17.5, height: 320.25, left: 0, top: 0 })
+    await observe(stage)
+
+    expect(useMeasure().measured.value).toMatchObject({
+      width: 210.5,
+      height: 320.25,
+      items: [{ id: 'i1', width: 17.5, height: 320.25, left: 0, top: 0 }, { id: 'i2' }],
+    })
+  })
+
+  it('绝不调用 getBoundingClientRect', async () => {
     // rect 会返回 Flip 动画的 transform 中间态，明细表数字会乱跳
     const stage = buildStage()
     const spy = vi.spyOn(Element.prototype, 'getBoundingClientRect')

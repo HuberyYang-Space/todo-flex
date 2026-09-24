@@ -6,7 +6,7 @@ import { resolveBasis } from './resolveBasis'
 import { splitLines } from './splitLines'
 
 /**
- * offset* 的位置与尺寸各自取整，各差 ±0.5；拿「位置 + 尺寸」去比另一个取整的位置，最多差 1.5px。
+ * 位置是取整的 offset*，各差 ±0.5；拿「位置 + 尺寸」去比另一个取整的位置，最多差 1px，阈值再多留 0.5 的余量。
  * 小数排版（被拉伸的行框、auto margin）下这点误差会伪装成交叉轴重叠或主轴回退。
  */
 const EPSILON = 1.5
