@@ -151,3 +151,10 @@ Node 24 自带的 `WebSocket` 直接连 CDP，不用装 puppeteer。它的页面
    首帧才可能早于 Vue 挂载。比对 `PerformanceObserver` 的 `first-paint` 时刻与 class 变化时刻
 6. **`vite preview` 读 `server.open`**，后台起预览要加 `BROWSER=none`；它的进程名是 `vite.js preview`，
    `pkill -f "vite preview"` 匹配不到，按端口停：`kill $(lsof -t -iTCP:<端口> -sTCP:LISTEN)`
+7. **改过的模块要从已加载的资源里找 URL 再 `import()`**：Vite 热更新之后，应用引用的是带 `?t=<时间戳>` 的 URL，
+   裸路径 `import('/todo-flex/src/composables/useMeasure.ts')` 拿到的是另一份模块实例，单例状态（`measured`）是空的。
+   做法与第 1 条找 gsap 实例相同：在 `performance.getEntriesByType('resource')` 里按路径找。
+   没改过的模块两种写法拿到的是同一份，所以这个坑只在改完代码复测时冒出来
+8. **随机扫描要专门造小数排版**：容器宽与 gap 取 10 的倍数、basis 取整百时，绝大多数盒子落在整数上，取整类缺陷几乎看不见。
+   观测层取整那次，常规随机状态 120 个里只露出 1 行；换成任意整数宽、任意 gap、`7%` / `33%` 这类 basis 与多档 grow 后，150 个状态里 42 行，
+   见 [progress.md](./progress.md#观测层取整误报2026-09-24)
