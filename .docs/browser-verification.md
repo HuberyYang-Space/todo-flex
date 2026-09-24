@@ -94,10 +94,10 @@ Vue 的 DOM 更新是异步的。`while (删除按钮数量 > 1) 点一下` 这�
 
 ## 四、本机已知的不可控项
 
-`resize_window` 在本机不可控：三次请求 1100 / 720 / 500，分别得到 1280 / 1120 / 1920，压不到 768 以下。
-因此窄屏（<768px）降级与 `prefers-reduced-motion` 降级两项**无法自动验证**，只能靠人眼。
-两项都已核对通过，记录见 [progress.md](./progress.md#人眼核对清单已全部核对通过)——
-但这个限制本身不会消失：再动这两处，自动化照样不会报。
+claude-in-chrome 的 `resize_window` 在本机不可控：三次请求 1100 / 720 / 500，分别得到 1280 / 1120 / 1920，压不到 768 以下。
+窄屏（<768px）与 `prefers-reduced-motion` 两项当年只能靠人眼，记录见 [progress.md](./progress.md#人眼核对清单已全部核对通过)。
+**2026-09-24 起这两项可以自动验证了**：改用下面第六节的 CDP 驱动，`Emulation.setDeviceMetricsOverride` 能压到 390px，
+`Emulation.setEmulatedMedia` 能切 `prefers-reduced-motion` 与 `prefers-color-scheme`。
 
 ## 五、headless Chrome 对拍
 
@@ -125,3 +125,29 @@ perl -e 'alarm 40; exec @ARGV' "/Applications/Google Chrome.app/Contents/MacOS/G
    简化结构里所有盒子交叉尺寸相同，会掩盖第 6 条那类问题
 8. **临时 spec 用完挪出 `src/`**，否则 `pnpm test` 会跑到它
 9. **比对 `offset*` 要留 1.5px 容差**：位置与尺寸各自取整，小数排版下会伪装成重叠或回退
+
+## 六、CDP 驱动的 headless Chrome
+
+第五节只能 dump 一次 DOM；要交互、要逐帧采样、要换视口，就用 `--remote-debugging-port` 起 headless Chrome，
+Node 24 自带的 `WebSocket` 直接连 CDP，不用装 puppeteer。它的页面是可见的（`visibilityState: visible`），rAF 真跑，
+正好补上第三节第 1 条那个窗口掉进 hidden 的坑。2026-09-24 的 M13 遗留排查全靠它，结论见
+[progress.md](./progress.md#m13-遗留排查与工程项2026-09-24)。
+
+驱动脚本很短（launch → 找 page target → 连 WebSocket → `send(method, params)`），每次按需重写即可。
+开发态直接连 `http://127.0.0.1:<dev 端口>/todo-flex/`；页面里能 `await import('/todo-flex/src/core/urlCodec.ts')`，
+用 `encode()` 拼出任意状态的分享链接再导航过去，免掉全部点击。
+
+踩过的坑与用法：
+
+1. **采 GSAP 动画要用 `gsap.ticker.add` 挂采样回调**，不要自己开 rAF。`Timeline.updateRoot` 是模块加载时第一个注册的 ticker 回调，
+   后注册的回调排在根时间线渲染之后，采到的就是这一帧最终画出来的状态；自己开的 rAF 可能排在 gsap 前面，
+   会采到下一次渲染前就被覆盖掉的中间值。gsap 实例从 `performance.getEntriesByType('resource')` 里找 `deps/gsap.js` 的 URL 再 `import()`，
+   与应用用的是同一个模块实例
+2. **`Page.addScriptToEvaluateOnNewDocument` 执行时 `document.documentElement` 还是 null**。要观察 `<html>` 的 class，
+   得把 `MutationObserver` 挂在 `document` 上（`subtree: true`），再筛 `target === document.documentElement`，否则脚本第一行就抛错，日志是空的
+3. **`document.elementFromPoint` 对视口外的点返回 null**。做命中测试前先 `scrollIntoView`，并且断言「总有一部分点命中目标」来自证
+4. **判断实际用了哪套字体**：`DOM.getDocument` → `DOM.querySelectorAll` → `CSS.getPlatformFontsForNode`，返回每套平台字体渲染了多少个字形
+5. **测首帧闪不闪要用生产构建加限速**：开发态的 CSS 由 JS 注入，本来就闪；`Network.emulateNetworkConditions` 限速让 JS 晚到，
+   首帧才可能早于 Vue 挂载。比对 `PerformanceObserver` 的 `first-paint` 时刻与 class 变化时刻
+6. **`vite preview` 读 `server.open`**，后台起预览要加 `BROWSER=none`；它的进程名是 `vite.js preview`，
+   `pkill -f "vite preview"` 匹配不到，按端口停：`kill $(lsof -t -iTCP:<端口> -sTCP:LISTEN)`
