@@ -1,8 +1,6 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { nextTick } from 'vue'
-import { isDark, toggleDark } from './useDark'
 
 // index.html 的防闪烁脚本读的键必须就是 useDark() 写的键，对不上时它永远读到 null，刷新会先闪一帧系统主题
 describe('防闪烁脚本与 useDark 的存储键', () => {

@@ -1,4 +1,5 @@
 import type { BasisIssue } from '~/core/basisSyntax'
+import type { FlexContainerState, FlexItemState } from '~/core/types'
 import { basisIssue, normalizeBasis } from '~/core/basisSyntax'
 
 const MDN = 'https://developer.mozilla.org/zh-CN/docs/Web/CSS'
@@ -8,13 +9,13 @@ interface PropertyOption {
 }
 
 /** 只作用于演示区的属性不是 CSS，面板标出来、CSS 区说明它不会导出，也没有 MDN 文档可链 */
-type PropertyBase = { key: string, cssName: string } & ({ mdn: string, demoOnly?: never } | { demoOnly: true, mdn?: never })
+type PropertyBase<K extends string> = { key: K, cssName: string } & ({ mdn: string, demoOnly?: never } | { demoOnly: true, mdn?: never })
 
-export type PropertyDef
-  = | (PropertyBase & { kind: 'enum', options: PropertyOption[], default: string })
-    | (PropertyBase & { kind: 'number', min: number, max: number, step: number, default: number })
-    | (PropertyBase & { kind: 'boolean', default: boolean })
-    | (PropertyBase & {
+export type PropertyDef<K extends string = string>
+  = | (PropertyBase<K> & { kind: 'enum', options: PropertyOption[], default: string })
+    | (PropertyBase<K> & { kind: 'number', min: number, max: number, step: number, default: number })
+    | (PropertyBase<K> & { kind: 'boolean', default: boolean })
+    | (PropertyBase<K> & {
       kind: 'text'
       presets: string[]
       maxLength: number
@@ -28,7 +29,7 @@ export type PropertyDef
 type NumberPropertyDef = Extract<PropertyDef, { kind: 'number' }>
 
 /** 区间只在表里写一份，拖拽手柄与链接解码都从这里读 */
-export function numberProp(props: PropertyDef[], key: string): NumberPropertyDef {
+export function numberProp<K extends string>(props: PropertyDef<K>[], key: NoInfer<K>): NumberPropertyDef {
   const prop = props.find(item => item.key === key)
   if (prop?.kind !== 'number')
     throw new Error(`属性表里没有数值属性 ${key}`)
@@ -44,7 +45,7 @@ const BASIS_HINTS: Record<BasisIssue, string> = {
   'unsupported': '不是合法的 flex-basis，可以写 auto、content、100px、30% 或 calc()',
 }
 
-export const containerProperties: PropertyDef[] = [
+export const containerProperties: PropertyDef<keyof FlexContainerState>[] = [
   {
     kind: 'enum',
     key: 'display',
@@ -170,7 +171,7 @@ export const containerProperties: PropertyDef[] = [
   },
 ]
 
-export const itemProperties: PropertyDef[] = [
+export const itemProperties: PropertyDef<Exclude<keyof FlexItemState, 'id'>>[] = [
   {
     kind: 'number',
     key: 'grow',

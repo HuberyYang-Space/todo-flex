@@ -1,8 +1,5 @@
 import type { EffectScope } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick, ref } from 'vue'
-import { useFlexState } from './useFlexState'
-import { useMeasure } from './useMeasure'
 
 interface Offsets { width: number, height: number, left: number, top: number }
 

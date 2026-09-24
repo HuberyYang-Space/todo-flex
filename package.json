@@ -21,6 +21,9 @@
     "playground",
     "visualization"
   ],
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "vite --open",
     "build": "vue-tsc --noEmit && vite build",

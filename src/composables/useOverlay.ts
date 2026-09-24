@@ -1,5 +1,3 @@
-import { ref } from 'vue'
-
 /** 纯 UI 偏好，刻意不放进 FlexState：分享链接只该携带布局状态 */
 const visible = ref(true)
 

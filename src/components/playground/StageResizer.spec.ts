@@ -1,6 +1,5 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { useFlexState } from '~/composables/useFlexState'
 import { containerProperties, numberProp } from '~/data/flexProperties'
 import StageResizer from './StageResizer.vue'
 

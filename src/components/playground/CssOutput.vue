@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { useTimeoutFn } from '@vueuse/core'
-import { computed, ref, shallowRef, watchEffect } from 'vue'
-import { useFlexState } from '~/composables/useFlexState'
 import { itemProperties } from '~/data/flexProperties'
 import { highlightCss } from '~/visual/highlight'
 

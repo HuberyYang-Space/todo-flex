@@ -1,7 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
-import { useFlexState } from './useFlexState'
-import { useShareUrl } from './useShareUrl'
 
 describe('useShareUrl', () => {
   let stop: (() => void) | undefined

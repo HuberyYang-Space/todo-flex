@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import type { FlexContainerState } from '~/core/types'
-import { useFlexState } from '~/composables/useFlexState'
 import { containerProperties } from '~/data/flexProperties'
-import PropertyField from './PropertyField.vue'
 
 const { state } = useFlexState()
 
-function valueOf(key: string): string | number | boolean {
-  return state.container[key as keyof FlexContainerState]
+function valueOf(key: keyof FlexContainerState): string | number | boolean {
+  return state.container[key]
 }
 
 function update(key: string, value: string | number | boolean): void {

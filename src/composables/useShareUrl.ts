@@ -1,5 +1,4 @@
 import { encode } from '~/core/urlCodec'
-import { useFlexState } from './useFlexState'
 
 /** 拖手柄时宽高每帧都变，不防抖 Safari 会因 replaceState 超频直接抛错 */
 const WRITE_DELAY = 300

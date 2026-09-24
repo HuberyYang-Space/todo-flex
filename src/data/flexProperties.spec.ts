@@ -1,7 +1,7 @@
 import type { FlexContainerState, FlexItemState } from '~/core/types'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createDefaultItem, createDefaultState } from '~/core/defaults'
-import { containerProperties, flexShorthandPresets, itemProperties } from './flexProperties'
+import { containerProperties, flexShorthandPresets, itemProperties, numberProp } from './flexProperties'
 
 const allProperties = [...containerProperties, ...itemProperties]
 
@@ -9,6 +9,18 @@ describe('属性元信息表', () => {
   it('每个属性的 key 唯一', () => {
     const keys = allProperties.map(prop => prop.key)
     expect(new Set(keys).size).toBe(keys.length)
+  })
+
+  // 判据是 pnpm tscheck：拼错的 key 必须编译不过，运行期抛错只是兜底
+  it('key 拼错在编译期就报错', () => {
+    // @ts-expect-error 容器属性里没有 widht
+    expect(() => numberProp(containerProperties, 'widht')).toThrow()
+    // @ts-expect-error size 是盒子属性，不在容器属性表里
+    expect(() => numberProp(containerProperties, 'size')).toThrow()
+
+    // @ts-expect-error 表里的 key 同样受状态字段约束
+    const typo: (typeof containerProperties)[number] = { kind: 'boolean', key: 'widht', cssName: 'widht', mdn: '', default: true }
+    expect(typo.key).toBe('widht')
   })
 
   it('枚举属性的默认值必须出现在选项里', () => {

@@ -1,8 +1,5 @@
 <script setup lang="ts">
 import type { Diagnostic, DiagnosticRule } from '~/core/types'
-import { computed } from 'vue'
-import { useFlexState } from '~/composables/useFlexState'
-import { useMeasure } from '~/composables/useMeasure'
 import { isRowDirection } from '~/core/axis'
 import { diagnose } from '~/core/diagnostics'
 import { itemLabel } from '~/core/labels'

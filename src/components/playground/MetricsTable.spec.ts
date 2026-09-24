@@ -1,8 +1,6 @@
 import type { MeasuredStage } from '~/core/types'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { useFlexState } from '~/composables/useFlexState'
-import { useMeasure } from '~/composables/useMeasure'
 import MetricsTable from './MetricsTable.vue'
 
 /** 默认状态：容器 720、三个盒子 basis auto、内容尺寸 80，grow 为 0，所以理论尺寸都是 80 */

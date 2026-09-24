@@ -2,9 +2,6 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { useFlexState } from '~/composables/useFlexState'
-import { useFlip } from '~/composables/useFlip'
-import { useOverlay } from '~/composables/useOverlay'
 import ThePlayground from './ThePlayground.vue'
 
 describe('thePlayground', () => {

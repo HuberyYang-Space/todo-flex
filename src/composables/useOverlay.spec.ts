@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { useOverlay } from './useOverlay'
 
 describe('useOverlay', () => {
   it('叠加层默认开着', () => {

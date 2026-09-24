@@ -1,8 +1,4 @@
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
-import { ref } from 'vue'
-import { useFlexState } from '~/composables/useFlexState'
-import { useFlip } from '~/composables/useFlip'
 import { containerProperties, numberProp } from '~/data/flexProperties'
 
 const { state } = useFlexState()

@@ -1,9 +1,5 @@
 <script setup lang="ts">
 import type { AxisVector } from '~/core/axis'
-import { computed } from 'vue'
-import { useFlexState } from '~/composables/useFlexState'
-import { useMeasure } from '~/composables/useMeasure'
-import { useOverlay } from '~/composables/useOverlay'
 import { axisVectors, isRowDirection } from '~/core/axis'
 import { itemLabel } from '~/core/labels'
 import { computeOverlay } from '~/core/overlay'

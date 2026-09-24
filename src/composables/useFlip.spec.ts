@@ -1,10 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { Flip } from 'gsap/Flip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 import DemoStage from '~/components/playground/DemoStage.vue'
-import { useFlexState } from './useFlexState'
-import { useFlip } from './useFlip'
 
 describe('useFlip', () => {
   beforeEach(() => {

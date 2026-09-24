@@ -41,7 +41,7 @@ function fromCode(code: string): string {
 }
 
 /** 合法值直接取自属性元信息表，短码与面板不会各说各话 */
-function allowedValues(props: PropertyDef[], key: string): Set<string> | null {
+function allowedValues<K extends string>(props: PropertyDef<K>[], key: NoInfer<K>): Set<string> | null {
   const prop = props.find(item => item.key === key)
   return prop?.kind === 'enum' ? new Set(prop.options.map(option => option.value)) : null
 }
@@ -50,7 +50,7 @@ function allowedValues(props: PropertyDef[], key: string): Set<string> | null {
  * 输入框的 maxlength、check 与规范写法都与解码同源：面板能输入的链接一定解得回来，面板不收的也解不出来。
  * 收下返回规范写法，不收返回 null
  */
-function acceptText(props: PropertyDef[], key: string, value: string): string | null {
+function acceptText<K extends string>(props: PropertyDef<K>[], key: NoInfer<K>, value: string): string | null {
   const prop = props.find(item => item.key === key)
   if (prop?.kind !== 'text')
     throw new Error(`属性表里没有文本属性 ${key}`)
@@ -62,7 +62,7 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /** 夹回属性表里该数值控件的区间，与面板滑块能调出的范围同源 */
-function clampToProp(props: PropertyDef[], key: string, value: number): number {
+function clampToProp<K extends string>(props: PropertyDef<K>[], key: NoInfer<K>, value: number): number {
   const { min, max } = numberProp(props, key)
   return clamp(value, min, max)
 }
@@ -189,7 +189,7 @@ function decodeContainer(raw: string): FlexContainerState | null {
   if (numbers.includes(null))
     return null
 
-  const enums: [string, string][] = [
+  const enums: [keyof FlexContainerState, string][] = [
     ['display', display],
     ['direction', direction],
     ['wrap', wrap],

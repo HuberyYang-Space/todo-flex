@@ -1,7 +1,5 @@
 import type { MaybeRefOrGetter } from 'vue'
 import type { MeasuredItem, MeasuredStage } from '~/core/types'
-import { onScopeDispose, shallowRef, toValue, watch } from 'vue'
-import { useFlexState } from './useFlexState'
 
 const measured = shallowRef<MeasuredStage | null>(null)
 

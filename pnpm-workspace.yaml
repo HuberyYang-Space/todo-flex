@@ -2,11 +2,6 @@ minimumReleaseAgeExcludePrune: true
 
 trustPolicy: no-downgrade
 trustPolicyExclude:
-  - chokidar@4.0.3
   - semver@6.3.1
 
 shellEmulator: true
-
-allowBuilds:
-  '@parcel/watcher': false
-  esbuild: false

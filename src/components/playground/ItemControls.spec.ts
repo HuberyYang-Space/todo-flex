@@ -1,6 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { useFlexState } from '~/composables/useFlexState'
 import { MAX_ITEMS } from '~/core/constants'
 import { itemProperties } from '~/data/flexProperties'
 import ItemControls from './ItemControls.vue'

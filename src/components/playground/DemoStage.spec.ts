@@ -1,8 +1,5 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { nextTick } from 'vue'
-import { useFlexState } from '~/composables/useFlexState'
-import { useMeasure } from '~/composables/useMeasure'
 import { readSfcStyle } from '~/test/sfcStyle'
 import { motion } from '~/visual/motion'
 import DemoStage from './DemoStage.vue'

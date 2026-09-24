@@ -1,13 +1,4 @@
 <script setup lang="ts">
-import { useFlexState } from '~/composables/useFlexState'
-import { useOverlay } from '~/composables/useOverlay'
-import ContainerControls from './ContainerControls.vue'
-import CssOutput from './CssOutput.vue'
-import DemoStage from './DemoStage.vue'
-import ItemControls from './ItemControls.vue'
-import ItemList from './ItemList.vue'
-import MetricsTable from './MetricsTable.vue'
-
 const { state, resetState } = useFlexState()
 const { visible: overlayVisible, toggleVisible } = useOverlay()
 </script>

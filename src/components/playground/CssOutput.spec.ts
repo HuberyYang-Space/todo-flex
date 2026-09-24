@@ -1,6 +1,5 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useFlexState } from '~/composables/useFlexState'
 import CssOutput from './CssOutput.vue'
 
 describe('cssOutput', () => {

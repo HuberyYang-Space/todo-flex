@@ -1,16 +1,9 @@
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
 import type { FlexItemState } from '~/core/types'
-import { computed, ref } from 'vue'
-import { useFlexState } from '~/composables/useFlexState'
-import { useFlip } from '~/composables/useFlip'
-import { useMeasure } from '~/composables/useMeasure'
-import { useOverlay } from '~/composables/useOverlay'
 import { itemLabel } from '~/core/labels'
 import { containerStyle as mapContainer, contentStyle as mapContent, itemStyle as mapItem } from '~/core/styleMap'
 import { motion } from '~/visual/motion'
-import OverlayLayer from './OverlayLayer.vue'
-import StageResizer from './StageResizer.vue'
 
 const { state, selectItem } = useFlexState()
 const { setHovered } = useOverlay()

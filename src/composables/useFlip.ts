@@ -2,11 +2,8 @@ import type { MaybeRefOrGetter } from 'vue'
 import type { Direction } from '~/core/types'
 import gsap from 'gsap'
 import { Flip } from 'gsap/Flip'
-import { nextTick, ref, toValue, watch } from 'vue'
 import { isRowDirection } from '~/core/axis'
 import { motion } from '~/visual/motion'
-import { useFlexState } from './useFlexState'
-import { useMeasure } from './useMeasure'
 
 gsap.registerPlugin(Flip)
 

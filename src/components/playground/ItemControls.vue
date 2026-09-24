@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import type { FlexItemState } from '~/core/types'
 import type { FlexShorthandPreset } from '~/data/flexProperties'
-import { useFlexState } from '~/composables/useFlexState'
 import { flexShorthandPresets, itemProperties } from '~/data/flexProperties'
-import PropertyField from './PropertyField.vue'
 
 const { selectedItem } = useFlexState()
 
-function valueOf(item: FlexItemState, key: string): string | number | boolean {
-  return item[key as keyof FlexItemState]
+function valueOf(item: FlexItemState, key: Exclude<keyof FlexItemState, 'id'>): string | number | boolean {
+  return item[key]
 }
 
 function update(item: FlexItemState, key: string, value: string | number | boolean): void {

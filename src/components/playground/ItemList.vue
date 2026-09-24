@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useFlexState } from '~/composables/useFlexState'
 import { MAX_ITEMS } from '~/core/constants'
 import { itemLabel } from '~/core/labels'
 

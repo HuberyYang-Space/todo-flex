@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import ThePlayground from '~/components/playground/ThePlayground.vue'
-
 useShareUrl()
 </script>
 

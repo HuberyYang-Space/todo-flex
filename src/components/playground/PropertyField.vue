@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { PropertyDef } from '~/data/flexProperties'
-import { useFlip } from '~/composables/useFlip'
 
 const props = defineProps<{
   prop: PropertyDef
