@@ -22,6 +22,7 @@
 | M14 三处一致 | ✅ 完成，经单测、真实 Chrome 对拍与变异验证 | basis 输入框把关、容器宽高进设置区与 CSS 区、「内容尺寸」标明仅演示区，[详见](#m14设置区演示区css-区三处一致) |
 | M13 遗留排查与工程项 | ✅ 完成，经单测、真实 Chrome 与变异验证（`7cd4f16` … `05615a0`） | 浏览器排查五项、工程项、分享链接失败提示、meta、诊断连带归因，[详见](#m13-遗留排查与工程项2026-09-24) |
 | 观测层取整误报 | ✅ 完成，经单测、真实 Chrome 对拍与变异验证（`98c1c6a`） | 尺寸改读小数、叠加层色块阈值放宽到 1px，[详见](#观测层取整误报2026-09-24) |
+| 公式展开 | ✅ 完成，经单测、随机守卫、真实 Chrome 与变异验证（`a8292a5` … `0fe3939`） | 推导过程标签页，选中盒子的理论推导逐步展开，[详见](#公式展开2026-10-08) |
 
 > `.docs/superpowers/plans/` 下的计划文档现在是**过程记录，不是待办清单**，每份开头都有状态横幅。
 > 判断进度一律以 git 历史和实际代码为准。
@@ -36,20 +37,22 @@
 ## 交接：下次开工从这里接
 
 > 2026-10-08 的状态。新会话读完 CLAUDE.md 后读这一节。
-> `main` 与 `dev` 已推送到 `62888d0` 并部署成功（线上产物核对过新代码）。
-> **正在做公式展开**：spec 已经用户审过（[2026-10-08-formula-expansion-design.md](./superpowers/specs/2026-10-08-formula-expansion-design.md)），
-> 实现计划见 [2026-10-08-formula-expansion.md](./superpowers/plans/2026-10-08-formula-expansion.md)，等用户审计划并选执行方式后才动代码。
+> 公式展开已在 `dev` 上做完（见[公式展开](#公式展开2026-10-08)），**未推送**；`main` 与线上仍是 `62888d0`。
+> **下一件由用户定**，开工先问用户。
 
-当前状态：`pnpm test` 652/652、`pnpm lint`、`pnpm tscheck`、`pnpm build` 全部通过。
+当前状态：`pnpm test` 695/695、`pnpm lint`、`pnpm tscheck`、`pnpm build` 全部通过。
 
 ### 还开着的事（等用户排进新计划）
 
-1. **公式展开**：进行中，计划待审，见上方与[下文](#待办已定要做时间未定公式展开)
-2. **需要人手试的两件**（自动化做不到）：真实拼音输入法按回车上屏（只验证了模拟的 `isComposing` / `keyCode 229` 事件）；
+1. **需要人手试的两件**（自动化做不到）：真实拼音输入法按回车上屏（只验证了模拟的 `isComposing` / `keyCode 229` 事件）；
    Safari 上点预设按钮时输入框是否先失焦（本机没有 Safari）
-3. GitHub 提示 `ubuntu-latest` 从 2026-10-19 起迁到 Ubuntu 26，[deploy.yml](../.github/workflows/deploy.yml) 用的就是它；届时部署若出问题先查这个
+2. GitHub 提示 `ubuntu-latest` 从 2026-10-19 起迁到 Ubuntu 26，[deploy.yml](../.github/workflows/deploy.yml) 用的就是它；届时部署若出问题先查这个
 
-### 本轮做完的（2026-09-23 ～ 09-24）
+### 本轮做完的（2026-10-08）
+
+- **公式展开**（`a8292a5` … `0fe3939`）：推导过程标签页、引擎补冻结轮次、随机守卫、零消费方收尾，见[公式展开](#公式展开2026-10-08)
+
+### 上一轮做完的（2026-09-23 ～ 09-24）
 
 - **M14 新界面的浏览器核对**与**提交部署**：见 [M14 节](#m14设置区演示区css-区三处一致)
 - **M13 遗留的五项浏览器排查**：挤压动画没复现缺陷、不改；标签宽度系数仍成立；主题刷新不闪；
@@ -75,19 +78,6 @@
 - **切去别的窗口也算失焦，照样恢复**：打到一半切去查资料，回来输入框是旧值。浏览器核对时确认了这个现象，用户决定维持「任何失焦都恢复」，不对切窗口例外
 - 其余全部已修，见 [M14 节](#m14设置区演示区css-区三处一致)
 
-### 待办（已定要做，时间未定）：公式展开
-
-**把每个盒子从 basis 到最终尺寸的推导过程逐项展开给用户看**——basis 解析、假设尺寸、
-grow / shrink 分配（含冻结循环与因子和小于 1 的按比例分配）、最终尺寸。
-本站的竞争力在于最全的属性展示，这是那条主线的下一步。
-
-- 动手前先走 brainstorming 出 spec，写到 [.docs/superpowers/specs/](./superpowers/specs/)
-- 推导引擎已经产出这批中间量，**眼下零消费方，但为这个功能保留，不要按零消费方规则删掉**：
-  `DerivedItem` 的 `basisResolved` / `deltaFromGrow` / `deltaFromShrink`（`hypotheticalMainSize` 已被行级诊断用上），
-  `DerivedLine` 的 `freeSpace` / `usedMainSize` / `totalGrow` / `totalShrinkWeighted`，
-  `Diagnostic` 的 `theoretical` / `actual`
-- 容器里有要到运行期才能确定的 basis 时，这些字段装的是占位数字（`finalMainSize` 为 `null`），展开时一并按「无法推导」处理
-
 ### 已知代价
 
 - **演示区尺寸手柄没有方向键**（2026-09-23 用户决定：方向键按住不放时每次重复都重建动画，
@@ -103,6 +93,56 @@ grow / shrink 分配（含冻结循环与因子和小于 1 的按比例分配）
 - **拆提交**（同一批文件里交错着几类改动时）：先把最终版本整份备份并 `git stash -u`，按提交顺序逐阶段生成文件内容写进工作区，
   每个阶段在工作区里跑 test / lint / tscheck 后再提交；全部提交完，逐字节比对 HEAD 与备份，确认没丢没串。
   注意入库的生成物（`components.d.ts`）要跟着它所属的阶段走，开着的 dev server 会按当时的文件自动重写它
+
+## 公式展开（2026-10-08）
+
+底部「理论 vs 实际」面板加了「推导过程」标签页：选中一个盒子，把它的理论尺寸摊成「步骤 | 公式 | 代入 | 结果」四列，
+末行对照浏览器实际值，对不上时写出与明细表同一条诊断。设计见 [spec](./superpowers/specs/2026-10-08-formula-expansion-design.md)，
+执行见 [计划](./superpowers/plans/2026-10-08-formula-expansion.md)，提交 `a8292a5` … `0fe3939`。
+
+- **引擎**：`distributeShrink` 同时交出冻结循环的每一轮（`DerivedLine.shrinkRounds`），数值算法不变
+- **编排**：[explain.ts](../src/core/explain.ts) 的 `explainItem` 只读 `deriveLayout` 的输出排成步骤，不重算，最后一步因此必然等于明细表的理论值
+- **展示**：[DerivationSteps.vue](../src/components/playground/DerivationSteps.vue) 按步骤种类穷尽分派文案（漏写一种时 `tscheck` 报 TS2366，实测过）；
+  [ComparePanel.vue](../src/components/playground/ComparePanel.vue) 按 WAI-ARIA tabs 承载两页；诊断经 [useDiagnostics](../src/composables/useDiagnostics.ts) 两页共用一份
+- **零消费方收尾**：推导页接上后，`usedMainSize`、`totalShrinkWeighted`、`Diagnostic.theoretical` / `actual` 仍没人读，已删；`shrinkWeight` 去掉导出
+
+### 守卫
+
+[explain.spec.ts](../src/core/explain.spec.ts) 末尾的随机守卫用 fast-check 造 1000 个容器，断言三件事：最后一步恒等于推导引擎的理论值；
+每一步的代入算得出它自称的结果、相邻步骤的数字接得上；19 条分支每条都命中过（为 0 判失败）。
+某次运行的命中次数，最少的是 Σgrow = 0（48 次）与权重和为 0（54 次）：
+
+| 分支 | 命中 | 分支 | 命中 | 分支 | 命中 |
+| --- | --- | --- | --- | --- | --- |
+| basis:content | 533 | grow | 2170 | freeze | 946 |
+| basis:length | 1904 | grow:scaled | 173 | freeze:self | 359 |
+| basis:percent | 820 | grow:zero | 48 | no-shrink | 54 |
+| basis:font | 426 | shrink | 762 | line | 2064 |
+| basis:unit | 402 | shrink:scaled | 130 | line:last | 564 |
+| basis-runtime | 125 | unresolvable:self | 125 | line:oversize | 351 |
+| | | unresolvable:other | 381 | | |
+
+「剩余恰好为 0」随机几乎命中不到，由单元测试覆盖。六条变异（结果取错字段、本行剩余漏 gap、分摊用错溢出、
+wrap-reverse 不反转、引擎不记冻结名单、本盒子冻结后不停）逐条确认落地、全部变红、还原后哈希一致；其中五条随机守卫单独就能拦下。
+
+### 浏览器实测（CDP 驱动 headless Chrome，以 DOM 为准）
+
+先跑已知答案探针：默认状态明细表 A 行理论 80px、实际 80px，`visibilityState: visible`。
+
+| 场景 | 实测 |
+| --- | --- |
+| 1024×800，A `30%` grow 1、B `150px` grow 1、C `150px` | 四行推导与单测一致；列宽 69 / 98 / 107 / 54px，行高 25～57px（折成 2～3 行），面板内容 213px > 可视 160px、在面板里滚；整页 `scrollWidth` = 视口宽，不横滚 |
+| 1440×900，同上 | 列宽 89 / 268 / 324 / 70px，每步一行不折，内容 160px 恰好不滚 |
+| 实际值 | 推导页末行 `306px ✓`，与明细表 A 行实际列一致 |
+| 冻结 | 分享链接把容器宽 110 夹到下限 200，仍发生冻结：「盒子 A 应让 −27.5，basis 只有 10」，溢出剩 −100px；理论 0px，实际 80px，诊断 `min-width:auto 撑住了内容固有尺寸` |
+| `min-width:auto` | 容器 300、两盒 `300px`、A 内容 240：理论 144px、实际 240px，末行无 ✓，诊断同上 |
+| 键盘 | 聚焦「明细表」按 → 后 `activeElement` 是 `compare-tab-derivation`、`aria-selected="true"` |
+| 样式 | 当前标签下边框为 `--accent`（`aria-selected:` 变体生效），另一个透明 |
+| console | 无报错、无警告 |
+
+**折行与面板内滚动没有自动化守卫**：happy-dom 不排版，这两项只在上面的浏览器实测里量过，改推导表的列或文案后要重量。
+
+主包 gzip 从线上的 78.9 kB 涨到 82.6 kB（`gzip -6` 量的，与 Vite 报的口径略有出入），仍在 150 kB 预算内。
 
 ## 观测层取整误报（2026-09-24）
 

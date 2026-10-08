@@ -1,7 +1,7 @@
 # 公式展开：把一个盒子从 basis 到最终尺寸的推导逐步摊开
 
-> 状态：2026-10-08 用户逐段确认了设计，待审 spec。
-> 来源：[progress.md 的待办节](../../progress.md#待办已定要做时间未定公式展开)；
+> 状态：2026-10-08 用户确认，同日实施完毕（[progress.md 的公式展开节](../../progress.md#公式展开2026-10-08)）。实施计划见 [2026-10-08-formula-expansion.md](../plans/2026-10-08-formula-expansion.md)。
+> 来源：progress.md 原有的待办节「公式展开」（功能落地后已删，见 `a1fafec` 之前的版本）；
 > 原总设计里对应的是[目标第 2 条](./2026-09-08-todo-flex-design.md#目标)「公式展开 grow/shrink 的分配过程」。
 
 ## 要回答的问题
@@ -112,7 +112,7 @@ interface ShrinkRound {
 做完后重查当初为本功能保留的字段：`basisResolved`、`deltaFromGrow`、`deltaFromShrink`、
 `freeSpace`、`usedMainSize`、`totalGrow`、`totalShrinkWeighted`、`Diagnostic.theoretical` / `actual`。
 届时仍无生产代码读取的，按规则删除（如 `totalShrinkWeighted` 可能被每轮的 `weightSum` 取代）。
-[progress.md 待办节](../../progress.md#待办已定要做时间未定公式展开)里「不要按零消费方规则删掉」那条保留说明随之撤掉。
+progress.md 待办节里「不要按零消费方规则删掉」那条保留说明随之撤掉（已随待办节一并删除）。
 
 ## 展示层
 
