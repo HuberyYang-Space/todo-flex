@@ -37,14 +37,14 @@
 
 > 2026-10-08 的状态。新会话读完 CLAUDE.md 后读这一节。
 > `main` 与 `dev` 已推送到 `62888d0` 并部署成功（线上产物核对过新代码）。
-> **正在做公式展开**：设计已逐段确认，spec 见 [2026-10-08-formula-expansion-design.md](./superpowers/specs/2026-10-08-formula-expansion-design.md)，
-> 等用户审 spec；审过后写实现计划，计划由用户选执行方式后才动代码。
+> **正在做公式展开**：spec 已经用户审过（[2026-10-08-formula-expansion-design.md](./superpowers/specs/2026-10-08-formula-expansion-design.md)），
+> 实现计划见 [2026-10-08-formula-expansion.md](./superpowers/plans/2026-10-08-formula-expansion.md)，等用户审计划并选执行方式后才动代码。
 
 当前状态：`pnpm test` 652/652、`pnpm lint`、`pnpm tscheck`、`pnpm build` 全部通过。
 
 ### 还开着的事（等用户排进新计划）
 
-1. **公式展开**：进行中，spec 待审，见上方与[下文](#待办已定要做时间未定公式展开)
+1. **公式展开**：进行中，计划待审，见上方与[下文](#待办已定要做时间未定公式展开)
 2. **需要人手试的两件**（自动化做不到）：真实拼音输入法按回车上屏（只验证了模拟的 `isComposing` / `keyCode 229` 事件）；
    Safari 上点预设按钮时输入框是否先失焦（本机没有 Safari）
 3. GitHub 提示 `ubuntu-latest` 从 2026-10-19 起迁到 Ubuntu 26，[deploy.yml](../.github/workflows/deploy.yml) 用的就是它；届时部署若出问题先查这个
@@ -776,3 +776,4 @@ M9 UI 细节、M10 行级对照、M11 三栏与 icon 体系也都已完成并实
 - [2026-09-09-isometric-solid-block.md](./superpowers/plans/2026-09-09-isometric-solid-block.md)
   —— 等距实体块，**开头的「三轮试错的结论」是动这块视觉前的必读**
 - [2026-09-23-three-way-consistency.md](./superpowers/plans/2026-09-23-three-way-consistency.md) —— M14
+- [2026-10-08-formula-expansion.md](./superpowers/plans/2026-10-08-formula-expansion.md) —— 公式展开
