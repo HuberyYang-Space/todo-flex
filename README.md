@@ -20,16 +20,17 @@ todo-flex 把浏览器藏起来的这段计算摊开：
 
 - 剩余空间用斜纹画在演示区里，改 `justify-content` 就能看到它是怎么被切分的
 - 每一行同时给出实际值和理论值：实际值来自浏览器渲染观测，理论值来自一套零 DOM 依赖的纯函数推导
-- 两个值对不上时直接说明是哪条规则介入了，`min-width: auto` 撑住了内容固有尺寸、`margin: auto` 吃掉了剩余空间，或者尺寸被某个上下限截断
+- 两个值对不上时直接说明是哪条规则介入了：`min-width: auto` 撑住了内容固有尺寸、同一行的盒子被它连带挤小、换行位置因此变了；归不到已知规则的，如实说归不到。`margin: auto` 吃掉剩余空间时也会单独提示
+- 选中一个盒子，就能看到它从 `flex-basis` 到最终尺寸的每一步：本行剩余空间怎么算、grow 怎么分、shrink 怎么按 basis 加权分摊，代入的数字照着算得出结果
 - 布局实时编码进地址栏，复制链接就能把当前画面原样分享出去
 
-演示区是真实 DOM 加真实 CSS flex 渲染，没有用 JS 去算盒子位置，所以右栏输出的那段 CSS 复制进项目是真能复现的。
+演示区是真实 DOM 加真实 CSS flex 渲染，没有用 JS 去算盒子位置，所以右栏输出的那段 CSS 复制进项目是真能复现的。`flex-basis` 输入框也只收放进 `flex` 简写后仍然成立的写法：简写遇到某些值会整条失效，而演示区用的单项属性只丢 basis，收下这种值两边就对不上了。
 
 如果你只是想看 `justify-content` 的几个取值长什么样，MDN 或 Flexbox Froggy 更快，不必打开它。
 
 ## 🎛 能调什么
 
-容器：`display` `flex-direction` `flex-wrap` `justify-content` `align-items` `align-content` `row-gap` `column-gap`，尺寸由右下角手柄拖拽。
+容器：`display` `flex-direction` `flex-wrap` `justify-content` `align-items` `align-content` `row-gap` `column-gap`，宽高用滑块调，也可以拖演示区右下角的手柄。
 
 盒子：`flex-grow` `flex-shrink` `flex-basis` `order` `align-self`、内容固有尺寸、`min-width: auto` 与 `margin: auto` 开关，另有 `flex` 简写预设（`1` / `auto` / `initial` / `none`）。
 
