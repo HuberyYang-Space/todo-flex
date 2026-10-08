@@ -14,6 +14,7 @@ declare module 'vue' {
     ContainerControls: typeof import('./src/components/playground/ContainerControls.vue')['default']
     CssOutput: typeof import('./src/components/playground/CssOutput.vue')['default']
     DemoStage: typeof import('./src/components/playground/DemoStage.vue')['default']
+    DerivationSteps: typeof import('./src/components/playground/DerivationSteps.vue')['default']
     DiagnosisText: typeof import('./src/components/playground/DiagnosisText.vue')['default']
     ItemControls: typeof import('./src/components/playground/ItemControls.vue')['default']
     ItemList: typeof import('./src/components/playground/ItemList.vue')['default']
