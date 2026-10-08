@@ -152,4 +152,12 @@ describe('deriveLayout', () => {
     expect(layout.lines[0].totalGrow).toBe(3)
     expect(layout.lines[0].totalShrinkWeighted).toBe(300)
   })
+
+  it('收缩的行带上冻结循环的每一轮，伸展的行为空', () => {
+    const shrinking = deriveLayout(stateWith([{ shrink: 10, basis: '10px' }, { shrink: 1, basis: '300px' }], 110))
+    expect(shrinking.lines[0].shrinkRounds.map(round => round.frozen)).toEqual([[{ id: 'i1', share: -50 }], []])
+
+    const growing = deriveLayout(stateWith([{ grow: 1, basis: '100px' }]))
+    expect(growing.lines[0].shrinkRounds).toEqual([])
+  })
 })

@@ -50,6 +50,19 @@ export interface DerivedItem {
   lineIndex: number
 }
 
+/** 冻结循环的一轮（规范 §9.7）。公式展开要逐轮讲，只有最终结果就讲不出谁先被冻住 */
+export interface ShrinkRound {
+  /** 本轮开始时还要消化的溢出（负） */
+  overflow: number
+  /** 本轮未冻结项的 Σshrink；小于 1 时实际分摊量被打折 */
+  factorSum: number
+  effective: number
+  /** 本轮未冻结项的 Σ(shrink × basis) */
+  weightSum: number
+  /** 本轮被冻结在 0 的项与它们原本应让出的量；最后一轮为空 */
+  frozen: { id: string, share: number }[]
+}
+
 export interface DerivedLine {
   index: number
   itemIds: string[]
@@ -62,6 +75,8 @@ export interface DerivedLine {
   totalGrow: number
   /** Σ(shrink × basis) */
   totalShrinkWeighted: number
+  /** 不收缩的行为空数组 */
+  shrinkRounds: ShrinkRound[]
 }
 
 export interface DerivedLayout {

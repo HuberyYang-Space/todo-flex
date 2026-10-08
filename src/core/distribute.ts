@@ -1,4 +1,4 @@
-import type { FlexContainerState, FlexItemState } from './types'
+import type { FlexContainerState, FlexItemState, ShrinkRound } from './types'
 import { mainAxisGap, mainAxisSize } from './axis'
 import { DEFAULT_FONT_SIZE } from './constants'
 import { resolveBasis } from './resolveBasis'
@@ -36,7 +36,7 @@ export function distributeGrow(lineItems: FlexItemState[], freeSpace: number): M
 }
 
 /**
- * 剩余空间为负时按 shrink × basis 加权分摊，返回每项让出的增量（≤ 0）。
+ * 剩余空间为负时按 shrink × basis 加权分摊，返回每项让出的增量（≤ 0）与冻结循环每一轮的记录。
  *
  * 按规范 §9.7 的冻结循环：分摊后会被压到 0 以下的项冻结在 0，剩下的溢出量在其余项之间重新分摊；
  * 未冻结项的 shrink 之和小于 1 时只让出对应比例（第 4b 步）。
@@ -47,8 +47,9 @@ export function distributeShrink(
   freeSpace: number,
   container: FlexContainerState,
   fontSize = DEFAULT_FONT_SIZE,
-): Map<string, number> {
-  const result = new Map<string, number>()
+): { deltas: Map<string, number>, rounds: ShrinkRound[] } {
+  const deltas = new Map<string, number>()
+  const rounds: ShrinkRound[] = []
   const frozen = new Set<string>()
   let remaining = freeSpace
 
@@ -62,26 +63,33 @@ export function distributeShrink(
     const effective = factorSum < 1 ? Math.max(remaining, freeSpace * factorSum) : remaining
     const share = (item: FlexItemState): number => (shrinkWeight(item, container, fontSize) / total) * effective
     const violators = active.filter(item => hypotheticalSize(item, container, fontSize) + share(item) < 0)
+    rounds.push({
+      overflow: remaining,
+      factorSum,
+      effective,
+      weightSum: total,
+      frozen: violators.map(item => ({ id: item.id, share: share(item) })),
+    })
 
     if (violators.length === 0) {
       for (const item of active)
-        result.set(item.id, share(item))
+        deltas.set(item.id, share(item))
       break
     }
 
     for (const item of violators) {
       const size = hypotheticalSize(item, container, fontSize)
       frozen.add(item.id)
-      result.set(item.id, -size)
+      deltas.set(item.id, -size)
       remaining += size
     }
   }
 
   for (const item of lineItems) {
-    const delta = result.get(item.id) ?? 0
+    const delta = deltas.get(item.id) ?? 0
     // 权重为 0 的项算出来是 -0，不规范成 0 会一路显示到界面上
-    result.set(item.id, delta === 0 ? 0 : delta)
+    deltas.set(item.id, delta === 0 ? 0 : delta)
   }
 
-  return result
+  return { deltas, rounds }
 }

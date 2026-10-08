@@ -13,6 +13,7 @@ function makeLines(lines: { index: number, itemIds: string[], remainingFreeSpace
       usedMainSize: 0,
       totalGrow: 0,
       totalShrinkWeighted: 0,
+      shrinkRounds: [],
     })),
     items: [],
     fontSize: 16,

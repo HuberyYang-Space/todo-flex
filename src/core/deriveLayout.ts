@@ -30,14 +30,14 @@ export function deriveLayout(state: FlexState, fontSize = DEFAULT_FONT_SIZE): De
     const totalShrinkWeighted = lineItems.reduce((sum, item) => sum + shrinkWeight(item, container, fontSize), 0)
 
     const growDeltas = freeSpace > 0 ? distributeGrow(lineItems, freeSpace) : null
-    const shrinkDeltas = freeSpace < 0 ? distributeShrink(lineItems, freeSpace, container, fontSize) : null
+    const shrinkResult = freeSpace < 0 ? distributeShrink(lineItems, freeSpace, container, fontSize) : null
     let remainingFreeSpace = freeSpace
 
     for (const item of lineItems) {
       const basisResolved = resolveBasis(item, container, fontSize)
       const hypotheticalMainSize = Math.max(0, basisResolved)
       const deltaFromGrow = growDeltas?.get(item.id) ?? 0
-      const deltaFromShrink = shrinkDeltas?.get(item.id) ?? 0
+      const deltaFromShrink = shrinkResult?.deltas.get(item.id) ?? 0
       remainingFreeSpace -= deltaFromGrow + deltaFromShrink
 
       derivedItems.push({
@@ -59,6 +59,7 @@ export function deriveLayout(state: FlexState, fontSize = DEFAULT_FONT_SIZE): De
       remainingFreeSpace: unresolvable ? null : remainingFreeSpace,
       totalGrow,
       totalShrinkWeighted,
+      shrinkRounds: shrinkResult?.rounds ?? [],
     })
   })
 

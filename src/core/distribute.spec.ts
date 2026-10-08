@@ -82,7 +82,7 @@ describe('distributeShrink', () => {
       { shrink: 1, basis: '300px' },
       { shrink: 1, basis: '100px' },
     ])
-    const result = distributeShrink(items, -200, container)
+    const result = distributeShrink(items, -200, container).deltas
     expect(result.get('i1')).toBe(-150)
     expect(result.get('i2')).toBe(-50)
   })
@@ -91,7 +91,7 @@ describe('distributeShrink', () => {
     const { container } = createDefaultState()
     const items = makeItems([{ shrink: 0.5, basis: '900px' }])
 
-    expect(distributeShrink(items, -300, container).get('i1')).toBe(-150)
+    expect(distributeShrink(items, -300, container).deltas.get('i1')).toBe(-150)
   })
 
   it('shrink 为 0 的项不参与收缩', () => {
@@ -100,7 +100,7 @@ describe('distributeShrink', () => {
       { shrink: 0, basis: '200px' },
       { shrink: 1, basis: '200px' },
     ])
-    const result = distributeShrink(items, -100, container)
+    const result = distributeShrink(items, -100, container).deltas
     expect(result.get('i1')).toBe(0)
     expect(result.get('i2')).toBe(-100)
   })
@@ -108,7 +108,7 @@ describe('distributeShrink', () => {
   it('全部 shrink 为 0 时不收缩，溢出保持', () => {
     const { container } = createDefaultState()
     const items = makeItems([{ shrink: 0 }, { shrink: 0 }])
-    const result = distributeShrink(items, -100, container)
+    const result = distributeShrink(items, -100, container).deltas
     expect(result.get('i1')).toBe(0)
     expect(result.get('i2')).toBe(0)
   })
@@ -120,8 +120,45 @@ describe('distributeShrink', () => {
       { shrink: 1, basis: '200px' },
     ])
     expect(shrinkWeight(items[0], container)).toBe(0)
-    const result = distributeShrink(items, -100, container)
+    const result = distributeShrink(items, -100, container).deltas
     expect(result.get('i1')).toBe(0)
     expect(result.get('i2')).toBe(-100)
+  })
+
+  it('没有盒子被压到 0 以下时只有一轮，冻结名单为空', () => {
+    const { container } = createDefaultState()
+    const items = makeItems([{ shrink: 1, basis: '300px' }, { shrink: 1, basis: '100px' }])
+
+    expect(distributeShrink(items, -200, container).rounds).toEqual([
+      { overflow: -200, factorSum: 2, effective: -200, weightSum: 400, frozen: [] },
+    ])
+  })
+
+  it('被压到 0 以下的盒子冻结在 0，记下它原本应让出的量，剩下的溢出进入下一轮', () => {
+    const { container } = createDefaultState()
+    // 权重 10×10 = 100 与 1×300 = 300：第 1 轮 i1 应让 −50，basis 只有 10，冻结；溢出剩 −190 全由 i2 消化
+    const items = makeItems([{ shrink: 10, basis: '10px' }, { shrink: 1, basis: '300px' }])
+    const { deltas, rounds } = distributeShrink(items, -200, container)
+
+    expect(rounds).toEqual([
+      { overflow: -200, factorSum: 11, effective: -200, weightSum: 400, frozen: [{ id: 'i1', share: -50 }] },
+      { overflow: -190, factorSum: 1, effective: -190, weightSum: 300, frozen: [] },
+    ])
+    expect(deltas.get('i1')).toBe(-10)
+    expect(deltas.get('i2')).toBe(-190)
+  })
+
+  it('未冻结项的 shrink 之和小于 1 时记下打折后的分摊量', () => {
+    const { container } = createDefaultState()
+    const items = makeItems([{ shrink: 0.5, basis: '900px' }])
+
+    expect(distributeShrink(items, -300, container).rounds).toEqual([
+      { overflow: -300, factorSum: 0.5, effective: -150, weightSum: 450, frozen: [] },
+    ])
+  })
+
+  it('权重全为 0 时一轮也不记', () => {
+    const { container } = createDefaultState()
+    expect(distributeShrink(makeItems([{ shrink: 0 }, { shrink: 0 }]), -100, container).rounds).toEqual([])
   })
 })
