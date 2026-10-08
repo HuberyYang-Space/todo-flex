@@ -1,5 +1,8 @@
 # 公式展开 Implementation Plan
 
+> **状态：2026-10-08 已按本计划实施完毕并上线。这是过程记录，不是待办清单。** 进度以 git 历史与
+> [progress.md 的公式展开节](../../progress.md#公式展开2026-10-08)为准；执行中对本计划的偏差与终审修复也记在那一节。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 在底部「理论 vs 实际」面板加一个「推导过程」标签页，把选中盒子从 basis 到最终尺寸的理论推导逐步摊成四列表格（步骤 | 公式 | 代入 | 结果），末行对照浏览器实际值与诊断。
@@ -63,7 +66,7 @@
 **Interfaces:**
 - Produces: `roundTenth(value: number): number`、`formatNumber(value: number, digits?: number): string`、`px(value: number): string`，都从 `~/core/labels` 导出。
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 在 `src/core/labels.spec.ts` 末尾追加，并把首行 import 改成 `import { formatNumber, itemLabel, px, roundTenth } from './labels'`：
 
@@ -90,12 +93,12 @@ describe('数字显示', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/core/labels.spec.ts`
 Expected: FAIL，`roundTenth` / `formatNumber` / `px` 未导出。
 
-- [ ] **Step 3: 实现**
+- **Step 3: 实现**
 
 `src/core/labels.ts` 追加：
 
@@ -120,12 +123,12 @@ export function px(value: number): string {
 
 `OverlayLayer.vue`：删掉第 103–105 行的 `function round(...)`，import 那行改成 `import { itemLabel, roundTenth } from '~/core/labels'`，文件内所有 `round(` 调用改成 `roundTenth(`（共 5 处：第 64 行两处、第 94 行两处、第 95 行一处）。
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/core/labels.spec.ts src/components/playground/MetricsTable.spec.ts src/components/playground/OverlayLayer.spec.ts`
 Expected: 全部 PASS。
 
-- [ ] **Step 5: 提交**
+- **Step 5: 提交**
 
 走 `/commit`，提交信息：`refactor: 数字显示格式合成一处，负数改用数学负号`
 
@@ -153,7 +156,7 @@ Expected: 全部 PASS。
   export function distributeShrink(lineItems: FlexItemState[], freeSpace: number, container: FlexContainerState, fontSize?: number): { deltas: Map<string, number>, rounds: ShrinkRound[] }
   ```
 
-- [ ] **Step 1: 改现有用例的取值方式，并写新的失败测试**
+- **Step 1: 改现有用例的取值方式，并写新的失败测试**
 
 `distribute.spec.ts` 的 `describe('distributeShrink')` 里，现有每处 `distributeShrink(...)` 的结果都改成取 `.deltas`（例如 `const result = distributeShrink(items, -200, container).deltas`、`distributeShrink(items, -300, container).deltas.get('i1')`）。然后在该 describe 末尾追加：
 
@@ -208,12 +211,12 @@ Expected: 全部 PASS。
   })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/core/distribute.spec.ts src/core/deriveLayout.spec.ts`
 Expected: FAIL（`.deltas` / `.rounds` / `shrinkRounds` 为 undefined）。
 
-- [ ] **Step 3: 实现**
+- **Step 3: 实现**
 
 `src/core/types.ts`，在 `DerivedLine` 之前加：
 
@@ -307,12 +310,12 @@ export function distributeShrink(
 
 替换原第 33 行；循环里 `shrinkDeltas?.get(item.id)` 改为 `shrinkResult?.deltas.get(item.id)`；`lines.push({...})` 里在 `totalShrinkWeighted,` 之后加 `shrinkRounds: shrinkResult?.rounds ?? [],`。
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm test && pnpm tscheck`
 Expected: 全部 PASS（其他用 `toEqual` 比对整行 `DerivedLine` 的测试若因多出 `shrinkRounds` 变红，给期望值补上 `shrinkRounds: []` 或改用 `toMatchObject`——逐个看，不要一刀切）。
 
-- [ ] **Step 5: 提交**
+- **Step 5: 提交**
 
 走 `/commit`，提交信息：`feat(core): 收缩分配记下冻结循环的每一轮，供公式展开逐轮讲解`
 
@@ -349,7 +352,7 @@ Expected: 全部 PASS（其他用 `toEqual` 比对整行 `DerivedLine` 的测试
   步骤顺序：`basis` →（多行时）`line` → `free` → 以下之一：`grow` / `balanced` / `shrink-weight` +（若有）`freeze`… +（未被冻结时）`shrink-total` + `shrink-share` 或 `no-shrink` → `final`。
   算不出理论值时只有 `basis`（或 `basis-runtime`）+ `unresolvable` 两步。
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 `src/core/explain.spec.ts`：
 
@@ -515,12 +518,12 @@ describe('explainItem', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/core/explain.spec.ts`
 Expected: FAIL，`./explain` 不存在。
 
-- [ ] **Step 3: 实现**
+- **Step 3: 实现**
 
 `src/core/types.ts` 末尾追加 Interfaces 里的 `BasisForm` 与 `ExplainStep`（原样照抄），`ExplainStep` 上方加一行注释：`/** 公式展开的一步：只有数值，文案在展示层 */`。
 
@@ -671,12 +674,12 @@ function shrinkSteps(
 }
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/core/explain.spec.ts && pnpm tscheck`
 Expected: 全部 PASS，类型检查无错。
 
-- [ ] **Step 5: 提交**
+- **Step 5: 提交**
 
 走 `/commit`，提交信息：`feat(core): 新增 explainItem，把单个盒子的理论推导编排成步骤`
 
@@ -691,12 +694,12 @@ Expected: 全部 PASS，类型检查无错。
 **Interfaces:**
 - Consumes: Task 3 的 `explainItem` 与 `ExplainStep`。
 
-- [ ] **Step 1: 装依赖**
+- **Step 1: 装依赖**
 
 Run: `pnpm add -D fast-check`
 Expected: `package.json` 的 devDependencies 出现 `"fast-check": "^4.x.x"`（取当时最新稳定版）。
 
-- [ ] **Step 2: 写守卫**
+- **Step 2: 写守卫**
 
 `src/core/explain.spec.ts` 顶部 import 补上 `import fc from 'fast-check'`、`import type { FlexState } from './types'`（并入已有的 type import），文件末尾追加：
 
@@ -876,12 +879,12 @@ describe('explainItem 随机守卫', () => {
 
 `balanced`（剩余恰好为 0）不进 `REQUIRED_BRANCHES`：随机状态里精确命中 0 的概率可以忽略，由 Task 3 的单元测试覆盖。
 
-- [ ] **Step 3: 跑守卫**
+- **Step 3: 跑守卫**
 
 Run: `pnpm vitest run src/core/explain.spec.ts`
 Expected: PASS。若最后一条断言列出了未命中的分支，**调生成器的权重或取值范围让它命中**，不准把它从 `REQUIRED_BRANCHES` 里删掉；调完重跑直到通过。
 
-- [ ] **Step 4: 变异验证**
+- **Step 4: 变异验证**
 
 在 scratchpad 写 `mutate.py`，逐条执行下表的变异：每条的「查找串」必须在文件里恰好出现一次（否则报「探针失效」并停下，不给结论）；变异前后比对文件的 sha256，确认改动真的落地；跑 `pnpm vitest run src/core/explain.spec.ts src/core/distribute.spec.ts`，记录红绿；用备份还原并再比一次 sha256。
 
@@ -896,7 +899,7 @@ Expected: PASS。若最后一条断言列出了未命中的分支，**调生成�
 
 六条必须全红、还原后 sha256 与变异前一致。结果（每条红在哪个用例）记进 [progress.md](../../progress.md) 的本里程碑一节（Task 9 写）。
 
-- [ ] **Step 5: 提交**
+- **Step 5: 提交**
 
 走 `/commit`，提交信息：`test(core): 公式展开的随机守卫——同源、代入自洽、分支全覆盖`（`package.json` 与 `pnpm-lock.yaml` 一并提交）。
 
@@ -921,7 +924,7 @@ Expected: PASS。若最后一条断言列出了未命中的分支，**调生成�
   ```
   `<DiagnosisText :diagnostic="Diagnostic" />`：渲染 ⚠ / ℹ 图标 + 文案，CSS 属性名整体不断行。
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 `src/composables/useDiagnostics.spec.ts`：
 
@@ -969,12 +972,12 @@ describe('useDiagnostics', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/composables/useDiagnostics.spec.ts`
 Expected: FAIL，`useDiagnostics` 未定义。
 
-- [ ] **Step 3: 实现**
+- **Step 3: 实现**
 
 `src/composables/useDiagnostics.ts`（`ruleText` 从 `MetricsTable.vue` 原样搬过来）：
 
@@ -1043,12 +1046,12 @@ const segments = computed(() =>
 - script 里删掉 `ruleText`、`labelsOf`、`diagnostics` computed、`CSS_NAME`、`segments`，以及不再用到的 `Diagnostic` / `DiagnosticRule` / `diagnose` import；加 `const { byId } = useDiagnostics()`；`rows` 里 `diagnosticById` 换成 `byId.value`。
 - 模板诊断单元格的 `<span v-if="row.diagnostic" ...>...</span>` 整段换成 `<DiagnosisText v-if="row.diagnostic" :diagnostic="row.diagnostic" />`，后面两个 `v-else-if` / `v-else` 不动。
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/composables/useDiagnostics.spec.ts src/components/playground/MetricsTable.spec.ts && pnpm tscheck`
 Expected: 全部 PASS——`MetricsTable.spec.ts` 一个字不改照样通过，证明明细表行为没变。
 
-- [ ] **Step 5: 提交**
+- **Step 5: 提交**
 
 走 `/commit`，提交信息：`refactor: 诊断计算与文案抽成共享 composable，供推导页复用`（含重新生成的 `auto-imports.d.ts` / `components.d.ts`）。
 
@@ -1064,7 +1067,7 @@ Expected: 全部 PASS——`MetricsTable.spec.ts` 一个字不改照样通过，
 - Consumes: `explainItem`、`ExplainStep`（Task 3）；`formatNumber`、`px`、`itemLabel`（Task 1）；`useDiagnostics().byId`、`<DiagnosisText>`（Task 5）。
 - Produces: `<DerivationSteps />`，根元素 `data-testid="derivation"`；空状态 `data-testid="derivation-empty"`；步骤行 `data-testid="derivation-row"`，四个单元格依次 `data-testid="step-label|step-formula|step-substitution|step-result"`；实际行 `data-testid="derivation-actual"`；诊断行 `data-testid="derivation-diagnosis"`。
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 `src/components/playground/DerivationSteps.spec.ts`：
 
@@ -1198,12 +1201,12 @@ describe('derivationSteps', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/components/playground/DerivationSteps.spec.ts`
 Expected: FAIL，组件不存在。
 
-- [ ] **Step 3: 实现**
+- **Step 3: 实现**
 
 `src/components/playground/DerivationSteps.vue`：
 
@@ -1392,12 +1395,12 @@ const diagnostic = computed(() => selectedItem.value ? byId.value.get(selectedIt
 </template>
 ```
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/components/playground/DerivationSteps.spec.ts && pnpm tscheck && pnpm lint`
 Expected: 全部 PASS。`rowOf` 与 `basisText` 的 `switch` 没有 `default`：新增 `ExplainStep` 种类而忘了写文案时，`tscheck` 会报「函数缺少结束 return」，这正是想要的拦截，不要补 `default` 把它吞掉。
 
-- [ ] **Step 5: 提交**
+- **Step 5: 提交**
 
 走 `/commit`，提交信息：`feat: 推导页把选中盒子的理论推导展开成四列表格`（含重新生成的 `components.d.ts`）。
 
@@ -1414,7 +1417,7 @@ Expected: 全部 PASS。`rowOf` 与 `basisText` 的 `switch` 没有 `default`：
 - Consumes: `<MetricsTable />`、`<DerivationSteps />`。
 - Produces: `<ComparePanel />`，根元素 `data-testid="compare-panel"`；标签按钮 `data-testid="tab-metrics"` / `tab-derivation`，`id` 为 `compare-tab-<key>`；面板 `id` 为 `compare-panel-<key>`。
 
-- [ ] **Step 1: 写失败的测试**
+- **Step 1: 写失败的测试**
 
 `src/components/playground/ComparePanel.spec.ts`：
 
@@ -1488,12 +1491,12 @@ describe('comparePanel', () => {
 })
 ```
 
-- [ ] **Step 2: 跑测试确认失败**
+- **Step 2: 跑测试确认失败**
 
 Run: `pnpm vitest run src/components/playground/ComparePanel.spec.ts`
 Expected: FAIL，组件不存在。
 
-- [ ] **Step 3: 实现**
+- **Step 3: 实现**
 
 `src/components/playground/ComparePanel.vue`：
 
@@ -1579,12 +1582,12 @@ function onKeydown(event: KeyboardEvent): void {
 
 `ThePlayground.vue`：把第 52–61 行（注释「固定高度…」到 `</section>`）整段替换为 `<ComparePanel />`。
 
-- [ ] **Step 4: 跑测试确认通过**
+- **Step 4: 跑测试确认通过**
 
 Run: `pnpm vitest run src/components/playground/ && pnpm tscheck && pnpm lint`
 Expected: 全部 PASS，`ThePlayground.spec.ts` 不改照样通过（`metrics` 仍在 DOM 里，只是被 `v-show` 切换）。
 
-- [ ] **Step 5: 提交**
+- **Step 5: 提交**
 
 走 `/commit`，提交信息：`feat: 理论 vs 实际面板加推导过程标签页，跟随选中的盒子`（含 `components.d.ts`）。
 
@@ -1596,7 +1599,7 @@ Expected: 全部 PASS，`ThePlayground.spec.ts` 不改照样通过（`metrics` �
 - Modify: `src/core/types.ts`、`src/core/deriveLayout.ts`、`src/core/distribute.ts`、`src/core/diagnostics.ts`
 - Modify: 对应的 `*.spec.ts`
 
-- [ ] **Step 1: 逐个字段查生产消费方**
+- **Step 1: 逐个字段查生产消费方**
 
 Run（zsh 下 `--include` 的通配必须加引号）：
 
@@ -1616,12 +1619,12 @@ done
 | `Diagnostic.theoretical` / `actual` | 只有 `diagnostics.ts` 写，界面读的是明细表行对象、叠加层行对象上的同名字段 | 删字段；`diagnostics.ts` 的 `base` 只留 `itemId`；`diagnostics.spec.ts` 第 71–72 行与第 263 行对这两个字段的断言改成等价的断言（第 263 行那个用例钉的是「主轴纵向时高度偏离才算数」，改成断言 `real[0].itemId` 与 `rule`；读上下文确认，不要只删不补） |
 | 其余（`basisResolved` 等） | 已被 `explain.ts` 读取 | 保留 |
 
-- [ ] **Step 2: 删除并跑全量**
+- **Step 2: 删除并跑全量**
 
 Run: `pnpm test && pnpm tscheck && pnpm lint`
 Expected: 全部 PASS。
 
-- [ ] **Step 3: 提交**
+- **Step 3: 提交**
 
 走 `/commit`，提交信息：`refactor(core): 删掉公式展开落地后仍零消费方的推导与诊断字段`
 
@@ -1634,11 +1637,11 @@ Expected: 全部 PASS。
 - Modify: `.docs/architecture.md`（分层表 `src/core/` 一格补上 `explain`；关键类型补 `ExplainStep` / `ShrinkRound`）
 - Modify: `.docs/superpowers/specs/2026-10-08-formula-expansion-design.md`（状态行改为已实施，链到 progress 新节）
 
-- [ ] **Step 1: 读浏览器验证文档**
+- **Step 1: 读浏览器验证文档**
 
 读 [browser-verification.md](../../browser-verification.md) 全文，尤其第六节（CDP 驱动 headless Chrome、`?t=` 模块 URL 的坑、`visibilityState`）。
 
-- [ ] **Step 2: 起 dev server，用 CDP 驱动 headless Chrome 核对**
+- **Step 2: 起 dev server，用 CDP 驱动 headless Chrome 核对**
 
 每轮先跑已知答案的探针（默认状态下明细表 A 行理论 80px、实际 80px），确认环境可信再看现象。以 DOM 为准，逐项记录数字：
 
@@ -1652,15 +1655,15 @@ Expected: 全部 PASS。
 
 任何一项不符：按 systematic-debugging 先在真实环境复现缺陷本身，再改，不要凭推断改。
 
-- [ ] **Step 3: 全量验证**
+- **Step 3: 全量验证**
 
 Run: `pnpm test && pnpm lint && pnpm tscheck && pnpm build`
 Expected: 全部通过，记下测试总数。
 
-- [ ] **Step 4: 写文档**
+- **Step 4: 写文档**
 
 `progress.md` 新增「## 公式展开（2026-10-xx）」一节，放在「观测层取整误报」节之前，写：做了什么、Task 4 六条变异的结果、随机守卫各分支命中次数、Step 2 的浏览器实测数字、**折行与面板内滚动没有自动化守卫**（happy-dom 不排版）这句原话。里程碑表加一行；交接节改为本功能完成后的状态；「还开着的事」删掉公式展开一项；待办节整节删除（功能已落地，保留说明随之失效）。
 
-- [ ] **Step 5: 提交**
+- **Step 5: 提交**
 
 走 `/commit`，提交信息：`docs: 记下公式展开的浏览器实测与守卫，交接节同步`

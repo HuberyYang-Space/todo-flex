@@ -37,7 +37,7 @@
 ## 交接：下次开工从这里接
 
 > 2026-10-08 的状态。新会话读完 CLAUDE.md 后读这一节。
-> 公式展开已做完并上线（见[公式展开](#公式展开2026-10-08)）：`main` 与 `dev` 推到 `a8b7ef9`，部署成功，线上主包 `index-DP1s6VaF.js` 与本地构建同名、含新功能文案。
+> 公式展开已做完并上线（见[公式展开](#公式展开2026-10-08)）：功能代码随 `a8b7ef9` 部署成功，线上主包 `index-DP1s6VaF.js` 与本地构建同名、含新功能文案；`main` 与 `dev` 已与远端同步。
 > **下一件由用户定**，开工先问用户。
 
 当前状态：`pnpm test` 700/700、`pnpm lint`、`pnpm tscheck`、`pnpm build` 全部通过。
@@ -46,7 +46,12 @@
 
 1. **需要人手试的两件**（自动化做不到）：真实拼音输入法按回车上屏（只验证了模拟的 `isComposing` / `keyCode 229` 事件）；
    Safari 上点预设按钮时输入框是否先失焦（本机没有 Safari）
-2. GitHub 提示 `ubuntu-latest` 从 2026-10-19 起迁到 Ubuntu 26，[deploy.yml](../.github/workflows/deploy.yml) 用的就是它；届时部署若出问题先查这个
+2. **公式展开终审暂缓的四条 Minor**（详见[终审与修复](#终审与修复)）：
+   - 本盒子与别的盒子都是运行期 basis 时，提示只点名别人
+   - 本行剩余在 gap = 0 时仍写「− 1 × 0」；极小负剩余显示成「0px（溢出）」，与后面几行自相矛盾
+   - 随机守卫不覆盖「剩余恰好为 0」（目前由单测覆盖）
+   - 「实际尺寸取主轴」的写法分散在 MetricsTable、DerivationSteps、diagnostics 三处
+3. GitHub 提示 `ubuntu-latest` 从 2026-10-19 起迁到 Ubuntu 26，[deploy.yml](../.github/workflows/deploy.yml) 用的就是它；届时部署若出问题先查这个
 
 ### 本轮做完的（2026-10-08）
 
