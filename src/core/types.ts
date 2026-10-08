@@ -125,3 +125,21 @@ export interface Diagnostic {
   /** 被同行连带时，是哪些盒子被 min-width:auto 兜住、多占了空间 */
   causedBy?: string[]
 }
+
+export type BasisForm = 'content' | 'length' | 'percent' | 'font' | 'unit'
+
+/** 公式展开的一步：只有数值，文案在展示层 */
+export type ExplainStep
+  = | { kind: 'basis', form: BasisForm, raw: string, value: number, unit: string, factor: number, result: number }
+    | { kind: 'basis-runtime', raw: string }
+    | { kind: 'unresolvable', blockers: string[] }
+    | { kind: 'line', lineNumber: number, lineCount: number, terms: number[], gap: number, next: number | null, limit: number }
+    | { kind: 'free', container: number, terms: number[], gap: number, result: number }
+    | { kind: 'balanced' }
+    | { kind: 'grow', grow: number, totalGrow: number, free: number, result: number }
+    | { kind: 'shrink-weight', shrink: number, basis: number, result: number }
+    | { kind: 'freeze', round: number, overflow: number, frozen: { id: string, share: number, basis: number }[], remaining: number }
+    | { kind: 'shrink-total', terms: number[], result: number }
+    | { kind: 'shrink-share', weight: number, weightSum: number, overflow: number, factorSum: number, initialOverflow: number, result: number }
+    | { kind: 'no-shrink' }
+    | { kind: 'final', basis: number, delta: number, result: number }
