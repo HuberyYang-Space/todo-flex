@@ -1,38 +1,14 @@
 <script setup lang="ts">
-import type { Diagnostic, DiagnosticRule } from '~/core/types'
 import { isRowDirection } from '~/core/axis'
-import { diagnose } from '~/core/diagnostics'
 import { itemLabel, px } from '~/core/labels'
 
 const { state, derived } = useFlexState()
 const { measured } = useMeasure()
-
-// 文案住在展示层：core/ 只产出 rule 标识、数值与盒子 id
-const ruleText: Record<DiagnosticRule, (diagnostic: Diagnostic) => string> = {
-  'runtime-basis': () => 'flex-basis 要到运行期才能确定（calc()、vw、ch 等），理论值无法推导',
-  'line-break-widened': () => 'min-width:auto 把它参与换行的尺寸撑到了内容尺寸，换行位置因此与推导不同',
-  'line-break-shifted': () => '换行位置与推导不同：有盒子被 min-width:auto 撑宽，它所在行的成员变了',
-  'min-width-auto': d => d.params.freeSpace < 0
-    ? 'min-width:auto 撑住了内容固有尺寸，收缩到此为止'
-    : '分到的尺寸比内容固有尺寸小，min-width:auto 把它撑到了内容尺寸',
-  'min-width-auto-sibling': d => `同一行的 ${labelsOf(d.causedBy ?? [])} 被 min-width:auto 兜住、多占了空间，它分到的尺寸跟着变小`,
-  'margin-auto': d => `margin:auto 吃掉了 ${px(d.params.freeSpace)} 剩余空间，justify-content 已失效`,
-  'unexplained': () => '与推导不一致，没能归到已知规则',
-}
-
-function labelsOf(ids: string[]): string {
-  return ids.map(id => itemLabel(state.items.findIndex(item => item.id === id))).join('、')
-}
-
-// 不放进 useFlexState：状态层不该反向依赖观测层
-const diagnostics = computed(() =>
-  measured.value ? diagnose(state, derived.value, measured.value) : [],
-)
+const { byId } = useDiagnostics()
 
 const rows = computed(() => {
   const derivedById = new Map(derived.value.items.map(item => [item.id, item]))
   const measuredById = new Map((measured.value?.items ?? []).map(item => [item.id, item]))
-  const diagnosticById = new Map(diagnostics.value.map(item => [item.itemId, item]))
   const isRow = isRowDirection(state.container.direction)
 
   return state.items.map((item, index) => {
@@ -44,17 +20,10 @@ const rows = computed(() => {
       theoretical: derivedById.get(item.id)?.finalMainSize ?? null,
       // 观测尚未产生时保持 null，不用 0 冒充
       actual: record ? (isRow ? record.width : record.height) : null,
-      diagnostic: diagnosticById.get(item.id) ?? null,
+      diagnostic: byId.value.get(item.id) ?? null,
     }
   })
 })
-
-// 连字符是断行机会：窄列里 min-width:auto 会被拆成「min-」与「width:auto」两行
-const CSS_NAME = /([a-z]+(?:-[a-z]+)+(?::[a-z]+)?)/
-
-function segments(text: string) {
-  return text.split(CSS_NAME).map((part, index) => ({ text: part, unbreakable: index % 2 === 1 }))
-}
 </script>
 
 <template>
@@ -99,13 +68,7 @@ function segments(text: string) {
               {{ row.actual === null ? '—' : px(row.actual) }}
             </td>
             <td data-testid="diagnosis" class="py-1 text-left font-sans">
-              <span v-if="row.diagnostic" :class="row.diagnostic.severity === 'info' ? 'text-accent' : 'text-accent2'">
-                {{ row.diagnostic.severity === 'info' ? 'ℹ' : '⚠' }}
-                <template v-for="(segment, index) in segments(ruleText[row.diagnostic.rule](row.diagnostic))" :key="index">
-                  <span v-if="segment.unbreakable" class="whitespace-nowrap">{{ segment.text }}</span>
-                  <template v-else>{{ segment.text }}</template>
-                </template>
-              </span>
+              <DiagnosisText v-if="row.diagnostic" :diagnostic="row.diagnostic" />
               <span v-else-if="row.actual === null || row.theoretical === null" class="op-60">—</span>
               <span v-else class="op-60">✓</span>
             </td>
