@@ -6,7 +6,7 @@ import type {
   FlexState,
   MeasuredStage,
 } from './types'
-import { isRowDirection } from './axis'
+import { measuredMainSize } from './axis'
 import { basisKind } from './basisSyntax'
 import { measuredLines } from './measuredLines'
 
@@ -30,7 +30,6 @@ export function diagnose(
   derived: DerivedLayout,
   measured: MeasuredStage,
 ): Diagnostic[] {
-  const isRow = isRowDirection(state.container.direction)
   const itemById = new Map(state.items.map(item => [item.id, item]))
   const measuredById = new Map(measured.items.map(item => [item.id, item]))
   const lineByIndex = new Map(derived.lines.map(line => [line.index, line]))
@@ -42,9 +41,6 @@ export function diagnose(
   const theoreticalMembers = membersOf(derived.lines.map(line => line.itemIds.filter(id => measuredById.has(id))))
   const actualMembers = membersOf(measuredLines(state, measured, derived.fontSize))
 
-  const mainSizeOf = (record: { width: number, height: number }): number =>
-    isRow ? record.width : record.height
-
   // 被 min-width:auto 兜住、比理论值多占了空间的盒子：多占的那份是从同行其余盒子里扣的
   const clampSourcesByLine = new Map<number, string[]>()
   for (const derivedItem of derived.items) {
@@ -52,7 +48,7 @@ export function diagnose(
     const record = measuredById.get(derivedItem.id)
     if (!item || !record || derivedItem.finalMainSize === null)
       continue
-    const actual = mainSizeOf(record)
+    const actual = measuredMainSize(record, state.container.direction)
     if (isClampedByContent(item, actual) && actual > derivedItem.finalMainSize + TOLERANCE)
       clampSourcesByLine.set(derivedItem.lineIndex, [...clampSourcesByLine.get(derivedItem.lineIndex) ?? [], item.id])
   }
@@ -64,7 +60,7 @@ export function diagnose(
     if (!item || !record)
       return null
 
-    const actual = mainSizeOf(record)
+    const actual = measuredMainSize(record, state.container.direction)
     const theoretical = derivedItem.finalMainSize
     const base = { itemId: item.id }
     const line = lineByIndex.get(derivedItem.lineIndex)

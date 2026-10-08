@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { isRowDirection } from '~/core/axis'
+import { measuredMainSize } from '~/core/axis'
 import { itemLabel, px } from '~/core/labels'
 
 const { state, derived } = useFlexState()
@@ -9,7 +9,6 @@ const { byId } = useDiagnostics()
 const rows = computed(() => {
   const derivedById = new Map(derived.value.items.map(item => [item.id, item]))
   const measuredById = new Map((measured.value?.items ?? []).map(item => [item.id, item]))
-  const isRow = isRowDirection(state.container.direction)
 
   return state.items.map((item, index) => {
     const record = measuredById.get(item.id)
@@ -19,7 +18,7 @@ const rows = computed(() => {
       label: itemLabel(index),
       theoretical: derivedById.get(item.id)?.finalMainSize ?? null,
       // 观测尚未产生时保持 null，不用 0 冒充
-      actual: record ? (isRow ? record.width : record.height) : null,
+      actual: record ? measuredMainSize(record, state.container.direction) : null,
       diagnostic: byId.value.get(item.id) ?? null,
     }
   })

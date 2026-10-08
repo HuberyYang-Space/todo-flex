@@ -15,8 +15,8 @@ export function explainItem(state: FlexState, layout: DerivedLayout, itemId: str
   const basis = basisStep(item, derived, state, layout.fontSize)
   if (derived.finalMainSize === null) {
     const blockers = state.items
-      .filter(other => other.id !== itemId && basisKind(other.basis) === 'runtime')
-      .map(other => other.id)
+      .filter(candidate => basisKind(candidate.basis) === 'runtime')
+      .map(candidate => candidate.id)
     return [basis, { kind: 'unresolvable', blockers }]
   }
 

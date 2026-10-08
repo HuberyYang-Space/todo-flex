@@ -79,6 +79,15 @@ describe('derivationSteps', () => {
     expect(wrapper.text()).not.toContain('理论最终')
   })
 
+  it('自己和别的盒子的 basis 都要到运行期才能确定时，一并点名', () => {
+    setItems([{ basis: '10vw' }, { basis: '5vw' }])
+    useFlexState().selectItem('item-1')
+    const wrapper = mount(DerivationSteps)
+
+    expect(table(wrapper).at(-1)?.label).toBe('无法推导')
+    expect(wrapper.text()).toContain('盒子 A、B 的 basis 要到运行期才能确定')
+  })
+
   it('还没有观测结果时实际行留空位，不打勾', () => {
     growScenario()
     const wrapper = mount(DerivationSteps)
@@ -142,6 +151,29 @@ describe('derivationSteps', () => {
       substitution: '盒子 A：5 ÷ 105 × max(−910, −910 × 0.6) = −26，basis 只有 10',
       result: '溢出剩 −900px',
     })
+  })
+
+  it('gap 为 0 时本行剩余不写「− 1 × 0」', () => {
+    const { state } = useFlexState()
+    state.container.columnGap = 0
+    setItems([{ basis: '300px', grow: 1 }, { basis: '300px' }])
+    useFlexState().selectItem('item-1')
+    const wrapper = mount(DerivationSteps)
+
+    expect(table(wrapper)[1]).toEqual({ label: '本行剩余', substitution: '720 − (300 + 300)', result: '120px' })
+  })
+
+  it('不到 0.05px 的溢出照实写出，不显示成「0px（溢出）」', () => {
+    // 两个 50.002% 在 720 里共 720.0288，溢出 0.0288，舍到 1 位小数就成了 0
+    const { state } = useFlexState()
+    state.container.columnGap = 0
+    setItems([{ basis: '50.002%' }, { basis: '50.002%' }])
+    useFlexState().selectItem('item-1')
+    const wrapper = mount(DerivationSteps)
+    const rows = table(wrapper)
+
+    expect(rows.find(row => row.label === '本行剩余')?.result).toBe('−0.0288px（溢出）')
+    expect(rows.find(row => row.label === 'shrink 分摊')?.result).toBe('−0.0144px')
   })
 
   it('代入列的运算数不舍成 1 位小数，照着算得出结果', async () => {

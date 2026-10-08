@@ -8,6 +8,11 @@ export function mainAxisSize(container: FlexContainerState): number {
   return isRowDirection(container.direction) ? container.width : container.height
 }
 
+/** 实测盒子在主轴上的尺寸：明细表、推导页、悬停标签与诊断必须取同一边，否则 column 下各说各话 */
+export function measuredMainSize(record: { width: number, height: number }, direction: Direction): number {
+  return isRowDirection(direction) ? record.width : record.height
+}
+
 export function mainAxisGap(container: FlexContainerState): number {
   return isRowDirection(container.direction) ? container.columnGap : container.rowGap
 }

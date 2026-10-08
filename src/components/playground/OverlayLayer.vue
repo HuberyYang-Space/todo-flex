@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { AxisVector } from '~/core/axis'
-import { axisVectors, isRowDirection } from '~/core/axis'
+import { axisVectors, measuredMainSize } from '~/core/axis'
 import { itemLabel, roundTenth } from '~/core/labels'
 import { computeOverlay } from '~/core/overlay'
 
@@ -87,7 +87,7 @@ const hud = computed(() => {
 
   const index = state.items.findIndex(item => item.id === id)
   const theoretical = derived.value.items.find(item => item.id === id)?.finalMainSize ?? null
-  const actualMain = isRowDirection(state.container.direction) ? record.width : record.height
+  const actualMain = measuredMainSize(record, state.container.direction)
 
   return {
     label: itemLabel(index),

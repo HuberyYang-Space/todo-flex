@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ExplainStep } from '~/core/types'
-import { isRowDirection } from '~/core/axis'
+import { measuredMainSize } from '~/core/axis'
 import { explainItem } from '~/core/explain'
 import { formatNumber, itemLabel, px } from '~/core/labels'
 
@@ -12,8 +12,11 @@ interface Row { label: string, formula: string, substitution: string, result: st
 
 // 运算数留 4 位：舍成 1 位的话，30pt 写成「30 × 1.3」却得出 40，照着算对不上
 const n = (value: number): string => formatNumber(value, 4)
+// 不到半格的非零量舍成 1 位小数就是 0，会写出「0px（溢出）」这种自相矛盾的话；理论最终仍用 px，与明细表一致
+const amount = (value: number): string => value !== 0 && Math.abs(value) < 0.05 ? `${n(value)}px` : px(value)
 const sum = (terms: number[]): string => terms.map(n).join(' + ')
-const boxOf = (id: string): string => `盒子 ${itemLabel(state.items.findIndex(item => item.id === id))}`
+const labelOf = (id: string): string => itemLabel(state.items.findIndex(item => item.id === id))
+const boxOf = (id: string): string => `盒子 ${labelOf(id)}`
 // gap 为 0 时不写：满屏的「+ 0」只会干扰
 const accumulate = (terms: number[], gap: number): string => terms.map(n).join(gap > 0 ? ` + ${n(gap)} + ` : ' + ')
 
@@ -35,15 +38,13 @@ function basisText(step: Extract<ExplainStep, { kind: 'basis' }>): Pick<Row, 'fo
 function rowOf(step: ExplainStep): Row {
   switch (step.kind) {
     case 'basis':
-      return { label: 'basis', ...basisText(step), result: px(step.result) }
+      return { label: 'basis', ...basisText(step), result: amount(step.result) }
     case 'basis-runtime':
       return { label: 'basis', formula: '要到运行期才能确定（calc()、vw、ch 等）', substitution: step.raw, result: '—' }
     case 'unresolvable':
       return {
         label: '无法推导',
-        formula: step.blockers.length > 0
-          ? `${step.blockers.map(boxOf).join('、')} 的 basis 要到运行期才能确定`
-          : '这个盒子的 basis 要到运行期才能确定',
+        formula: `盒子 ${step.blockers.map(labelOf).join('、')} 的 basis 要到运行期才能确定`,
         substitution: '整个容器的理论值都给不出',
         result: '—',
       }
@@ -69,8 +70,8 @@ function rowOf(step: ExplainStep): Row {
       return {
         label: '本行剩余',
         formula: '容器主轴 − Σbasis − (n − 1) × gap',
-        substitution: `${n(step.container)} − ${used}${gaps > 0 ? ` − ${gaps} × ${n(step.gap)}` : ''}`,
-        result: step.result < 0 ? `${px(step.result)}（溢出）` : px(step.result),
+        substitution: `${n(step.container)} − ${used}${gaps > 0 && step.gap > 0 ? ` − ${gaps} × ${n(step.gap)}` : ''}`,
+        result: step.result < 0 ? `${amount(step.result)}（溢出）` : amount(step.result),
       }
     }
     case 'balanced':
@@ -83,9 +84,9 @@ function rowOf(step: ExplainStep): Row {
             label: 'grow 分配',
             formula: 'grow ÷ Σgrow × (剩余 × Σgrow)：Σgrow < 1 时只分出这个比例',
             substitution: `${n(step.grow)} ÷ ${n(step.totalGrow)} × (${n(step.free)} × ${n(step.totalGrow)})`,
-            result: px(step.result),
+            result: amount(step.result),
           }
-        : { label: 'grow 分配', formula: 'grow ÷ Σgrow × 剩余', substitution: `${n(step.grow)} ÷ ${n(step.totalGrow)} × ${n(step.free)}`, result: px(step.result) }
+        : { label: 'grow 分配', formula: 'grow ÷ Σgrow × 剩余', substitution: `${n(step.grow)} ÷ ${n(step.totalGrow)} × ${n(step.free)}`, result: amount(step.result) }
     case 'shrink-weight':
       return { label: '收缩权重', formula: 'shrink × basis', substitution: `${n(step.shrink)} × ${n(step.basis)}`, result: n(step.result) }
     case 'freeze':
@@ -95,7 +96,7 @@ function rowOf(step: ExplainStep): Row {
         substitution: step.frozen
           .map(record => `${boxOf(record.id)}：${n(record.weight)} ÷ ${n(step.weightSum)} × ${effectiveText(step)} = ${n(record.share)}，basis 只有 ${n(record.basis)}`)
           .join('；'),
-        result: `溢出剩 ${px(step.remaining)}`,
+        result: `溢出剩 ${amount(step.remaining)}`,
       }
     case 'shrink-total':
       return { label: '权重和', formula: 'Σ(shrink × basis)，只计未冻结的盒子', substitution: sum(step.terms), result: n(step.result) }
@@ -105,7 +106,7 @@ function rowOf(step: ExplainStep): Row {
         label: 'shrink 分摊',
         formula: scaled ? '权重 ÷ 权重和 × max(剩余溢出, 初始溢出 × Σshrink)：Σshrink < 1 时只分摊这个比例' : '权重 ÷ 权重和 × 溢出',
         substitution: `${n(step.weight)} ÷ ${n(step.weightSum)} × ${effectiveText(step)}`,
-        result: px(step.result),
+        result: amount(step.result),
       }
     }
     case 'no-shrink':
@@ -127,7 +128,7 @@ const theoretical = computed(() => derived.value.items.find(item => item.id === 
 // 观测尚未产生时保持 null，不用 0 冒充
 const actual = computed(() => {
   const record = measured.value?.items.find(item => item.id === selectedItem.value?.id)
-  return record ? (isRowDirection(state.container.direction) ? record.width : record.height) : null
+  return record ? measuredMainSize(record, state.container.direction) : null
 })
 
 const diagnostic = computed(() => selectedItem.value ? byId.value.get(selectedItem.value.id) ?? null : null)

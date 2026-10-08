@@ -163,8 +163,13 @@ describe('explainItem', () => {
     const state = stateWith([{ basis: '10vw' }, { basis: '100px' }])
     expect(explain(state, 'i1')).toEqual([
       { kind: 'basis-runtime', raw: '10vw' },
-      { kind: 'unresolvable', blockers: [] },
+      { kind: 'unresolvable', blockers: ['i1'] },
     ])
+  })
+
+  it('自己和别的盒子的 basis 都要到运行期才能确定：一并点名，不漏掉自己', () => {
+    const state = stateWith([{ basis: '10vw' }, { basis: '5vw' }, { basis: '100px' }])
+    expect(explain(state, 'i1')[1]).toEqual({ kind: 'unresolvable', blockers: ['i1', 'i2'] })
   })
 
   it('别的盒子的 basis 要到运行期才能确定：本盒子 basis 照常解析，随即停下并点名', () => {
@@ -269,12 +274,13 @@ function branchesOf(steps: ExplainStep[], itemId: string): string[] {
     switch (step.kind) {
       case 'basis': return [`basis:${step.form}`]
       case 'basis-runtime': return ['basis-runtime']
-      case 'unresolvable': return step.blockers.length > 0 ? ['unresolvable:other'] : ['unresolvable:self']
+      case 'unresolvable': return [...(step.blockers.includes(itemId) ? ['unresolvable:self'] : []), ...(step.blockers.some(id => id !== itemId) ? ['unresolvable:other'] : [])]
       case 'line': return ['line', ...(step.next === null ? ['line:last'] : []), ...(step.terms.length === 1 && step.terms[0] > step.limit ? ['line:oversize'] : [])]
       case 'grow': return [step.totalGrow === 0 ? 'grow:zero' : step.totalGrow < 1 ? 'grow:scaled' : 'grow']
       case 'freeze': return ['freeze', ...(step.frozen.some(record => record.id === itemId) ? ['freeze:self'] : [])]
       case 'shrink-share': return [step.factorSum < 1 ? 'shrink:scaled' : 'shrink']
       case 'no-shrink': return ['no-shrink']
+      case 'balanced': return ['balanced']
       default: return []
     }
   })
@@ -300,6 +306,7 @@ const REQUIRED_BRANCHES = [
   'freeze',
   'freeze:self',
   'no-shrink',
+  'balanced',
 ]
 
 describe('explainItem 随机守卫', () => {

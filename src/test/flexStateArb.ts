@@ -32,11 +32,21 @@ export const flexStateArb = fc.record({
   wrap: fc.constantFrom('nowrap', 'wrap', 'wrap-reverse'),
   // 运行期 basis 只放在一成的状态里：放进每个盒子的候选里，大半状态整个容器都推不出来，其余分支就喂不饱
   runtime: fc.integer({ min: 0, max: 9 }).map(value => value === 0),
-}).map(({ items, main, gap, direction, wrap, runtime }): FlexState => {
+  // 剩余恰好为 0 靠碰运气每千次只出现几次，偶尔一次都没有，守卫就时红时绿；单独造一成「刚好排满」的容器
+  balanced: fc.integer({ min: 0, max: 9 }).map(value => value === 0),
+}).map(({ items, main, gap, direction, wrap, runtime, balanced }): FlexState => {
   const state = createDefaultState()
   Object.assign(state.container, { direction, wrap, width: main, height: main, rowGap: gap, columnGap: gap })
   state.items = items.map((spec, index) => ({ ...createDefaultItem(`i${index + 1}`), ...spec }))
-  if (runtime)
+  if (runtime) {
     state.items[0].basis = '10vw'
+  }
+  else if (balanced) {
+    // 整数 px 相加没有浮点误差，剩余空间精确等于 0
+    for (const item of state.items)
+      item.basis = `${item.size}px`
+    const exact = state.items.reduce((sum, item) => sum + item.size, 0) + (state.items.length - 1) * gap
+    Object.assign(state.container, { wrap: 'nowrap', width: exact, height: exact })
+  }
   return state
 })
