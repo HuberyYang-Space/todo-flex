@@ -76,12 +76,15 @@ function lineStep(
 ): ExplainStep {
   // lines 按视觉行序排，wrap-reverse 下与断行先后相反；「下一个放不下的」要按断行先后找
   const sequence = state.container.wrap === 'wrap-reverse' ? [...layout.lines].reverse() : layout.lines
-  const nextLine = sequence[sequence.indexOf(line) + 1]
+  const position = sequence.indexOf(line)
+  const previousLine = sequence[position - 1]
+  const nextLine = sequence[position + 1]
 
   return {
     kind: 'line',
     lineNumber: line.index + 1,
     lineCount: layout.lines.length,
+    previous: previousLine ? previousLine.itemIds.map(id => sizeOf.get(id) ?? 0) : null,
     terms,
     gap,
     next: nextLine ? sizeOf.get(nextLine.itemIds[0]) ?? 0 : null,
@@ -104,30 +107,33 @@ function shrinkSteps(
   const frozen = new Set<string>()
 
   for (const [index, round] of line.shrinkRounds.entries()) {
+    const active = line.itemIds.filter(id => !frozen.has(id))
+    steps.push({ kind: 'shrink-total', terms: active.map(weightOf), result: round.weightSum })
+
     if (round.frozen.length === 0) {
-      const active = line.itemIds.filter(id => !frozen.has(id))
-      steps.push(
-        { kind: 'shrink-total', terms: active.map(weightOf), result: round.weightSum },
-        {
-          kind: 'shrink-share',
-          weight: weightOf(item.id),
-          weightSum: round.weightSum,
-          overflow: round.overflow,
-          factorSum: round.factorSum,
-          initialOverflow: line.freeSpace,
-          result: derived.deltaFromShrink,
-        },
-      )
+      steps.push({
+        kind: 'shrink-share',
+        weight: weightOf(item.id),
+        weightSum: round.weightSum,
+        overflow: round.overflow,
+        factorSum: round.factorSum,
+        initialOverflow: line.freeSpace,
+        result: derived.deltaFromShrink,
+      })
       return steps
     }
 
-    // 与引擎同一个累加顺序（从本轮溢出起逐个加回），守卫用 toBe 比对下一轮的起点才不会差在浮点舍入上
-    const remaining = round.frozen.reduce((sum, record) => sum + (sizeOf.get(record.id) ?? 0), round.overflow)
+    // 没有下一轮，说明剩下的盒子权重为 0、循环就此停下，剩下的溢出只能自己加回来
+    const remaining = line.shrinkRounds[index + 1]?.overflow
+      ?? round.frozen.reduce((sum, record) => sum + (sizeOf.get(record.id) ?? 0), round.overflow)
     steps.push({
       kind: 'freeze',
       round: index + 1,
       overflow: round.overflow,
-      frozen: round.frozen.map(record => ({ ...record, basis: sizeOf.get(record.id) ?? 0 })),
+      factorSum: round.factorSum,
+      initialOverflow: line.freeSpace,
+      weightSum: round.weightSum,
+      frozen: round.frozen.map(record => ({ id: record.id, weight: weightOf(record.id), share: record.share, basis: sizeOf.get(record.id) ?? 0 })),
       remaining,
     })
     for (const record of round.frozen)

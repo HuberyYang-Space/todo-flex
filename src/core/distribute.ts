@@ -66,7 +66,6 @@ export function distributeShrink(
     rounds.push({
       overflow: remaining,
       factorSum,
-      effective,
       weightSum: total,
       frozen: violators.map(item => ({ id: item.id, share: share(item) })),
     })

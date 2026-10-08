@@ -10,12 +10,17 @@ const { byId } = useDiagnostics()
 
 interface Row { label: string, formula: string, substitution: string, result: string }
 
-const n = (value: number): string => formatNumber(value)
-const factor = (value: number): string => formatNumber(value, 2)
+// 运算数留 4 位：舍成 1 位的话，30pt 写成「30 × 1.3」却得出 40，照着算对不上
+const n = (value: number): string => formatNumber(value, 4)
 const sum = (terms: number[]): string => terms.map(n).join(' + ')
 const boxOf = (id: string): string => `盒子 ${itemLabel(state.items.findIndex(item => item.id === id))}`
 // gap 为 0 时不写：满屏的「+ 0」只会干扰
 const accumulate = (terms: number[], gap: number): string => terms.map(n).join(gap > 0 ? ` + ${n(gap)} + ` : ' + ')
+
+/** 本轮实际分摊量：Σshrink < 1 时按规范 §9.7 第 4b 步打折，乘的是初始溢出 */
+function effectiveText(step: { overflow: number, initialOverflow: number, factorSum: number }): string {
+  return step.factorSum < 1 ? `max(${n(step.overflow)}, ${n(step.initialOverflow)} × ${n(step.factorSum)})` : n(step.overflow)
+}
 
 function basisText(step: Extract<ExplainStep, { kind: 'basis' }>): Pick<Row, 'formula' | 'substitution'> {
   switch (step.form) {
@@ -44,12 +49,19 @@ function rowOf(step: ExplainStep): Row {
       }
     case 'line': {
       const used = step.terms.reduce((total, term) => total + term, 0) + (step.terms.length - 1) * step.gap
-      const substitution = step.terms.length === 1 && used > step.limit
-        ? `${n(used)} > ${n(step.limit)}，独占一行`
-        : step.next === null
-          ? `${accumulate(step.terms, step.gap)} = ${n(used)} ≤ ${n(step.limit)}`
-          : `${accumulate([...step.terms, step.next], step.gap)} = ${n(used + step.gap + step.next)} > ${n(step.limit)}`
-      return { label: '分行', formula: '按 order 累加 basis 与 gap，超出容器主轴就换行', substitution, result: `第 ${step.lineNumber} 行（共 ${step.lineCount} 行）` }
+      const parts: string[] = []
+      if (step.previous !== null) {
+        const before = step.previous.reduce((total, term) => total + term, 0) + step.previous.length * step.gap + step.terms[0]
+        parts.push(`上一行 ${accumulate([...step.previous, step.terms[0]], step.gap)} = ${n(before)} > ${n(step.limit)}，放不下本行开头`)
+      }
+      if (step.terms.length === 1 && used > step.limit)
+        parts.push(`${n(used)} > ${n(step.limit)}，独占一行`)
+      else if (step.next !== null)
+        parts.push(`本行 ${accumulate([...step.terms, step.next], step.gap)} = ${n(used + step.gap + step.next)} > ${n(step.limit)}，再放一个就超出`)
+      // 只有一个盒子又是最后一行时，「300 = 300 ≤ 720」是恒等式，不写
+      else if (step.terms.length > 1 || step.previous === null)
+        parts.push(`本行 ${accumulate(step.terms, step.gap)} = ${n(used)} ≤ ${n(step.limit)}`)
+      return { label: '分行', formula: '按 order 累加 basis 与 gap，超出容器主轴就换行', substitution: parts.join('；'), result: `第 ${step.lineNumber} / ${step.lineCount} 行` }
     }
     case 'free': {
       const gaps = step.terms.length - 1
@@ -70,17 +82,19 @@ function rowOf(step: ExplainStep): Row {
         ? {
             label: 'grow 分配',
             formula: 'grow ÷ Σgrow × (剩余 × Σgrow)：Σgrow < 1 时只分出这个比例',
-            substitution: `${factor(step.grow)} ÷ ${factor(step.totalGrow)} × (${n(step.free)} × ${factor(step.totalGrow)})`,
+            substitution: `${n(step.grow)} ÷ ${n(step.totalGrow)} × (${n(step.free)} × ${n(step.totalGrow)})`,
             result: px(step.result),
           }
-        : { label: 'grow 分配', formula: 'grow ÷ Σgrow × 剩余', substitution: `${factor(step.grow)} ÷ ${factor(step.totalGrow)} × ${n(step.free)}`, result: px(step.result) }
+        : { label: 'grow 分配', formula: 'grow ÷ Σgrow × 剩余', substitution: `${n(step.grow)} ÷ ${n(step.totalGrow)} × ${n(step.free)}`, result: px(step.result) }
     case 'shrink-weight':
-      return { label: '收缩权重', formula: 'shrink × basis', substitution: `${factor(step.shrink)} × ${n(step.basis)}`, result: n(step.result) }
+      return { label: '收缩权重', formula: 'shrink × basis', substitution: `${n(step.shrink)} × ${n(step.basis)}`, result: n(step.result) }
     case 'freeze':
       return {
         label: `冻结第 ${step.round} 轮`,
         formula: '分摊后压到 0 以下的盒子冻结在 0，溢出在其余盒子间重新分摊',
-        substitution: step.frozen.map(record => `${boxOf(record.id)} 应让 ${n(record.share)}，basis 只有 ${n(record.basis)}`).join('；'),
+        substitution: step.frozen
+          .map(record => `${boxOf(record.id)}：${n(record.weight)} ÷ ${n(step.weightSum)} × ${effectiveText(step)} = ${n(record.share)}，basis 只有 ${n(record.basis)}`)
+          .join('；'),
         result: `溢出剩 ${px(step.remaining)}`,
       }
     case 'shrink-total':
@@ -90,7 +104,7 @@ function rowOf(step: ExplainStep): Row {
       return {
         label: 'shrink 分摊',
         formula: scaled ? '权重 ÷ 权重和 × max(剩余溢出, 初始溢出 × Σshrink)：Σshrink < 1 时只分摊这个比例' : '权重 ÷ 权重和 × 溢出',
-        substitution: `${n(step.weight)} ÷ ${n(step.weightSum)} × ${scaled ? `max(${n(step.overflow)}, ${n(step.initialOverflow)} × ${factor(step.factorSum)})` : n(step.overflow)}`,
+        substitution: `${n(step.weight)} ÷ ${n(step.weightSum)} × ${effectiveText(step)}`,
         result: px(step.result),
       }
     }

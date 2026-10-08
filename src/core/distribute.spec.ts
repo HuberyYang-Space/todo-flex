@@ -129,7 +129,7 @@ describe('distributeShrink', () => {
     const items = makeItems([{ shrink: 1, basis: '300px' }, { shrink: 1, basis: '100px' }])
 
     expect(distributeShrink(items, -200, container).rounds).toEqual([
-      { overflow: -200, factorSum: 2, effective: -200, weightSum: 400, frozen: [] },
+      { overflow: -200, factorSum: 2, weightSum: 400, frozen: [] },
     ])
   })
 
@@ -140,8 +140,8 @@ describe('distributeShrink', () => {
     const { deltas, rounds } = distributeShrink(items, -200, container)
 
     expect(rounds).toEqual([
-      { overflow: -200, factorSum: 11, effective: -200, weightSum: 400, frozen: [{ id: 'i1', share: -50 }] },
-      { overflow: -190, factorSum: 1, effective: -190, weightSum: 300, frozen: [] },
+      { overflow: -200, factorSum: 11, weightSum: 400, frozen: [{ id: 'i1', share: -50 }] },
+      { overflow: -190, factorSum: 1, weightSum: 300, frozen: [] },
     ])
     expect(deltas.get('i1')).toBe(-10)
     expect(deltas.get('i2')).toBe(-190)
@@ -152,7 +152,7 @@ describe('distributeShrink', () => {
     const items = makeItems([{ shrink: 0.5, basis: '900px' }])
 
     expect(distributeShrink(items, -300, container).rounds).toEqual([
-      { overflow: -300, factorSum: 0.5, effective: -150, weightSum: 450, frozen: [] },
+      { overflow: -300, factorSum: 0.5, weightSum: 450, frozen: [] },
     ])
   })
 

@@ -1,6 +1,7 @@
-import type { ExplainStep, FlexItemState, FlexState } from './types'
+import type { ExplainStep, FlexItemState } from './types'
 import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
+import { flexStateArb } from '~/test/flexStateArb'
 import { createDefaultItem, createDefaultState } from './defaults'
 import { deriveLayout } from './deriveLayout'
 import { explainItem } from './explain'
@@ -45,21 +46,41 @@ describe('explainItem', () => {
     expect((steps[4] as { result: number }).result).toBeCloseTo(-300 / 7)
   })
 
-  it('本盒子在第 1 轮被冻结：列出冻结那一轮后直接给最终，不再有分摊行', () => {
+  it('本盒子在第 1 轮被冻结：先给这一轮的权重和，再列冻结轮，随即给最终，不再有分摊行', () => {
     const state = stateWith([{ shrink: 10, basis: '10px' }, { shrink: 1, basis: '300px' }], { width: 110, columnGap: 0 })
 
     expect(explain(state, 'i1').slice(2)).toEqual([
       { kind: 'shrink-weight', shrink: 10, basis: 10, result: 100 },
-      { kind: 'freeze', round: 1, overflow: -200, frozen: [{ id: 'i1', share: -50, basis: 10 }], remaining: -190 },
+      { kind: 'shrink-total', terms: [100, 300], result: 400 },
+      {
+        kind: 'freeze',
+        round: 1,
+        overflow: -200,
+        factorSum: 11,
+        initialOverflow: -200,
+        weightSum: 400,
+        frozen: [{ id: 'i1', weight: 100, share: -50, basis: 10 }],
+        remaining: -190,
+      },
       { kind: 'final', basis: 10, delta: -10, result: 0 },
     ])
   })
 
-  it('别的盒子被冻结：冻结轮之后按剩下的盒子重算权重和', () => {
+  it('别的盒子被冻结：每一轮先给本轮的权重和，冻结轮之后按剩下的盒子重算', () => {
     const state = stateWith([{ shrink: 10, basis: '10px' }, { shrink: 1, basis: '300px' }], { width: 110, columnGap: 0 })
 
     expect(explain(state, 'i2').slice(3)).toEqual([
-      { kind: 'freeze', round: 1, overflow: -200, frozen: [{ id: 'i1', share: -50, basis: 10 }], remaining: -190 },
+      { kind: 'shrink-total', terms: [100, 300], result: 400 },
+      {
+        kind: 'freeze',
+        round: 1,
+        overflow: -200,
+        factorSum: 11,
+        initialOverflow: -200,
+        weightSum: 400,
+        frozen: [{ id: 'i1', weight: 100, share: -50, basis: 10 }],
+        remaining: -190,
+      },
       { kind: 'shrink-total', terms: [300], result: 300 },
       { kind: 'shrink-share', weight: 300, weightSum: 300, overflow: -190, factorSum: 1, initialOverflow: -200, result: -190 },
       { kind: 'final', basis: 300, delta: -190, result: 110 },
@@ -101,18 +122,18 @@ describe('explainItem', () => {
     expect(explainItem(state, layout, 'i4')[0]).toEqual({ kind: 'basis', form: 'unit', raw: '1in', value: 1, unit: 'in', factor: 96, result: 96 })
   })
 
-  it('多行时加一步分行：给出本行累加，以及下一个放不下的盒子', () => {
+  it('多行时加一步分行：给出上一行为什么放不下本行开头、本行累加，以及下一个放不下的盒子', () => {
     const state = stateWith(Array.from({ length: 4 }, () => ({ basis: '300px' })), { width: 720, columnGap: 12, wrap: 'wrap' })
 
-    expect(explain(state, 'i1')[1]).toEqual({ kind: 'line', lineNumber: 1, lineCount: 2, terms: [300, 300], gap: 12, next: 300, limit: 720 })
-    expect(explain(state, 'i3')[1]).toEqual({ kind: 'line', lineNumber: 2, lineCount: 2, terms: [300, 300], gap: 12, next: null, limit: 720 })
+    expect(explain(state, 'i1')[1]).toEqual({ kind: 'line', lineNumber: 1, lineCount: 2, previous: null, terms: [300, 300], gap: 12, next: 300, limit: 720 })
+    expect(explain(state, 'i3')[1]).toEqual({ kind: 'line', lineNumber: 2, lineCount: 2, previous: [300, 300], terms: [300, 300], gap: 12, next: null, limit: 720 })
   })
 
   it('wrap-reverse：行号按视觉行序，下一个按 order 顺序', () => {
     const state = stateWith(Array.from({ length: 4 }, () => ({ basis: '300px' })), { width: 720, columnGap: 12, wrap: 'wrap-reverse' })
 
-    expect(explain(state, 'i1')[1]).toMatchObject({ lineNumber: 2, next: 300 })
-    expect(explain(state, 'i3')[1]).toMatchObject({ lineNumber: 1, next: null })
+    expect(explain(state, 'i1')[1]).toMatchObject({ lineNumber: 2, previous: null, next: 300 })
+    expect(explain(state, 'i3')[1]).toMatchObject({ lineNumber: 1, previous: [300, 300], next: null })
   })
 
   it('order 打乱时分行按 order 累加，不按文档顺序', () => {
@@ -124,8 +145,8 @@ describe('explainItem', () => {
       { basis: '200px' },
     ], { width: 720, columnGap: 12, wrap: 'wrap' })
 
-    expect(explain(state, 'i2')[1]).toMatchObject({ lineNumber: 1, terms: [100, 400], next: 200 })
-    expect(explain(state, 'i1')[1]).toMatchObject({ lineNumber: 2, terms: [200, 300], next: null })
+    expect(explain(state, 'i2')[1]).toMatchObject({ lineNumber: 1, previous: null, terms: [100, 400], next: 200 })
+    expect(explain(state, 'i1')[1]).toMatchObject({ lineNumber: 2, previous: [100, 400], terms: [200, 300], next: null })
   })
 
   it('column 方向：主轴取 height，gap 取 rowGap', () => {
@@ -184,6 +205,8 @@ function assertConsistent(steps: ExplainStep[], itemId: string): void {
         // 百分比、cm 这类小数尺寸重新累加时结合顺序与 splitLines 不同，边界上留一点浮点余量
         if (step.next !== null)
           expect(used + step.gap + step.next).toBeGreaterThan(step.limit - CLOSE)
+        if (step.previous !== null)
+          expect(sum(step.previous) + step.previous.length * step.gap + step.terms[0]).toBeGreaterThan(step.limit - CLOSE)
         break
       }
       case 'free':
@@ -201,14 +224,19 @@ function assertConsistent(steps: ExplainStep[], itemId: string): void {
       case 'shrink-weight':
         expect(Math.abs(step.shrink * step.basis - step.result)).toBeLessThan(CLOSE)
         break
-      case 'freeze':
+      case 'freeze': {
         expect(step.overflow).toBe(overflow)
-        for (const record of step.frozen)
+        expect(step.initialOverflow).toBe(free?.kind === 'free' ? free.result : Number.NaN)
+        const effective = step.factorSum < 1 ? Math.max(step.overflow, step.initialOverflow * step.factorSum) : step.overflow
+        for (const record of step.frozen) {
+          expect(Math.abs(record.weight / step.weightSum * effective - record.share)).toBeLessThan(CLOSE)
           expect(record.basis + record.share).toBeLessThan(0)
+        }
         overflow = step.remaining
         if (step.frozen.some(record => record.id === itemId))
           expect(final?.kind === 'final' && final.delta).toBe(-(basis?.kind === 'basis' ? basis.result : Number.NaN))
         break
+      }
       case 'shrink-total':
         expect(Math.abs(sum(step.terms) - step.result)).toBeLessThan(CLOSE)
         break
@@ -274,47 +302,11 @@ const REQUIRED_BRANCHES = [
   'no-shrink',
 ]
 
-const factorArb = fc.oneof(
-  { weight: 4, arbitrary: fc.integer({ min: 0, max: 10 }) },
-  { weight: 1, arbitrary: fc.constantFrom(0.2, 0.3, 0.5) },
-)
-
-const basisArb = fc.oneof(
-  { weight: 2, arbitrary: fc.constantFrom('auto', 'content', '0') },
-  { weight: 4, arbitrary: fc.integer({ min: 0, max: 500 }).map(value => `${value}px`) },
-  { weight: 2, arbitrary: fc.integer({ min: 0, max: 80 }).map(value => `${value}%`) },
-  { weight: 1, arbitrary: fc.integer({ min: 0, max: 20 }).map(value => `${value}em`) },
-  { weight: 1, arbitrary: fc.constantFrom('1in', '2cm', '30pt') },
-)
-
-const stateArb = fc.record({
-  items: fc.array(fc.record({
-    grow: factorArb,
-    shrink: factorArb,
-    basis: basisArb,
-    size: fc.integer({ min: 0, max: 300 }),
-    order: fc.integer({ min: -1, max: 1 }),
-  }), { minLength: 1, maxLength: 8 }),
-  main: fc.integer({ min: 100, max: 1200 }),
-  gap: fc.integer({ min: 0, max: 64 }),
-  direction: fc.constantFrom('row', 'row-reverse', 'column', 'column-reverse'),
-  wrap: fc.constantFrom('nowrap', 'wrap', 'wrap-reverse'),
-  // 运行期 basis 只放在一成的状态里：放进每个盒子的候选里，大半状态整个容器都推不出来，其余分支就喂不饱
-  runtime: fc.integer({ min: 0, max: 9 }).map(value => value === 0),
-}).map(({ items, main, gap, direction, wrap, runtime }): FlexState => {
-  const state = createDefaultState()
-  Object.assign(state.container, { direction, wrap, width: main, height: main, rowGap: gap, columnGap: gap })
-  state.items = items.map((spec, index) => ({ ...createDefaultItem(`i${index + 1}`), ...spec }))
-  if (runtime)
-    state.items[0].basis = '10vw'
-  return state
-})
-
 describe('explainItem 随机守卫', () => {
   it('最后一步恒等于推导引擎的理论值，每一步的代入都算得出它自称的结果，各条分支都走到过', () => {
     const hits = new Map<string, number>()
 
-    fc.assert(fc.property(stateArb, (state) => {
+    fc.assert(fc.property(flexStateArb, (state) => {
       const layout = deriveLayout(state)
       for (const item of state.items) {
         const steps = explainItem(state, layout, item.id)

@@ -17,11 +17,11 @@ describe('useDiagnostics', () => {
   })
 
   it('明细表与推导页拿到的是同一份计算结果', () => {
-    expect(useDiagnostics().diagnostics).toBe(useDiagnostics().diagnostics)
+    expect(useDiagnostics().byId).toBe(useDiagnostics().byId)
   })
 
   it('还没有观测结果时没有诊断', () => {
-    expect(useDiagnostics().diagnostics.value).toEqual([])
+    expect(useDiagnostics().byId.value.size).toBe(0)
   })
 
   it('按盒子 id 取诊断，并给出中文文案', () => {

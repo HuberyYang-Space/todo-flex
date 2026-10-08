@@ -27,5 +27,5 @@ export const useDiagnostics = createSharedComposable(() => {
   const diagnostics = computed(() => measured.value ? diagnose(state, derived.value, measured.value) : [])
   const byId = computed(() => new Map(diagnostics.value.map(diagnostic => [diagnostic.itemId, diagnostic])))
 
-  return { diagnostics, byId, textOf: (diagnostic: Diagnostic): string => ruleText[diagnostic.rule](diagnostic) }
+  return { byId, textOf: (diagnostic: Diagnostic): string => ruleText[diagnostic.rule](diagnostic) }
 })
