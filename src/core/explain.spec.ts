@@ -1,4 +1,5 @@
-import type { ExplainStep, FlexItemState } from './types'
+import type { ExplainStep, FlexItemState, FlexState } from './types'
+import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { createDefaultItem, createDefaultState } from './defaults'
 import { deriveLayout } from './deriveLayout'
@@ -155,5 +156,177 @@ describe('explainItem', () => {
 
   it('找不到盒子时返回空数组', () => {
     expect(explain(stateWith([{}]), 'nope')).toEqual([])
+  })
+})
+
+const CLOSE = 1e-9
+
+function sum(terms: number[]): number {
+  return terms.reduce((total, term) => total + term, 0)
+}
+
+/** 每一步把「代入」真的算一遍，必须等于它自称的结果；相邻步骤之间的数字也要接得上 */
+function assertConsistent(steps: ExplainStep[], itemId: string): void {
+  const basis = steps.find(step => step.kind === 'basis')
+  const free = steps.find(step => step.kind === 'free')
+  const final = steps.find(step => step.kind === 'final')
+  let overflow = free?.result
+
+  for (const step of steps) {
+    switch (step.kind) {
+      case 'basis':
+        expect(Math.abs((step.form === 'percent' ? step.value * step.factor / 100 : step.value * step.factor) - step.result)).toBeLessThan(CLOSE)
+        break
+      case 'line': {
+        const used = sum(step.terms) + (step.terms.length - 1) * step.gap
+        if (step.terms.length > 1)
+          expect(used).toBeLessThanOrEqual(step.limit + CLOSE)
+        // 百分比、cm 这类小数尺寸重新累加时结合顺序与 splitLines 不同，边界上留一点浮点余量
+        if (step.next !== null)
+          expect(used + step.gap + step.next).toBeGreaterThan(step.limit - CLOSE)
+        break
+      }
+      case 'free':
+        expect(Math.abs(step.container - sum(step.terms) - (step.terms.length - 1) * step.gap - step.result)).toBeLessThan(CLOSE)
+        expect(step.terms).toContain(basis?.kind === 'basis' ? basis.result : Number.NaN)
+        break
+      case 'grow': {
+        const expected = step.totalGrow === 0
+          ? 0
+          : step.grow / step.totalGrow * (step.totalGrow < 1 ? step.free * step.totalGrow : step.free)
+        expect(Math.abs(expected - step.result)).toBeLessThan(CLOSE)
+        expect(final?.kind === 'final' && final.delta).toBe(step.result)
+        break
+      }
+      case 'shrink-weight':
+        expect(Math.abs(step.shrink * step.basis - step.result)).toBeLessThan(CLOSE)
+        break
+      case 'freeze':
+        expect(step.overflow).toBe(overflow)
+        for (const record of step.frozen)
+          expect(record.basis + record.share).toBeLessThan(0)
+        overflow = step.remaining
+        if (step.frozen.some(record => record.id === itemId))
+          expect(final?.kind === 'final' && final.delta).toBe(-(basis?.kind === 'basis' ? basis.result : Number.NaN))
+        break
+      case 'shrink-total':
+        expect(Math.abs(sum(step.terms) - step.result)).toBeLessThan(CLOSE)
+        break
+      case 'shrink-share': {
+        expect(step.overflow).toBe(overflow)
+        expect(step.initialOverflow).toBe(free?.kind === 'free' ? free.result : Number.NaN)
+        const effective = step.factorSum < 1 ? Math.max(step.overflow, step.initialOverflow * step.factorSum) : step.overflow
+        expect(Math.abs(step.weight / step.weightSum * effective - step.result)).toBeLessThan(CLOSE)
+        expect(final?.kind === 'final' && final.delta).toBe(step.result)
+        break
+      }
+      case 'balanced':
+      case 'no-shrink':
+        expect(final?.kind === 'final' && final.delta).toBe(0)
+        break
+      case 'final':
+        expect(Math.abs(step.basis + step.delta - step.result)).toBeLessThan(CLOSE)
+        expect(step.basis).toBe(basis?.kind === 'basis' ? basis.result : Number.NaN)
+        break
+      case 'basis-runtime':
+      case 'unresolvable':
+        break
+    }
+  }
+}
+
+/** 随机扫描各条分支实际命中了几次；为 0 的分支说明生成器根本没造出那种状态，守卫在那条路上是瞎的 */
+function branchesOf(steps: ExplainStep[], itemId: string): string[] {
+  return steps.flatMap((step) => {
+    switch (step.kind) {
+      case 'basis': return [`basis:${step.form}`]
+      case 'basis-runtime': return ['basis-runtime']
+      case 'unresolvable': return step.blockers.length > 0 ? ['unresolvable:other'] : ['unresolvable:self']
+      case 'line': return ['line', ...(step.next === null ? ['line:last'] : []), ...(step.terms.length === 1 && step.terms[0] > step.limit ? ['line:oversize'] : [])]
+      case 'grow': return [step.totalGrow === 0 ? 'grow:zero' : step.totalGrow < 1 ? 'grow:scaled' : 'grow']
+      case 'freeze': return ['freeze', ...(step.frozen.some(record => record.id === itemId) ? ['freeze:self'] : [])]
+      case 'shrink-share': return [step.factorSum < 1 ? 'shrink:scaled' : 'shrink']
+      case 'no-shrink': return ['no-shrink']
+      default: return []
+    }
+  })
+}
+
+const REQUIRED_BRANCHES = [
+  'basis:content',
+  'basis:length',
+  'basis:percent',
+  'basis:font',
+  'basis:unit',
+  'basis-runtime',
+  'unresolvable:self',
+  'unresolvable:other',
+  'line',
+  'line:last',
+  'line:oversize',
+  'grow',
+  'grow:zero',
+  'grow:scaled',
+  'shrink',
+  'shrink:scaled',
+  'freeze',
+  'freeze:self',
+  'no-shrink',
+]
+
+const factorArb = fc.oneof(
+  { weight: 4, arbitrary: fc.integer({ min: 0, max: 10 }) },
+  { weight: 1, arbitrary: fc.constantFrom(0.2, 0.3, 0.5) },
+)
+
+const basisArb = fc.oneof(
+  { weight: 2, arbitrary: fc.constantFrom('auto', 'content', '0') },
+  { weight: 4, arbitrary: fc.integer({ min: 0, max: 500 }).map(value => `${value}px`) },
+  { weight: 2, arbitrary: fc.integer({ min: 0, max: 80 }).map(value => `${value}%`) },
+  { weight: 1, arbitrary: fc.integer({ min: 0, max: 20 }).map(value => `${value}em`) },
+  { weight: 1, arbitrary: fc.constantFrom('1in', '2cm', '30pt') },
+)
+
+const stateArb = fc.record({
+  items: fc.array(fc.record({
+    grow: factorArb,
+    shrink: factorArb,
+    basis: basisArb,
+    size: fc.integer({ min: 0, max: 300 }),
+    order: fc.integer({ min: -1, max: 1 }),
+  }), { minLength: 1, maxLength: 8 }),
+  main: fc.integer({ min: 100, max: 1200 }),
+  gap: fc.integer({ min: 0, max: 64 }),
+  direction: fc.constantFrom('row', 'row-reverse', 'column', 'column-reverse'),
+  wrap: fc.constantFrom('nowrap', 'wrap', 'wrap-reverse'),
+  // 运行期 basis 只放在一成的状态里：放进每个盒子的候选里，大半状态整个容器都推不出来，其余分支就喂不饱
+  runtime: fc.integer({ min: 0, max: 9 }).map(value => value === 0),
+}).map(({ items, main, gap, direction, wrap, runtime }): FlexState => {
+  const state = createDefaultState()
+  Object.assign(state.container, { direction, wrap, width: main, height: main, rowGap: gap, columnGap: gap })
+  state.items = items.map((spec, index) => ({ ...createDefaultItem(`i${index + 1}`), ...spec }))
+  if (runtime)
+    state.items[0].basis = '10vw'
+  return state
+})
+
+describe('explainItem 随机守卫', () => {
+  it('最后一步恒等于推导引擎的理论值，每一步的代入都算得出它自称的结果，各条分支都走到过', () => {
+    const hits = new Map<string, number>()
+
+    fc.assert(fc.property(stateArb, (state) => {
+      const layout = deriveLayout(state)
+      for (const item of state.items) {
+        const steps = explainItem(state, layout, item.id)
+        const final = steps.find(step => step.kind === 'final')
+        const derived = layout.items.find(record => record.id === item.id)
+        expect(final?.kind === 'final' ? final.result : null).toBe(derived?.finalMainSize)
+        assertConsistent(steps, item.id)
+        for (const branch of branchesOf(steps, item.id))
+          hits.set(branch, (hits.get(branch) ?? 0) + 1)
+      }
+    }), { numRuns: 1000 })
+
+    expect(REQUIRED_BRANCHES.filter(branch => !hits.get(branch))).toEqual([])
   })
 })
