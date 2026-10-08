@@ -2,7 +2,7 @@
 import type { Diagnostic, DiagnosticRule } from '~/core/types'
 import { isRowDirection } from '~/core/axis'
 import { diagnose } from '~/core/diagnostics'
-import { itemLabel } from '~/core/labels'
+import { itemLabel, px } from '~/core/labels'
 
 const { state, derived } = useFlexState()
 const { measured } = useMeasure()
@@ -48,10 +48,6 @@ const rows = computed(() => {
     }
   })
 })
-
-function px(value: number): string {
-  return `${Math.round(value * 10) / 10}px`
-}
 
 // 连字符是断行机会：窄列里 min-width:auto 会被拆成「min-」与「width:auto」两行
 const CSS_NAME = /([a-z]+(?:-[a-z]+)+(?::[a-z]+)?)/

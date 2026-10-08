@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { AxisVector } from '~/core/axis'
 import { axisVectors, isRowDirection } from '~/core/axis'
-import { itemLabel } from '~/core/labels'
+import { itemLabel, roundTenth } from '~/core/labels'
 import { computeOverlay } from '~/core/overlay'
 
 const { state, derived } = useFlexState()
@@ -61,7 +61,7 @@ const lineLabels = computed(() => {
       return []
 
     const band = bands.reduce((a, b) => (a.width * a.height >= b.width * b.height ? a : b))
-    const text = `剩余 ${round(line.actual)} · 理论 ${line.theoretical === null ? '—' : round(line.theoretical)}`
+    const text = `剩余 ${roundTenth(line.actual)} · 理论 ${line.theoretical === null ? '—' : roundTenth(line.theoretical)}`
     if (band.width < estimateLabelWidth(text) + LABEL_PADDING || band.height < MIN_LABEL_HEIGHT)
       return []
 
@@ -91,18 +91,14 @@ const hud = computed(() => {
 
   return {
     label: itemLabel(index),
-    text: `${round(record.width)} × ${round(record.height)}`,
-    theoretical: theoretical === null ? '—' : round(theoretical),
+    text: `${roundTenth(record.width)} × ${roundTenth(record.height)}`,
+    theoretical: theoretical === null ? '—' : roundTenth(theoretical),
     mismatch: theoretical !== null && Math.abs(theoretical - actualMain) > 0.5,
     x: record.left,
     // 盒子贴着容器顶时翻到盒子内侧，免得被裁掉
     y: record.top < 20 ? record.top + 16 : record.top - 6,
   }
 })
-
-function round(value: number): number {
-  return Math.round(value * 10) / 10
-}
 </script>
 
 <template>
