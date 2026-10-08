@@ -49,16 +49,7 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
         </div>
       </div>
 
-      <!-- 固定高度：行数随盒子增删变化，自适应会把上面的演示区挤得忽大忽小 -->
-      <section class="h-52 flex shrink-0 flex-col gap-space overflow-hidden panel p-space">
-        <h2 class="panel-title shrink-0">
-          <div class="i-carbon-compare" />
-          理论 vs 实际
-        </h2>
-        <div class="min-h-0 flex-1 overflow-auto">
-          <MetricsTable />
-        </div>
-      </section>
+      <ComparePanel />
     </main>
 
     <CssOutput class="lg:min-h-0" />

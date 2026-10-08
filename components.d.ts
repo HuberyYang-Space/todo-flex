@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    ComparePanel: typeof import('./src/components/playground/ComparePanel.vue')['default']
     ContainerControls: typeof import('./src/components/playground/ContainerControls.vue')['default']
     CssOutput: typeof import('./src/components/playground/CssOutput.vue')['default']
     DemoStage: typeof import('./src/components/playground/DemoStage.vue')['default']
