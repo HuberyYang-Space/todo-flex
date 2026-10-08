@@ -1,7 +1,7 @@
 import type { FlexItemState } from './types'
 import { describe, expect, it } from 'vitest'
 import { createDefaultItem, createDefaultState } from './defaults'
-import { computeFreeSpace, distributeGrow, distributeShrink, shrinkWeight } from './distribute'
+import { computeFreeSpace, distributeGrow, distributeShrink } from './distribute'
 
 function makeItems(specs: Partial<FlexItemState>[]): FlexItemState[] {
   return specs.map((spec, index) => ({ ...createDefaultItem(`i${index + 1}`), ...spec }))
@@ -119,7 +119,6 @@ describe('distributeShrink', () => {
       { shrink: 1, basis: '0' },
       { shrink: 1, basis: '200px' },
     ])
-    expect(shrinkWeight(items[0], container)).toBe(0)
     const result = distributeShrink(items, -100, container).deltas
     expect(result.get('i1')).toBe(0)
     expect(result.get('i2')).toBe(-100)

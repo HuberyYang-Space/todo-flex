@@ -66,15 +66,11 @@ export interface ShrinkRound {
 export interface DerivedLine {
   index: number
   itemIds: string[]
-  /** 已占用主轴尺寸，含 gap */
-  usedMainSize: number
   /** 分配之前：正 = 有剩余，负 = 溢出 */
   freeSpace: number
   /** grow / shrink 分配之后还剩多少：正的交给 justify-content 与 auto margin，负的是溢出 */
   remainingFreeSpace: number | null
   totalGrow: number
-  /** Σ(shrink × basis) */
-  totalShrinkWeighted: number
   /** 不收缩的行为空数组 */
   shrinkRounds: ShrinkRound[]
 }
@@ -118,8 +114,6 @@ export interface Diagnostic {
   itemId: string
   rule: DiagnosticRule
   severity: 'warn' | 'info'
-  theoretical: number | null
-  actual: number
   /** 补充数值，供展示层写进文案（如被 margin 吃掉的剩余空间） */
   params: Record<string, number>
   /** 被同行连带时，是哪些盒子被 min-width:auto 兜住、多占了空间 */

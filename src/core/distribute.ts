@@ -15,7 +15,7 @@ export function computeFreeSpace(lineItems: FlexItemState[], container: FlexCont
 }
 
 /** 收缩权重 = shrink × basis；grow 不加权，这是两者最容易被忽略的差别 */
-export function shrinkWeight(item: FlexItemState, container: FlexContainerState, fontSize = DEFAULT_FONT_SIZE): number {
+function shrinkWeight(item: FlexItemState, container: FlexContainerState, fontSize = DEFAULT_FONT_SIZE): number {
   return Math.max(0, item.shrink) * hypotheticalSize(item, container, fontSize)
 }
 

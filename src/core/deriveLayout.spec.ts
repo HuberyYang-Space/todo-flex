@@ -144,13 +144,12 @@ describe('deriveLayout', () => {
     expect(itemById(layout, 'i3').lineIndex).toBe(1)
   })
 
-  it('每行都记录 totalGrow 与 totalShrinkWeighted', () => {
+  it('每行都记录 totalGrow', () => {
     const layout = deriveLayout(stateWith([
       { grow: 2, shrink: 1, basis: '100px' },
       { grow: 1, shrink: 2, basis: '100px' },
     ]))
     expect(layout.lines[0].totalGrow).toBe(3)
-    expect(layout.lines[0].totalShrinkWeighted).toBe(300)
   })
 
   it('收缩的行带上冻结循环的每一轮，伸展的行为空', () => {

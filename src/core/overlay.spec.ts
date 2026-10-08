@@ -10,9 +10,7 @@ function makeLines(lines: { index: number, itemIds: string[], remainingFreeSpace
     lines: lines.map(line => ({
       ...line,
       freeSpace: line.remainingFreeSpace,
-      usedMainSize: 0,
       totalGrow: 0,
-      totalShrinkWeighted: 0,
       shrinkRounds: [],
     })),
     items: [],

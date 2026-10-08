@@ -68,8 +68,6 @@ describe('diagnose', () => {
     expect(diagnostic.itemId).toBe('i1')
     expect(diagnostic.rule).toBe('min-width-auto')
     expect(diagnostic.severity).toBe('warn')
-    expect(diagnostic.theoretical).toBe(150)
-    expect(diagnostic.actual).toBe(240)
   })
 
   it('收缩连锁导致实际值反而小于理论值时，仍认得出是 min-width:auto 接住了下限', () => {
@@ -260,7 +258,7 @@ describe('diagnose', () => {
     // 高度偏离才算数
     const real = diagnoseWith(state, { i1: { width: 999, height: 130 } })
     expect(real).toHaveLength(1)
-    expect(real[0].actual).toBe(130)
+    expect(real[0]).toMatchObject({ itemId: 'i1', rule: 'unexplained' })
   })
 
   it('basis 要到运行期才能确定时指出是谁，同一容器里的其余盒子不做比对', () => {

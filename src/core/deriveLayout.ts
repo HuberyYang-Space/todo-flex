@@ -1,8 +1,7 @@
 import type { DerivedItem, DerivedLayout, DerivedLine, FlexState } from './types'
-import { mainAxisSize } from './axis'
 import { basisKind } from './basisSyntax'
 import { DEFAULT_FONT_SIZE } from './constants'
-import { computeFreeSpace, distributeGrow, distributeShrink, shrinkWeight } from './distribute'
+import { computeFreeSpace, distributeGrow, distributeShrink } from './distribute'
 import { resolveBasis } from './resolveBasis'
 import { splitLines } from './splitLines'
 
@@ -18,7 +17,6 @@ export function deriveLayout(state: FlexState, fontSize = DEFAULT_FONT_SIZE): De
   const byId = new Map(items.map(item => [item.id, item]))
   const lineIds = splitLines(items, container, fontSize)
   const unresolvable = items.some(item => basisKind(item.basis) === 'runtime')
-  const containerMain = mainAxisSize(container)
 
   const lines: DerivedLine[] = []
   const derivedItems: DerivedItem[] = []
@@ -27,7 +25,6 @@ export function deriveLayout(state: FlexState, fontSize = DEFAULT_FONT_SIZE): De
     const lineItems = ids.map(id => byId.get(id)!)
     const freeSpace = computeFreeSpace(lineItems, container, fontSize)
     const totalGrow = lineItems.reduce((sum, item) => sum + Math.max(0, item.grow), 0)
-    const totalShrinkWeighted = lineItems.reduce((sum, item) => sum + shrinkWeight(item, container, fontSize), 0)
 
     const growDeltas = freeSpace > 0 ? distributeGrow(lineItems, freeSpace) : null
     const shrinkResult = freeSpace < 0 ? distributeShrink(lineItems, freeSpace, container, fontSize) : null
@@ -54,11 +51,9 @@ export function deriveLayout(state: FlexState, fontSize = DEFAULT_FONT_SIZE): De
     lines.push({
       index: lineIndex,
       itemIds: ids,
-      usedMainSize: containerMain - freeSpace,
       freeSpace,
       remainingFreeSpace: unresolvable ? null : remainingFreeSpace,
       totalGrow,
-      totalShrinkWeighted,
       shrinkRounds: shrinkResult?.rounds ?? [],
     })
   })

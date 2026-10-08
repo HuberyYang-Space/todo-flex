@@ -66,7 +66,7 @@ export function diagnose(
 
     const actual = mainSizeOf(record)
     const theoretical = derivedItem.finalMainSize
-    const base = { itemId: item.id, theoretical, actual }
+    const base = { itemId: item.id }
     const line = lineByIndex.get(derivedItem.lineIndex)
 
     if (theoretical === null)
