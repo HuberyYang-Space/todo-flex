@@ -1,6 +1,10 @@
 <script setup lang="ts">
 const { state, resetState } = useFlexState()
 const { visible: overlayVisible, toggleVisible } = useOverlay()
+
+// 只看焦点不看选中：从左侧列表选中时焦点在列表按钮上，按 Delete 不会删
+const activeElement = useActiveElement()
+const deletable = computed(() => activeElement.value?.dataset.itemId !== undefined && state.items.length > 1)
 </script>
 
 <template>
@@ -35,7 +39,14 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
             >
             <span class="op-70">叠加层</span>
           </label>
-          <span class="op-60">拖拽右下角手柄调整容器尺寸</span>
+          <!--
+            两段文案叠在同一格、只切 visibility：占位宽度恒取较长那段。直接换文字的话，这一行 flex-wrap，
+            长短一变折行就变，点一下盒子演示区就跳 24px
+          -->
+          <span data-testid="stage-hint" class="grid op-60">
+            <span class="[grid-area:1/1]" :class="{ invisible: deletable }">拖拽右下角手柄调整容器尺寸</span>
+            <span class="[grid-area:1/1]" :class="{ invisible: !deletable }">按 Delete 键删除盒子</span>
+          </span>
           <span class="ml-auto font-mono op-70">
             {{ state.container.width }} × {{ state.container.height }}
           </span>

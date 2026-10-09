@@ -58,6 +58,9 @@ happy-dom 不排版，凡是取决于真实排版、字体、绘制顺序的判�
 - **演示区按 Delete / Backspace 删除后的焦点**（[DemoStage.vue](../src/components/playground/DemoStage.vue) `removeByKey`）：单测 mock 掉了 Flip，
   因为 happy-dom 里 Flip 拍过快照后 `focus()` 会静默失效。真实 Chrome 里分别打开和关闭 `prefers-reduced-motion`，用 `Input.dispatchKeyEvent` 删除中间的盒子，
   `document.activeElement` 应落到补位的那个盒子；删的是末尾时，应落到新的末尾。去掉接焦点的代码后会掉回 `BODY`
+- **演示区标题栏的提示切换不跳**（[ThePlayground.vue](../src/components/playground/ThePlayground.vue) `stage-hint`）：1024 / 768 / 390 宽下真实点击盒子、按 Delete、点空白，
+  标题栏 `offsetHeight` 全程不变，可见的那段文案（按计算样式的 `visibility` 判断）随焦点切换。1024 宽时默认文案本身就折成两行（44px），
+  改回直接换文字会掉到 20px、演示区上移 24px
 - **窄屏单栏**：390 / 768 宽下整页 `scrollWidth` 等于视口宽，演示区在内部横滚、`.stage` 仍是真实尺寸
 - **推导引擎的传递依赖**：7 个推导模块不经 `defaults` 间接依赖属性表，只做过一次性核对
 - **观感与动效，只能人眼看**（2026-09 已全部核对通过，改到相关参数要重看）：

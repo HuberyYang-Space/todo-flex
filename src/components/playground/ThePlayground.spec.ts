@@ -25,6 +25,66 @@ describe('thePlayground', () => {
     expect(wrapper.findAll('[data-testid="metrics-row"]')).toHaveLength(3)
   })
 
+  describe('演示区标题栏的操作提示', () => {
+    const DELETE_HINT = '按 Delete 键删除盒子'
+    const RESIZE_HINT = '拖拽右下角手柄调整容器尺寸'
+    const hint = (wrapper: ReturnType<typeof mount>): string[] =>
+      wrapper.get('[data-testid="stage-hint"]').findAll(':scope > :not(.invisible)').map(span => span.text())
+
+    it('平时提示拖拽手柄', () => {
+      const wrapper = mount(ThePlayground)
+      expect(hint(wrapper)).toEqual([RESIZE_HINT])
+    })
+
+    it('演示区的盒子获得焦点时换成删除快捷键，失焦后换回来', async () => {
+      const wrapper = mount(ThePlayground, { attachTo: document.body })
+      ;(wrapper.findAll('[data-testid="stage-item"]')[1].element as HTMLElement).focus()
+      await nextTick()
+      expect(hint(wrapper)).toEqual([DELETE_HINT])
+
+      ;(document.activeElement as HTMLElement).blur()
+      await nextTick()
+      expect(hint(wrapper)).toEqual([RESIZE_HINT])
+      wrapper.unmount()
+    })
+
+    it('两段文案始终都在、只切可见性，占位宽度才恒取较长那段', async () => {
+      const wrapper = mount(ThePlayground, { attachTo: document.body })
+      const all = (): string[] => wrapper.get('[data-testid="stage-hint"]').findAll(':scope > *').map(span => span.text())
+
+      expect(all()).toEqual([RESIZE_HINT, DELETE_HINT])
+      ;(wrapper.findAll('[data-testid="stage-item"]')[1].element as HTMLElement).focus()
+      await nextTick()
+      expect(all()).toEqual([RESIZE_HINT, DELETE_HINT])
+      wrapper.unmount()
+    })
+
+    // 从左侧列表选中时焦点在列表按钮上，按 Delete 不会删，提示了就是误导
+    it('从左侧列表选中盒子时不提示删除', async () => {
+      const wrapper = mount(ThePlayground, { attachTo: document.body })
+      const row = wrapper.findAll('[data-testid="item-row"]')[1]
+      await row.trigger('click')
+      ;(row.element as HTMLElement).focus()
+      await nextTick()
+
+      expect(useFlexState().state.selectedId).toBe('item-2')
+      expect(hint(wrapper)).toEqual([RESIZE_HINT])
+      wrapper.unmount()
+    })
+
+    it('只剩一个盒子时删不掉，也不提示删除', async () => {
+      const { removeItem } = useFlexState()
+      removeItem('item-1')
+      removeItem('item-2')
+      const wrapper = mount(ThePlayground, { attachTo: document.body })
+      ;(wrapper.get('[data-testid="stage-item"]').element as HTMLElement).focus()
+      await nextTick()
+
+      expect(hint(wrapper)).toEqual([RESIZE_HINT])
+      wrapper.unmount()
+    })
+  })
+
   it('拖拽手柄改变演示区尺寸，一路生效到演示区的真实样式', async () => {
     const wrapper = mount(ThePlayground)
     await wrapper.get('[data-testid="stage-resizer"]').trigger('pointerdown', { clientX: 0, clientY: 0 })
