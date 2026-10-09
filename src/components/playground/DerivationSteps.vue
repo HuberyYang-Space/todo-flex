@@ -140,58 +140,40 @@ const diagnostic = computed(() => selectedItem.value ? byId.value.get(selectedIt
       点击演示区里的任意盒子，看它的尺寸是怎么算出来的
     </p>
 
-    <table v-else class="w-full text-xs font-mono">
-      <thead class="op-60">
-        <tr>
-          <th class="whitespace-nowrap py-1 pr-3 text-left font-normal">
-            步骤
-          </th>
-          <th class="py-1 pr-3 text-left font-normal">
-            公式
-          </th>
-          <th class="py-1 pr-3 text-left font-normal">
-            代入
-          </th>
-          <th class="whitespace-nowrap py-1 text-right font-normal">
-            结果
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(row, index) in rows" :key="index" data-testid="derivation-row" class="border-t border-bd">
-          <td data-testid="step-label" class="whitespace-nowrap py-1 pr-3 font-sans">
-            {{ row.label }}
-          </td>
-          <td data-testid="step-formula" class="py-1 pr-3 font-sans op-70">
-            {{ row.formula }}
-          </td>
-          <td data-testid="step-substitution" class="py-1 pr-3">
-            {{ row.substitution }}
-          </td>
-          <td data-testid="step-result" class="whitespace-nowrap py-1 text-right">
-            {{ row.result }}
-          </td>
-        </tr>
-        <tr data-testid="derivation-actual" class="border-t border-bd">
-          <td class="whitespace-nowrap py-1 pr-3 font-sans">
-            实际
-          </td>
-          <td class="py-1 pr-3 font-sans op-70">
-            浏览器排版
-          </td>
-          <td class="py-1 pr-3" />
-          <td class="whitespace-nowrap py-1 text-right">
-            {{ actual === null ? '—' : px(actual) }}<template v-if="!diagnostic && actual !== null && theoretical !== null">
-              ✓
-            </template>
-          </td>
-        </tr>
-        <tr v-if="diagnostic" data-testid="derivation-diagnosis">
-          <td colspan="4" class="py-1 font-sans">
-            <DiagnosisText :diagnostic="diagnostic" />
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <CompareTable v-else :headers="['步骤', '公式', '代入', '结果']">
+      <tr v-for="(row, index) in rows" :key="index" data-testid="derivation-row">
+        <td data-testid="step-label" class="font-sans">
+          {{ row.label }}
+        </td>
+        <td data-testid="step-formula" class="font-sans op-70">
+          {{ row.formula }}
+        </td>
+        <td data-testid="step-substitution">
+          {{ row.substitution }}
+        </td>
+        <td data-testid="step-result">
+          {{ row.result }}
+        </td>
+      </tr>
+      <tr data-testid="derivation-actual">
+        <td class="font-sans">
+          实际
+        </td>
+        <td class="font-sans op-70">
+          浏览器排版
+        </td>
+        <td />
+        <td>
+          {{ actual === null ? '—' : px(actual) }}<template v-if="!diagnostic && actual !== null && theoretical !== null">
+            ✓
+          </template>
+        </td>
+      </tr>
+      <tr v-if="diagnostic" data-testid="derivation-diagnosis">
+        <td colspan="4" class="font-sans">
+          <DiagnosisText :diagnostic="diagnostic" />
+        </td>
+      </tr>
+    </CompareTable>
   </div>
 </template>

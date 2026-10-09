@@ -51,6 +51,10 @@ happy-dom 不排版，凡是取决于真实排版、字体、绘制顺序的判�
 - **叠加层行标签的宽度估算**（[OverlayLayer.vue](../src/components/playground/OverlayLayer.vue) `estimateLabelWidth`，Latin-1 以内 0.61 个字号）：量标签实际宽度不超过估值加 8px 留白。分界在 U+00FF 不是 U+007F，「·」是 U+00B7、按半角渲染
 - **推导页的折行与面板内滚动**（[DerivationSteps.vue](../src/components/playground/DerivationSteps.vue)）：1024 宽下量各行高度与面板 `scrollHeight`。改列或文案后要重量；2026-10-08 时最长的「分行」一行 121px
 - **明细表表头不折行、盒子列表整行可点**：1024 宽下表头每格一行；列表行点击采样不落在 `LI` 上
+- **两个页签的表格对齐**（[CompareTable.vue](../src/components/playground/CompareTable.vue)，四列等宽、左对齐、全网格边框）：1024 / 768 / 390 宽下，
+  两个页签的表头 `offsetLeft` 逐列相等，面板 `scrollWidth − clientWidth` 为 0。要在**有诊断的状态**下量（容器宽 200、三个盒子内容 120）：
+  1024 宽时每列只有约 82px，诊断里的 `min-width:auto` 若改回 `whitespace-nowrap` 会撑出 12px 横向溢出；
+  页签面板的 `scrollbar-gutter: stable` 一去掉，只有一边出滚动条时竖线会差 6px
 - **窄屏单栏**：390 / 768 宽下整页 `scrollWidth` 等于视口宽，演示区在内部横滚、`.stage` 仍是真实尺寸
 - **推导引擎的传递依赖**：7 个推导模块不经 `defaults` 间接依赖属性表，只做过一次性核对
 - **观感与动效，只能人眼看**（2026-09 已全部核对通过，改到相关参数要重看）：

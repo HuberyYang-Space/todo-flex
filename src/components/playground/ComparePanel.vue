@@ -60,6 +60,7 @@ function onKeydown(event: KeyboardEvent): void {
       </div>
     </div>
 
+    <!-- 两个页签内容高度不同，一个出滚动条一个不出时表格宽度差一条滚动条，切换时竖线会跳；固定预留槽位 -->
     <div
       v-for="tab in tabs"
       v-show="active === tab.key"
@@ -68,7 +69,7 @@ function onKeydown(event: KeyboardEvent): void {
       role="tabpanel"
       :aria-labelledby="`compare-tab-${tab.key}`"
       tabindex="0"
-      class="min-h-0 flex-1 overflow-auto"
+      class="[scrollbar-gutter:stable] min-h-0 flex-1 overflow-auto"
     >
       <MetricsTable v-if="tab.key === 'metrics'" />
       <DerivationSteps v-else />

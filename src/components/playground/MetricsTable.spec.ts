@@ -199,7 +199,7 @@ describe('metricsTable', () => {
   // 连字符是断行机会：窄列里 min-width:auto 会被拆成「min-」与「width:auto」两行
   it('诊断文案里的 CSS 属性名整体不断行', async () => {
     const wrapper = await mountWithShiftedLineBreak()
-    const unbreakable = rows(wrapper)[1].get('[data-testid="diagnosis"]').findAll('.whitespace-nowrap').map(span => span.text())
+    const unbreakable = rows(wrapper)[1].get('[data-testid="diagnosis"]').findAll('.inline-block').map(span => span.text())
 
     expect(unbreakable).toEqual(['min-width:auto'])
   })

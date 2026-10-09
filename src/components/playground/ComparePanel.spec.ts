@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import ComparePanel from './ComparePanel.vue'
+import CompareTable from './CompareTable.vue'
 
 function hidden(wrapper: ReturnType<typeof mount>, key: string): boolean {
   return (wrapper.get(`#compare-panel-${key}`).attributes('style') ?? '').includes('display: none')
@@ -55,6 +56,18 @@ describe('comparePanel', () => {
     await wrapper.get('[data-testid="tab-derivation"]').trigger('keydown', { key: 'Home' })
     expect(document.activeElement?.id).toBe('compare-tab-metrics')
     wrapper.unmount()
+  })
+
+  it('两个页签的表格是同一个组件渲染的，各自四列表头', () => {
+    useFlexState().selectItem('item-1')
+    const wrapper = mount(ComparePanel)
+    const headers = (key: string): string[] => {
+      const table = wrapper.get(`#compare-panel-${key}`).findComponent(CompareTable)
+      return table.findAll('thead th').map(th => th.text())
+    }
+
+    expect(headers('metrics')).toEqual(['#', '理论', '实际', '诊断'])
+    expect(headers('derivation')).toEqual(['步骤', '公式', '代入', '结果'])
   })
 
   it('只有当前标签进 Tab 键序列，面板指回自己的标签', () => {
