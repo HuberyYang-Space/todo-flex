@@ -14,7 +14,9 @@
    **切法是关键**：实现体单独放进 [shikiHighlighter.ts](../src/visual/shikiHighlighter.ts)，由 [highlight.ts](../src/visual/highlight.ts) 动态 import 这一个子模块，整棵依赖树切成 1 个 chunk。
    在 `highlight.ts` 里直接写 5 个 `import()` 会散成 5 个 chunk、gzip 多 1.6 kB；用 `advancedChunks` 手工分组更大、还要手写包名正则。
    所以 `vite.config.ts` 里**没有** chunk 分组配置——量过之后不要，不是漏了
-2. **Vue 编译期开关全关**（`__VUE_OPTIONS_API__` 等一律 `'false'`）：全站只用 script setup，gzip −1.78 kB
+2. **Vue 编译期开关全关**（`__VUE_PROD_DEVTOOLS__` 等一律 `'false'`）：全站只用 script setup，gzip −1.78 kB。
+   例外是 Options API：由 plugin-vue 的 `features.optionsAPI` 控制，**只在构建时关**，构建产物与全关时逐字节一致。
+   开发态不能关：VueDevTools 的组件检查器 `Overlay.vue` 是 Options API 写的，一关它的 `mounted` 不跑，浮层上「选中组件跳转编辑器」的按钮就整个消失，且不报任何错
 3. **`modulePreload: { polyfill: false }`**：gzip −0.27 kB，modulepreload 只是加载提示，没有功能损失
 
 ## 试过没用的三条（别再走）

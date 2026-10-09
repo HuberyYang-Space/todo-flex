@@ -7,7 +7,7 @@ import Components from 'unplugin-vue-components/vite'
 import { defineConfig } from 'vite'
 import VueDevTools from 'vite-plugin-vue-devtools'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   // 开发态也走同一个子路径：分成两套的话，资源路径写死成绝对路径这类缺陷只在构建产物里现形
   base: '/todo-flex/',
   resolve: {
@@ -17,7 +17,11 @@ export default defineConfig({
   },
   plugins: [
     UnoCSS(),
-    Vue(),
+    Vue({
+      // 全站只用 script setup，构建时关掉让压缩器把 Options API 运行时整段删掉；
+      // 开发态必须开着：VueDevTools 的组件检查器 Overlay.vue 是 Options API 写的，关掉它的 mounted 不跑，浮层上的检查器按钮就不出现
+      features: { optionsAPI: command !== 'build' },
+    }),
     VueDevTools(),
     AutoImport({
       imports: [
@@ -32,9 +36,7 @@ export default defineConfig({
       dts: true,
     }),
   ],
-  // 全站只用 script setup，关掉开关让压缩器把 Options API 运行时整段删掉
   define: {
-    __VUE_OPTIONS_API__: 'false',
     __VUE_PROD_DEVTOOLS__: 'false',
     __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'false',
   },
@@ -60,4 +62,4 @@ export default defineConfig({
     globals: true,
     include: ['src/**/*.{test,spec}.ts'],
   },
-})
+}))
