@@ -5,7 +5,7 @@ import { itemLabel } from '~/core/labels'
 import { containerStyle as mapContainer, contentStyle as mapContent, itemStyle as mapItem } from '~/core/styleMap'
 import { motion } from '~/visual/motion'
 
-const { state, selectItem } = useFlexState()
+const { state, selectItem, removeItem } = useFlexState()
 const { setHovered } = useOverlay()
 
 const stageEl = ref<HTMLElement>()
@@ -44,6 +44,18 @@ function itemStyle(item: FlexItemState): CSSProperties {
 function contentStyle(item: FlexItemState): CSSProperties {
   return mapContent(item, state.container.direction) as CSSProperties
 }
+
+async function removeByKey(id: string, index: number): Promise<void> {
+  const count = state.items.length
+  removeItem(id)
+  if (state.items.length === count)
+    return
+
+  // 被删的元素带着焦点一起消失，不接住的话焦点掉回 body，键盘用户得从页面开头重新 Tab 过来
+  await nextTick()
+  const items = stageEl.value?.querySelectorAll<HTMLElement>('.stage-item')
+  items?.[Math.min(index, items.length - 1)]?.focus()
+}
 </script>
 
 <template>
@@ -65,10 +77,12 @@ function contentStyle(item: FlexItemState): CSSProperties {
         role="button"
         :aria-label="`盒子 ${itemLabel(index)}`"
         :aria-pressed="state.selectedId === item.id"
+        aria-keyshortcuts="Delete Backspace"
         :style="itemStyle(item)"
         @click="selectItem(item.id)"
         @keydown.enter="selectItem(item.id)"
         @keydown.space.prevent="selectItem(item.id)"
+        @keydown.delete="removeByKey(item.id, index)"
         @mouseenter="setHovered(item.id)"
         @mouseleave="setHovered(null)"
         @focus="setHovered(item.id)"

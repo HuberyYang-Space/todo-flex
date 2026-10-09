@@ -94,6 +94,28 @@ describe('demoStage', () => {
     expect(useFlexState().state.selectedId).toBe('item-1')
   })
 
+  it.each(['Delete', 'Backspace'])('聚焦盒子按 %s 删除它，规则与左侧列表的删除一致', async (key) => {
+    const wrapper = mount(DemoStage)
+    await wrapper.findAll('[data-testid="stage-item"]')[1].trigger('keydown', { key })
+
+    expect(useFlexState().state.items.map(item => item.id)).toEqual(['item-1', 'item-3'])
+  })
+
+  it('只剩一个盒子时按 Delete 不删', async () => {
+    const { state, removeItem } = useFlexState()
+    removeItem('item-1')
+    removeItem('item-2')
+    const wrapper = mount(DemoStage)
+    await wrapper.get('[data-testid="stage-item"]').trigger('keydown', { key: 'Delete' })
+
+    expect(state.items.map(item => item.id)).toEqual(['item-3'])
+  })
+
+  it('快捷键通过 aria-keyshortcuts 告知辅助技术', () => {
+    const wrapper = mount(DemoStage)
+    expect(wrapper.get('[data-testid="stage-item"]').attributes('aria-keyshortcuts')).toBe('Delete Backspace')
+  })
+
   it('挂载后把演示区接入观测层', async () => {
     useMeasure().measured.value = null
 

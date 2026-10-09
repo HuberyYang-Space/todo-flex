@@ -55,6 +55,9 @@ happy-dom 不排版，凡是取决于真实排版、字体、绘制顺序的判�
   两个页签的表头 `offsetLeft` 逐列相等，面板 `scrollWidth − clientWidth` 为 0。要在**有诊断的状态**下量（容器宽 200、三个盒子内容 120）：
   1024 宽时每列只有约 82px，诊断里的 `min-width:auto` 若改回 `whitespace-nowrap` 会撑出 12px 横向溢出；
   页签面板的 `scrollbar-gutter: stable` 一去掉，只有一边出滚动条时竖线会差 6px
+- **演示区按 Delete / Backspace 删除后的焦点**（[DemoStage.vue](../src/components/playground/DemoStage.vue) `removeByKey`）：单测 mock 掉了 Flip，
+  因为 happy-dom 里 Flip 拍过快照后 `focus()` 会静默失效。真实 Chrome 里分别打开和关闭 `prefers-reduced-motion`，用 `Input.dispatchKeyEvent` 删除中间的盒子，
+  `document.activeElement` 应落到补位的那个盒子；删的是末尾时，应落到新的末尾。去掉接焦点的代码后会掉回 `BODY`
 - **窄屏单栏**：390 / 768 宽下整页 `scrollWidth` 等于视口宽，演示区在内部横滚、`.stage` 仍是真实尺寸
 - **推导引擎的传递依赖**：7 个推导模块不经 `defaults` 间接依赖属性表，只做过一次性核对
 - **观感与动效，只能人眼看**（2026-09 已全部核对通过，改到相关参数要重看）：
