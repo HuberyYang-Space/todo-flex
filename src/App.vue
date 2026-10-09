@@ -12,7 +12,7 @@ useShareUrl()
           todo-flex
         </h1>
         <p class="text-xs op-60">
-          看得见的 CSS Flexbox
+          最直观的 CSS Flexbox 游乐场
         </p>
       </div>
 

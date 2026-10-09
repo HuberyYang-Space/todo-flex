@@ -34,7 +34,7 @@ function isPresetActive(item: FlexItemState, preset: FlexShorthandPreset): boole
     </h2>
 
     <p v-if="!selectedItem" data-testid="item-empty" class="text-xs op-60">
-      点击演示区里的任意盒子来编辑它的属性
+      点击演示区的任意盒子编辑属性
     </p>
 
     <template v-else>

@@ -29,7 +29,7 @@ describe('comparePanel', () => {
     const wrapper = mount(ComparePanel)
     await wrapper.get('[data-testid="tab-derivation"]').trigger('click')
 
-    expect(wrapper.get('[data-testid="tab-derivation"]').text()).toBe('推导过程 · 盒子 B')
+    expect(wrapper.get('[data-testid="tab-derivation"]').text()).toBe('推导过程-盒子 B')
     expect(wrapper.get('[data-testid="tab-derivation"]').attributes('aria-selected')).toBe('true')
     expect(hidden(wrapper, 'derivation')).toBe(false)
     expect(hidden(wrapper, 'metrics')).toBe(true)

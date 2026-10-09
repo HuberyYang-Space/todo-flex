@@ -9,8 +9,8 @@ const active = ref<TabKey>('metrics')
 const tabs = computed<{ key: TabKey, label: string }[]>(() => {
   const index = state.items.findIndex(item => item.id === state.selectedId)
   return [
-    { key: 'metrics', label: '明细表' },
-    { key: 'derivation', label: index === -1 ? '推导过程' : `推导过程 · 盒子 ${itemLabel(index)}` },
+    { key: 'metrics', label: '明细' },
+    { key: 'derivation', label: index === -1 ? '推导过程' : `推导过程-盒子 ${itemLabel(index)}` },
   ]
 })
 
@@ -37,11 +37,11 @@ function onKeydown(event: KeyboardEvent): void {
   <!-- 固定高度：行数随盒子增删变化，自适应会把上面的演示区挤得忽大忽小 -->
   <section data-testid="compare-panel" class="h-52 flex shrink-0 flex-col gap-space overflow-hidden panel p-space">
     <div class="flex shrink-0 flex-wrap items-center gap-space">
-      <h2 class="panel-title">
+      <h2 class="mr-2 panel-title">
         <div class="i-carbon-compare" />
-        理论 vs 实际
+        理论值与实际值
       </h2>
-      <div role="tablist" aria-label="理论 vs 实际" class="flex gap-tight text-xs" @keydown="onKeydown">
+      <div role="tablist" aria-label="理论值与实际值" class="flex gap-tight text-xs" @keydown="onKeydown">
         <button
           v-for="tab in tabs"
           :id="`compare-tab-${tab.key}`"

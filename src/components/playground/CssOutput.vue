@@ -53,7 +53,7 @@ async function copy(): Promise<void> {
 
 <template>
   <section class="flex flex-col gap-space overflow-hidden panel p-space">
-    <header class="flex shrink-0 items-center gap-space">
+    <header class="flex shrink-0 items-start gap-space">
       <h2 class="panel-title">
         <div class="i-carbon-code" />
         CSS
@@ -66,7 +66,7 @@ async function copy(): Promise<void> {
         :aria-label="copyLabel"
         @click="copy()"
       >
-        <div :class="copyIcon" />
+        <div :class="copyIcon" class="text-3" />
       </button>
     </header>
 

@@ -28,14 +28,14 @@ const rows = computed(() => {
 <template>
   <section data-testid="metrics" class="flex flex-col gap-tight">
     <p class="text-xs op-60">
-      理论值来自推导引擎，实际值取自浏览器渲染结果——不一致处即是规则介入的地方
+      理论值来自推导引擎，实际值来自浏览器渲染结果，不一致处即是规则介入的地方
     </p>
 
     <div>
       <table class="w-full text-xs font-mono">
         <thead class="op-60">
           <tr>
-            <th class="whitespace-nowrap py-1 pr-3 text-center font-normal">
+            <th class="whitespace-nowrap py-1 pr-3 text-start font-normal">
               #
             </th>
             <th class="whitespace-nowrap py-1 pr-3 text-center font-normal">
@@ -57,7 +57,7 @@ const rows = computed(() => {
             :data-metrics-id="row.id"
             class="border-t border-bd"
           >
-            <td class="py-1 pr-3 text-center">
+            <td class="py-1 pr-3 text-start">
               {{ row.label }}
             </td>
             <td data-testid="theoretical" class="py-1 pr-3 text-center">

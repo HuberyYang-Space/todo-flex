@@ -15,7 +15,7 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
       <ItemList />
       <ItemControls />
       <button data-testid="reset" class="btn text-xs" @click="resetState()">
-        重置为默认状态
+        重 置
       </button>
     </aside>
 
@@ -35,7 +35,7 @@ const { visible: overlayVisible, toggleVisible } = useOverlay()
             >
             <span class="op-70">叠加层</span>
           </label>
-          <span class="op-60">拖拽演示区右下角手柄调整容器尺寸</span>
+          <span class="op-60">拖拽右下角手柄调整容器尺寸</span>
           <span class="ml-auto font-mono op-70">
             {{ state.container.width }} × {{ state.container.height }}
           </span>
