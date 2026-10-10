@@ -5,8 +5,8 @@ useShareUrl()
 <template>
   <!-- 只在宽屏锁死整页：窄屏塌成一栏后一屏放不下，锁死等于把下半页切掉 -->
   <div class="min-h-full flex flex-col font-sans lg:h-full lg:overflow-hidden">
-    <!-- 只给上内边距：下方留白由 Playground 的 p-space 承担，两边都写会叠成两份 -->
-    <header class="mx-auto max-w-480 w-full flex shrink-0 items-center justify-between px-space pt-space">
+    <!-- 上下留白都由头部承担，Playground 不写上内边距，两边都写会叠成两份 -->
+    <header class="mx-auto max-w-480 w-full flex shrink-0 items-center justify-between px-space py-tight">
       <div class="flex items-baseline gap-space">
         <h1 class="text-lg font-bold font-mono">
           todo-flex

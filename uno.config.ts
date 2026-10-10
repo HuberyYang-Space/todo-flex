@@ -19,6 +19,9 @@ export default defineConfig({
       space: 'var(--space)',
       tight: 'var(--space-tight)',
     },
+    boxShadow: {
+      panel: 'var(--panel-shadow)',
+    },
     fontFamily: {
       // 组件 <style> 里的 var(--font-mono) 与工具类 font-mono 必须落在同一套字体上
       mono: 'var(--font-mono)',
@@ -26,7 +29,7 @@ export default defineConfig({
     },
   },
   shortcuts: [
-    ['panel', 'bg-panel border border-bd rounded-2'],
+    ['panel', 'bg-panel border border-bd rounded-2 shadow-panel'],
     ['panel-title', 'flex items-center gap-tight text-sm font-bold'],
     ['btn', 'px-3 py-1 rounded-2 border border-bd bg-panel cursor-pointer transition-colors hover:border-accent'],
     // text-base 必须写死：图标尺寸是 1.2em，不写就跟着各自父级的字号漂

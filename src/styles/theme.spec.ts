@@ -76,6 +76,7 @@ function faded(fg: Rgb, opacity: number, bg: Rgb): Rgb {
 // 混色参数一律从组件源码里读，不在测试里抄一份：抄过去的常量不会跟着产品代码变，守卫就瞎了
 const STAGE = readSfcStyle('src/components/playground/DemoStage.vue')
 const OVERLAY = readSfcStyle('src/components/playground/OverlayLayer.vue')
+const TABLE = readSfcStyle('src/components/playground/CompareTable.vue')
 
 /** 按逗号切顶层参数，括号里的逗号不算 */
 function splitTopLevel(source: string): string[] {
@@ -183,6 +184,19 @@ describe.each(Object.entries(THEMES))('%s主题', (_name, theme) => {
   it('op-60 的说明文字达到 AA——站点有八处这样用', () => {
     // 亮色主题曾是 4.11，只看暗色（6.33）永远发现不了
     expect(contrast(faded(fg, 0.6, bg), bg)).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('页面底色比卡片暗——四块面板读作浮在背景之上', () => {
+    expect(luminance(bg)).toBeLessThan(luminance(c(theme, '--panel')))
+  })
+
+  it('明细表表头底色有别于卡片，op-60 的表头文字仍达到 AA', () => {
+    const panel = c(theme, '--panel')
+    // 不给 backdrop：表头吸顶后底下压着表体，底色必须不透明，混了 transparent 这里会直接抛错
+    const head = evalColor(TABLE.decl('.compare-table th', 'background'), theme)
+
+    expect(contrast(head, panel)).toBeGreaterThan(1.05)
+    expect(contrast(faded(fg, 0.6, head), head)).toBeGreaterThanOrEqual(4.5)
   })
 
   it('op-70 的次要文字达到 AA', () => {

@@ -167,6 +167,23 @@ describe('thePlayground', () => {
   })
 
   /*
+   * 滚动容器的内边距会跟着内容一起滚走：面板自己滚的话，滚到中途内容就贴着面板上下边缘被切，
+   * 和另外三块留出的 8px 对不齐。所以竖向留白必须在面板上、滚动容器外。只能读源码断言，理由同上。
+   */
+  it('操作区的上下留白在滚动容器外，滚到中途内容也不贴边', () => {
+    const playground = readFileSync(resolve(process.cwd(), 'src/components/playground/ThePlayground.vue'), 'utf-8')
+
+    const aside = /<aside class="([^"]*)"/.exec(playground)!
+    const asideTokens = aside[1].split(/\s+/)
+    expect(asideTokens, '操作区面板自己不能滚，否则它的内边距会跟着滚走').not.toContain('lg:overflow-y-auto')
+    expect(asideTokens.some(token => /^(?:p|py)-space$/.test(token)), `操作区面板缺竖向留白：${aside[1]}`).toBe(true)
+
+    const asideScroller = /<aside[^>]*>\s*(?:<!--[\s\S]*?-->\s*)?<div class="([^"]*)"/.exec(playground)!
+    const vertical = asideScroller[1].split(/\s+/).filter(token => /^(?:lg:)?p[tby]?-/.test(token))
+    expect(vertical, `操作区滚动容器不该带竖向内边距：${vertical.join(' ')}`).toHaveLength(0)
+  })
+
+  /*
    * 整页不滚、只有各栏内部滚：flex 子项的 min-height 默认是 auto，中间漏一级 min-h-0 整页就重新开始滚。
    * 同上，只能读源码断言。
    */
@@ -187,8 +204,13 @@ describe('thePlayground', () => {
 
     const aside = /<aside class="([^"]*)"/.exec(playground)
     expect(aside, '没找到操作区 aside').toBeTruthy()
-    expect(aside![1], '操作区必须自己滚，而不是把页面撑长').toMatch(/(?:^|\s)lg:overflow-y-auto(?:\s|$)/)
-    expect(aside![1], '操作区缺 min-h-0，滚动条会跑到外层去').toMatch(/(?:^|\s)lg:min-h-0(?:\s|$)/)
+    expect(aside![1], '操作区缺 min-h-0，长内容会把整行顶高').toMatch(/(?:^|\s)lg:min-h-0(?:\s|$)/)
+
+    const asideScroller = /<aside[^>]*>\s*(?:<!--[\s\S]*?-->\s*)?<div class="([^"]*)"/.exec(playground)
+    expect(asideScroller, '没找到操作区里的滚动容器').toBeTruthy()
+    expect(asideScroller![1], '操作区必须自己滚，而不是把页面撑长').toMatch(/(?:^|\s)lg:overflow-y-auto(?:\s|$)/)
+    expect(asideScroller![1], '操作区滚动容器要吃满面板的剩余高度').toMatch(/(?:^|\s)lg:flex-1(?:\s|$)/)
+    expect(asideScroller![1], '操作区滚动容器缺 min-h-0，滚动条会跑到外层去').toMatch(/(?:^|\s)lg:min-h-0(?:\s|$)/)
 
     const main = /<main class="([^"]*)"/.exec(playground)
     expect(main, '没找到右侧 main').toBeTruthy()

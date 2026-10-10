@@ -6,7 +6,7 @@
 
 - 已上线：<https://huberyyang-space.github.io/todo-flex/>，推 `main` 由 [deploy.yml](../.github/workflows/deploy.yml) 跑 lint / test / build 后发布
 - 2026-10-09 起正式进入维护期，不再主动加功能；`main` 与 `dev` 以 `git log` 为准
-- `pnpm test` 718/718、`pnpm lint`、`pnpm tscheck`、`pnpm build` 全部通过
+- `pnpm test` 725/725、`pnpm lint`、`pnpm tscheck`、`pnpm build` 全部通过
 
 ## 待办
 

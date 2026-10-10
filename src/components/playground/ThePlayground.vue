@@ -13,14 +13,17 @@ const deletable = computed(() => activeElement.value?.dataset.itemId !== undefin
     中间列必须是 minmax(0, 1fr) 而不是 1fr：1fr 的下限是 min-content（演示区 784px），
     窗口一窄右侧 CSS 栏会被顶出视口再被 overflow-hidden 裁掉；main 的 lg:min-w-0 是同一件事的另一半。
   -->
-  <div class="grid mx-auto max-w-480 w-full gap-space p-space lg:grid-cols-[320px_minmax(0,1fr)_320px] lg:min-h-0 lg:flex-1">
-    <aside class="flex flex-col gap-space panel p-space lg:min-h-0 lg:overflow-y-auto">
-      <ContainerControls />
-      <ItemList />
-      <ItemControls />
-      <button data-testid="reset" class="btn text-xs" @click="resetState()">
-        重 置
-      </button>
+  <div class="grid mx-auto max-w-480 w-full gap-space px-space pb-space lg:grid-cols-[320px_minmax(0,1fr)_320px] lg:min-h-0 lg:flex-1">
+    <aside class="flex flex-col panel py-space lg:min-h-0">
+      <!-- 竖向留白在滚动容器外：写在里面会跟着内容滚走，滚到中途内容就贴着面板边缘被切。横向留白留在里面，给滑块和焦点环的外扩留地方 -->
+      <div class="flex flex-col gap-space px-space lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+        <ContainerControls />
+        <ItemList />
+        <ItemControls />
+        <button data-testid="reset" class="btn text-xs" @click="resetState()">
+          重 置
+        </button>
+      </div>
     </aside>
 
     <main class="min-w-0 flex flex-col gap-space lg:min-h-0">
